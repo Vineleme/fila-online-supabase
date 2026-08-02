@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fila Online</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="topbar" aria-label="Resumo da fila">
+        <div>
+          <p class="eyebrow">Atendimento</p>
+          <h1>Fila Online</h1>
+        </div>
+        <div class="stats">
+          <div>
+            <span id="statWaiting">0</span>
+            <small>aguardando</small>
+          </div>
+          <div>
+            <span id="statAvg">5 min</span>
+            <small>por pessoa</small>
+          </div>
+        </div>
+      </section>
+
+      <nav class="tabs" aria-label="Areas do sistema">
+        <button class="tab is-active" data-view="clientView" type="button">Fila</button>
+        <button class="tab" data-view="adminView" type="button">Administrativo</button>
+      </nav>
+
+      <section id="clientView" class="view is-active">
+        <div id="calledBanner" class="called-banner" hidden>
+          <div>
+            <p>Senha chamada</p>
+            <strong id="calledName">-</strong>
+          </div>
+          <span id="calledService">Dirija-se ao atendimento</span>
+        </div>
+
+        <div class="layout">
+          <form id="joinForm" class="panel">
+            <h2>Entrar na fila</h2>
+            <label>
+              Nome
+              <input id="nameInput" name="name" autocomplete="name" required minlength="2" placeholder="Seu nome" />
+            </label>
+            <label>
+              Atendimento
+              <select id="serviceInput" name="service">
+                <option value="Recepcao">Recepcao</option>
+                <option value="Matricula">Matricula</option>
+                <option value="Financeiro">Financeiro</option>
+                <option value="Avaliacao">Avaliacao</option>
+              </select>
+            </label>
+            <button class="primary" type="submit">Cadastrar</button>
+          </form>
+
+          <article id="myTicket" class="panel ticket-panel" aria-live="polite">
+            <h2>Minha posicao</h2>
+            <p class="muted">Cadastre seu nome para acompanhar a fila.</p>
+          </article>
+        </div>
+
+        <section class="queue-section">
+          <div class="section-title">
+            <h2>Fila atual</h2>
+            <button id="notifyButton" class="ghost" type="button">Ativar notificacoes</button>
+          </div>
+          <ol id="publicQueue" class="queue-list"></ol>
+        </section>
+      </section>
+
+      <section id="adminView" class="view">
+        <div id="loginPanel" class="panel compact">
+          <h2>Area administrativa</h2>
+          <label>
+            PIN
+            <input id="pinInput" inputmode="numeric" autocomplete="off" placeholder="1234" />
+          </label>
+          <button id="loginButton" class="primary" type="button">Entrar</button>
+        </div>
+
+        <div id="adminPanel" class="admin-grid" hidden>
+          <section class="panel">
+            <div class="section-title">
+              <h2>Controle</h2>
+              <button id="logoutButton" class="ghost" type="button">Sair</button>
+            </div>
+            <label>
+              Tempo medio por pessoa
+              <input id="avgInput" min="1" max="60" type="number" />
+            </label>
+            <div class="admin-actions">
+              <button id="callNextButton" class="success" type="button">Chamar proximo</button>
+              <button id="finishCalledButton" type="button">Finalizar chamado</button>
+              <button id="resetButton" class="danger" type="button">Limpar fila</button>
+            </div>
+          </section>
+
+          <section class="panel">
+            <h2>Pessoas na fila</h2>
+            <div id="adminQueue" class="admin-list"></div>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
