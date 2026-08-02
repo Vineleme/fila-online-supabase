@@ -57,6 +57,27 @@ select {
   font: inherit;
 }
 
+input[type="file"] {
+  min-height: auto;
+  border-style: dashed;
+  padding: 11px;
+  cursor: pointer;
+  font-size: 0.88rem;
+}
+
+input[type="file"]::file-selector-button {
+  min-height: 34px;
+  margin-right: 10px;
+  border: 0;
+  border-radius: 8px;
+  padding: 0 12px;
+  background: var(--brand);
+  color: #fff;
+  font: inherit;
+  font-weight: 850;
+  cursor: pointer;
+}
+
 button {
   min-height: 44px;
   border: 0;

@@ -1,5 +1,6 @@
 const STORAGE_KEY = "fila-online-state-v2";
 const MY_TICKET_KEY = "fila-online-my-ticket-v2";
+const ASSETS_BUCKET = "fila-ai-assets";
 const OWNER_PIN = "7890";
 
 const params = new URLSearchParams(window.location.search);
@@ -105,6 +106,9 @@ const elements = {
   companyNameInput: document.querySelector("#companyNameInput"),
   companyLogoUrlInput: document.querySelector("#companyLogoUrlInput"),
   companyCoverUrlInput: document.querySelector("#companyCoverUrlInput"),
+  companyLogoFileInput: document.querySelector("#companyLogoFileInput"),
+  companyCoverFileInput: document.querySelector("#companyCoverFileInput"),
+  brandUploadStatus: document.querySelector("#brandUploadStatus"),
   themeModeInput: document.querySelector("#themeModeInput"),
   queueOpenInput: document.querySelector("#queueOpenInput"),
   openTimeInput: document.querySelector("#openTimeInput"),
@@ -480,6 +484,8 @@ function bindEvents() {
 
   elements.saveCompanyButton.addEventListener("click", saveCompanySettings);
   elements.adminAddForm.addEventListener("submit", addTicketFromAdmin);
+  elements.companyLogoFileInput.addEventListener("change", () => handleBrandFileUpload("logo"));
+  elements.companyCoverFileInput.addEventListener("change", () => handleBrandFileUpload("cover"));
 
   elements.callNextButton.addEventListener("click", callNextTicket);
   elements.finishCalledButton.addEventListener("click", finishCalledTicket);
@@ -602,6 +608,56 @@ async function saveCompanySettings() {
   }
 
   render();
+}
+
+async function handleBrandFileUpload(type) {
+  const fileInput = type === "logo" ? elements.companyLogoFileInput : elements.companyCoverFileInput;
+  const urlInput = type === "logo" ? elements.companyLogoUrlInput : elements.companyCoverUrlInput;
+  const file = fileInput.files?.[0];
+  if (!file) return;
+
+  if (!db) {
+    alert("Upload precisa do Supabase configurado.");
+    fileInput.value = "";
+    return;
+  }
+
+  if (!file.type.startsWith("image/")) {
+    alert("Escolha uma imagem.");
+    fileInput.value = "";
+    return;
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    alert("Use uma imagem de ate 5 MB.");
+    fileInput.value = "";
+    return;
+  }
+
+  const previousStatus = elements.brandUploadStatus.textContent;
+  elements.brandUploadStatus.textContent = `Enviando ${type === "logo" ? "logo" : "capa"}...`;
+  fileInput.disabled = true;
+
+  const extension = file.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") || "png";
+  const path = `${COMPANY_SLUG}/${type}-${Date.now()}-${slugify(file.name)}.${extension}`;
+  const { error } = await db.storage.from(ASSETS_BUCKET).upload(path, file, {
+    cacheControl: "3600",
+    upsert: true,
+    contentType: file.type
+  });
+
+  fileInput.disabled = false;
+  fileInput.value = "";
+
+  if (error) {
+    elements.brandUploadStatus.textContent = previousStatus;
+    alert(`Nao consegui enviar imagem: ${error.message}`);
+    return;
+  }
+
+  const { data } = db.storage.from(ASSETS_BUCKET).getPublicUrl(path);
+  urlInput.value = data.publicUrl;
+  elements.brandUploadStatus.textContent = "Imagem enviada. Clique em Salvar configuracao para aplicar no restaurante.";
 }
 
 async function addTicketFromAdmin(event) {

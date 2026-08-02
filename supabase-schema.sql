@@ -46,6 +46,20 @@ create table if not exists public.trial_requests (
   updated_at timestamptz not null default now()
 );
 
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'fila-ai-assets',
+  'fila-ai-assets',
+  true,
+  5242880,
+  array['image/png', 'image/jpeg', 'image/webp', 'image/gif']
+)
+on conflict (id) do update
+set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
 create table if not exists public.queue_tickets (
   id uuid primary key default gen_random_uuid(),
   number integer not null,
@@ -115,6 +129,9 @@ drop policy if exists "Public can delete queue tickets" on public.queue_tickets;
 drop policy if exists "Public can read trial requests" on public.trial_requests;
 drop policy if exists "Public can create trial requests" on public.trial_requests;
 drop policy if exists "Public can update trial requests" on public.trial_requests;
+drop policy if exists "Public can read fila ai assets" on storage.objects;
+drop policy if exists "Public can upload fila ai assets" on storage.objects;
+drop policy if exists "Public can update fila ai assets" on storage.objects;
 
 create policy "Public can read queue companies"
   on public.queue_companies for select
@@ -179,6 +196,22 @@ create policy "Public can update trial requests"
   to anon
   using (true)
   with check (true);
+
+create policy "Public can read fila ai assets"
+  on storage.objects for select
+  to anon
+  using (bucket_id = 'fila-ai-assets');
+
+create policy "Public can upload fila ai assets"
+  on storage.objects for insert
+  to anon
+  with check (bucket_id = 'fila-ai-assets');
+
+create policy "Public can update fila ai assets"
+  on storage.objects for update
+  to anon
+  using (bucket_id = 'fila-ai-assets')
+  with check (bucket_id = 'fila-ai-assets');
 
 do $$
 begin
