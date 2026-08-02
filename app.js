@@ -14,7 +14,9 @@ const defaultCompany = {
   tables6: 1,
   dwell2: 50,
   dwell4: 70,
-  dwell6: 90
+  dwell6: 90,
+  themeMode: "light",
+  accentColor: "#0d6efd"
 };
 
 const defaultState = {
@@ -62,6 +64,7 @@ const elements = {
   adminPanel: document.querySelector("#adminPanel"),
   logoutButton: document.querySelector("#logoutButton"),
   companyNameInput: document.querySelector("#companyNameInput"),
+  themeModeInput: document.querySelector("#themeModeInput"),
   tables2Input: document.querySelector("#tables2Input"),
   tables4Input: document.querySelector("#tables4Input"),
   tables6Input: document.querySelector("#tables6Input"),
@@ -273,7 +276,9 @@ async function saveCompanySettings() {
     tables6: clamp(Number(elements.tables6Input.value), 0, 99),
     dwell2: clamp(Number(elements.dwell2Input.value), 15, 240),
     dwell4: clamp(Number(elements.dwell4Input.value), 15, 240),
-    dwell6: clamp(Number(elements.dwell6Input.value), 15, 240)
+    dwell6: clamp(Number(elements.dwell6Input.value), 15, 240),
+    themeMode: elements.themeModeInput.value === "dark" ? "dark" : "light",
+    accentColor: "#0d6efd"
   };
 
   state.company = company;
@@ -449,6 +454,7 @@ function render() {
   elements.statAvg.textContent = formatDuration(state.avgMinutes);
   elements.callNextButton.disabled = !waitingTickets.some((ticket) => tableAvailabilityFor(partyBucket(ticket.partySize)).available > 0);
   elements.finishCalledButton.disabled = !current;
+  applyTheme();
 
   renderCalledBanner();
   renderMyTicket();
@@ -465,6 +471,7 @@ function fillCompanyForm() {
   elements.dwell2Input.value = state.company.dwell2;
   elements.dwell4Input.value = state.company.dwell4;
   elements.dwell6Input.value = state.company.dwell6;
+  elements.themeModeInput.value = state.company.themeMode;
   elements.avgInput.value = state.avgMinutes;
 }
 
@@ -578,6 +585,13 @@ function renderTableStatus() {
   });
 
   elements.tableStatus.innerHTML = rows.join("");
+}
+
+function applyTheme() {
+  const themeMode = state.company.themeMode === "dark" ? "dark" : "light";
+  document.documentElement.dataset.theme = themeMode;
+  document.documentElement.style.setProperty("--brand", state.company.accentColor || "#0d6efd");
+  document.documentElement.style.setProperty("--brand-dark", "#084298");
 }
 
 function estimateWait(ticket) {
@@ -705,7 +719,9 @@ function fromSupabaseCompany(company) {
     tables6: company.tables_6,
     dwell2: company.dwell_2,
     dwell4: company.dwell_4,
-    dwell6: company.dwell_6
+    dwell6: company.dwell_6,
+    themeMode: company.theme_mode || "light",
+    accentColor: company.accent_color || "#0d6efd"
   };
 }
 
@@ -719,7 +735,9 @@ function toSupabaseCompany(company) {
     tables_6: company.tables6,
     dwell_2: company.dwell2,
     dwell_4: company.dwell4,
-    dwell_6: company.dwell6
+    dwell_6: company.dwell6,
+    theme_mode: company.themeMode,
+    accent_color: company.accentColor
   };
 }
 
