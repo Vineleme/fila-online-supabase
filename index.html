@@ -82,8 +82,15 @@
           <button id="loginButton" class="primary" type="button">Entrar</button>
         </div>
 
-        <div id="adminPanel" class="admin-grid" hidden>
-          <section class="panel">
+        <div id="adminPanel" class="admin-shell" hidden>
+          <div class="admin-tabs" role="tablist" aria-label="Administracao">
+            <button class="admin-tab is-active" data-admin-tab="adminQueuePanel" type="button">Fila</button>
+            <button class="admin-tab" data-admin-tab="adminTablesPanel" type="button">Mesas</button>
+            <button class="admin-tab" data-admin-tab="adminConfigPanel" type="button">Configurar</button>
+          </div>
+
+          <div class="admin-grid">
+          <section id="adminConfigPanel" class="panel admin-tab-panel">
             <div class="section-title">
               <h2>Controle</h2>
               <button id="logoutButton" class="ghost" type="button">Sair</button>
@@ -127,7 +134,17 @@
             </div>
             <p class="muted">Base inicial sugerida: 50 min para casal, 70 min para 4 pessoas, 90 min para grupos grandes.</p>
             <button id="saveCompanyButton" class="primary" type="button">Salvar configuracao</button>
+          </section>
+
+          <section id="adminTablesPanel" class="panel admin-tab-panel">
+            <div class="section-title">
+              <h2>Mesas</h2>
+              <span id="tableHint" class="ready-chip" hidden>Pode chamar</span>
+            </div>
             <div id="tableStatus" class="table-status" aria-live="polite"></div>
+          </section>
+
+          <section id="adminQueuePanel" class="panel admin-tab-panel is-active">
             <form id="adminAddForm" class="manual-add">
               <h3>Adicionar por telefone</h3>
               <label>
@@ -144,27 +161,21 @@
               </label>
               <button class="primary" type="submit">Adicionar a fila</button>
             </form>
-            <label>
-              Tempo medio antigo
-              <input id="avgInput" min="1" max="240" type="number" />
-            </label>
             <div class="admin-actions">
               <button id="callNextButton" class="success" type="button">Chamar proximo</button>
               <button id="finishCalledButton" type="button">Finalizar chamado</button>
               <button id="resetButton" class="danger" type="button">Limpar fila</button>
             </div>
-          </section>
-
-          <section class="panel">
             <h2>Pessoas na fila</h2>
             <div id="adminQueue" class="admin-list"></div>
           </section>
+          </div>
         </div>
       </section>
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
-    <script src="app.js?v=admin-add-1"></script>
+    <script src="app.js?v=mesas-1"></script>
   </body>
 </html>
