@@ -645,10 +645,18 @@ function renderTableStatus() {
 }
 
 function applyTheme() {
-  const themeMode = state.company.themeMode === "dark" ? "dark" : "light";
+  const isCustomerLink = ACCESS_MODE === "fila";
+  const themeMode = isCustomerLink || state.company.themeMode === "dark" ? "dark" : "light";
+  const brand = isCustomerLink ? "#22c55e" : "#0d6efd";
+  const brandDark = isCustomerLink ? "#15803d" : "#084298";
+  const brandSoft = isCustomerLink ? "#0f2f1d" : themeMode === "dark" ? "#0b2f6b" : "#e7f0ff";
+  const heroAccent = isCustomerLink ? "rgba(34, 197, 94, 0.62)" : "rgba(13, 110, 253, 0.62)";
+
   document.documentElement.dataset.theme = themeMode;
-  document.documentElement.style.setProperty("--brand", state.company.accentColor || "#0d6efd");
-  document.documentElement.style.setProperty("--brand-dark", "#084298");
+  document.documentElement.style.setProperty("--brand", brand);
+  document.documentElement.style.setProperty("--brand-dark", brandDark);
+  document.documentElement.style.setProperty("--brand-soft", brandSoft);
+  document.documentElement.style.setProperty("--hero-accent", heroAccent);
 }
 
 function estimateWait(ticket) {
