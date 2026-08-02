@@ -67,6 +67,7 @@ const elements = {
   dwell4Input: document.querySelector("#dwell4Input"),
   dwell6Input: document.querySelector("#dwell6Input"),
   saveCompanyButton: document.querySelector("#saveCompanyButton"),
+  tableStatus: document.querySelector("#tableStatus"),
   avgInput: document.querySelector("#avgInput"),
   callNextButton: document.querySelector("#callNextButton"),
   finishCalledButton: document.querySelector("#finishCalledButton"),
@@ -272,7 +273,7 @@ async function saveCompanySettings() {
 }
 
 async function callNextTicket() {
-  const waiting = state.queue.find((ticket) => ticket.status === "waiting");
+  const waiting = getWaitingTickets().find((ticket) => tableAvailabilityFor(partyBucket(ticket.partySize)).available > 0);
   if (!waiting) return;
 
   if (db) {
@@ -345,6 +346,11 @@ async function handleTicketAction(action, id) {
 
   if (db) {
     if (action === "call") {
+      if (tableAvailabilityFor(partyBucket(ticket.partySize)).available <= 0) {
+        alert("Nao ha mesa livre para esse tamanho de grupo.");
+        return;
+      }
+
       const { error } = await db
         .from("queue_tickets")
         .update({ status: "called", called_at: new Date().toISOString() })
@@ -369,6 +375,11 @@ async function handleTicketAction(action, id) {
   }
 
   if (action === "call") {
+    if (tableAvailabilityFor(partyBucket(ticket.partySize)).available <= 0) {
+      alert("Nao ha mesa livre para esse tamanho de grupo.");
+      return;
+    }
+
     ticket.status = "called";
     ticket.calledAt = Date.now();
     state.currentTicketId = ticket.id;
@@ -402,13 +413,14 @@ function render() {
   elements.companyTitle.textContent = state.company.name;
   elements.statWaiting.textContent = waitingTickets.length;
   elements.statAvg.textContent = `${state.avgMinutes} min`;
-  elements.callNextButton.disabled = waitingTickets.length === 0;
+  elements.callNextButton.disabled = !waitingTickets.some((ticket) => tableAvailabilityFor(partyBucket(ticket.partySize)).available > 0);
   elements.finishCalledButton.disabled = !current;
 
-  renderCalledBanner(current);
+  renderCalledBanner();
   renderMyTicket();
   renderPublicQueue();
   renderAdminQueue();
+  renderTableStatus();
 }
 
 function fillCompanyForm() {
@@ -422,11 +434,13 @@ function fillCompanyForm() {
   elements.avgInput.value = state.avgMinutes;
 }
 
-function renderCalledBanner(current) {
-  elements.calledBanner.hidden = !current;
-  if (!current) return;
-  elements.calledName.textContent = `${formatNumber(current.number)} - ${current.name}`;
-  elements.calledService.textContent = `Mesa para ${partyLabel(current.partySize)}`;
+function renderCalledBanner() {
+  const myTicket = state.queue.find((item) => item.id === state.myTicketId);
+  const shouldShow = myTicket?.status === "called";
+  elements.calledBanner.hidden = !shouldShow;
+  if (!shouldShow) return;
+  elements.calledName.textContent = `${formatNumber(myTicket.number)} - ${myTicket.name}`;
+  elements.calledService.textContent = `Mesa para ${partyLabel(myTicket.partySize)}`;
 }
 
 function renderMyTicket() {
@@ -448,7 +462,8 @@ function renderMyTicket() {
   elements.myTicket.innerHTML = `
     <h2>Minha senha</h2>
     <div class="ticket-number">${formatNumber(ticket.number)}</div>
-    <p><strong>${escapeHtml(ticket.name)}</strong> - ${partyLabel(ticket.partySize)}</p>
+    <p><strong>${formatNumber(ticket.number)} - ${escapeHtml(ticket.name)}</strong></p>
+    <p class="muted">${partyLabel(ticket.partySize)}</p>
     <div class="ticket-grid">
       <div class="metric"><strong>${ahead}</strong><span>grupos na frente</span></div>
       <div class="metric"><strong>${wait} min</strong><span>espera estimada</span></div>
@@ -458,29 +473,26 @@ function renderMyTicket() {
 }
 
 function renderPublicQueue() {
-  const visibleTickets = state.queue.filter((ticket) => ticket.status !== "done");
+  const ticket = state.queue.find((item) => item.id === state.myTicketId);
 
-  if (visibleTickets.length === 0) {
-    elements.publicQueue.innerHTML = `<li class="panel muted">Nenhum grupo na lista.</li>`;
+  if (!ticket) {
+    elements.publicQueue.innerHTML = `<li class="panel muted">Depois do cadastro, esta tela mostra apenas a sua senha e sua previsao.</li>`;
     return;
   }
 
-  elements.publicQueue.innerHTML = visibleTickets.map((ticket) => {
-    const place = ticket.status === "called" ? "OK" : countAhead(ticket) + 1;
-    const wait = estimateWait(ticket);
-    const calledClass = ticket.status === "called" ? " is-called" : "";
-    const status = ticket.status === "called" ? "Chamado" : `${wait} min`;
-    return `
-      <li class="queue-item${calledClass}">
-        <span class="place">${place}</span>
-        <span class="person">
-          <strong>${formatNumber(ticket.number)} - ${escapeHtml(ticket.name)}</strong>
-          <span>${partyLabel(ticket.partySize)}</span>
-        </span>
-        <span class="time-chip">${status}</span>
-      </li>
-    `;
-  }).join("");
+  const ahead = countAhead(ticket);
+  const wait = estimateWait(ticket);
+  const status = ticket.status === "called" ? "Sua mesa esta pronta" : ticket.status === "done" ? "Atendimento finalizado" : "Voce esta na lista";
+  elements.publicQueue.innerHTML = `
+    <li class="queue-item${ticket.status === "called" ? " is-called" : ""}">
+      <span class="place">${ticket.status === "called" ? "OK" : ahead + 1}</span>
+      <span class="person">
+        <strong>${status}</strong>
+        <span>Senha ${formatNumber(ticket.number)} - ${escapeHtml(ticket.name)} - ${ahead} grupos na frente - ${wait} min estimados</span>
+      </span>
+      <span class="time-chip">${partyLabel(ticket.partySize)}</span>
+    </li>
+  `;
 }
 
 function renderAdminQueue() {
@@ -493,6 +505,7 @@ function renderAdminQueue() {
 
   elements.adminQueue.innerHTML = visibleTickets.map((ticket) => {
     const calledClass = ticket.status === "called" ? " is-called" : "";
+    const canCall = ticket.status === "waiting" && tableAvailabilityFor(partyBucket(ticket.partySize)).available > 0;
     return `
       <div class="admin-item${calledClass}">
         <span class="place">${formatNumber(ticket.number)}</span>
@@ -501,7 +514,7 @@ function renderAdminQueue() {
           <span>${partyLabel(ticket.partySize)} - ${ticket.status} - ${estimateWait(ticket)} min</span>
         </span>
         <span class="mini-actions">
-          <button type="button" data-action="call" data-id="${ticket.id}">Chamar</button>
+          <button type="button" data-action="call" data-id="${ticket.id}" ${canCall ? "" : "disabled"}>Chamar</button>
           <button type="button" data-action="done" data-id="${ticket.id}">Finalizar</button>
           <button type="button" data-action="remove" data-id="${ticket.id}">Remover</button>
         </span>
@@ -512,6 +525,22 @@ function renderAdminQueue() {
   elements.adminQueue.querySelectorAll("button").forEach((button) => {
     button.addEventListener("click", () => handleTicketAction(button.dataset.action, button.dataset.id));
   });
+}
+
+function renderTableStatus() {
+  const rows = [2, 4, 6].map((bucket) => {
+    const status = tableAvailabilityFor(bucket);
+    const waiting = getWaitingTickets().filter((ticket) => partyBucket(ticket.partySize) === bucket).length;
+    return `
+      <div class="table-card">
+        <strong>${partyLabel(bucket)}</strong>
+        <span>${status.used} usadas de ${status.total}</span>
+        <small>${status.available} livres - ${waiting} aguardando</small>
+      </div>
+    `;
+  });
+
+  elements.tableStatus.innerHTML = rows.join("");
 }
 
 function estimateWait(ticket) {
@@ -599,6 +628,16 @@ function dwellFor(bucket) {
   if (bucket === 2) return state.company.dwell2;
   if (bucket === 4) return state.company.dwell4;
   return state.company.dwell6;
+}
+
+function tableAvailabilityFor(bucket) {
+  const total = Math.max(0, tableCountFor(bucket));
+  const used = state.queue.filter((ticket) => ticket.status === "called" && partyBucket(ticket.partySize) === bucket).length;
+  return {
+    total,
+    used,
+    available: Math.max(0, total - used)
+  };
 }
 
 function fromSupabaseTicket(ticket) {
