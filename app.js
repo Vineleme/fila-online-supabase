@@ -1,11 +1,26 @@
-const STORAGE_KEY = "fila-online-state-v1";
-const MY_TICKET_KEY = "fila-online-my-ticket-v1";
-const ADMIN_PIN = "1234";
+const STORAGE_KEY = "fila-online-state-v2";
+const MY_TICKET_KEY = "fila-online-my-ticket-v2";
+
+const params = new URLSearchParams(window.location.search);
+const COMPANY_SLUG = slugify(params.get("empresa") || "restaurante-demo");
+
+const defaultCompany = {
+  slug: COMPANY_SLUG,
+  name: "Restaurante Demo",
+  adminPin: "1234",
+  tables2: 4,
+  tables4: 4,
+  tables6: 2,
+  dwell2: 50,
+  dwell4: 70,
+  dwell6: 90
+};
 
 const defaultState = {
-  avgMinutes: 5,
+  company: defaultCompany,
+  avgMinutes: 70,
   currentTicketId: null,
-  myTicketId: localStorage.getItem(MY_TICKET_KEY),
+  myTicketId: localStorage.getItem(`${MY_TICKET_KEY}-${COMPANY_SLUG}`),
   queue: []
 };
 
@@ -26,9 +41,10 @@ let audioContext;
 const elements = {
   tabs: document.querySelectorAll(".tab"),
   views: document.querySelectorAll(".view"),
+  companyTitle: document.querySelector("#companyTitle"),
   joinForm: document.querySelector("#joinForm"),
   nameInput: document.querySelector("#nameInput"),
-  serviceInput: document.querySelector("#serviceInput"),
+  partySizeInput: document.querySelector("#partySizeInput"),
   myTicket: document.querySelector("#myTicket"),
   publicQueue: document.querySelector("#publicQueue"),
   adminQueue: document.querySelector("#adminQueue"),
@@ -43,6 +59,14 @@ const elements = {
   loginPanel: document.querySelector("#loginPanel"),
   adminPanel: document.querySelector("#adminPanel"),
   logoutButton: document.querySelector("#logoutButton"),
+  companyNameInput: document.querySelector("#companyNameInput"),
+  tables2Input: document.querySelector("#tables2Input"),
+  tables4Input: document.querySelector("#tables4Input"),
+  tables6Input: document.querySelector("#tables6Input"),
+  dwell2Input: document.querySelector("#dwell2Input"),
+  dwell4Input: document.querySelector("#dwell4Input"),
+  dwell6Input: document.querySelector("#dwell6Input"),
+  saveCompanyButton: document.querySelector("#saveCompanyButton"),
   avgInput: document.querySelector("#avgInput"),
   callNextButton: document.querySelector("#callNextButton"),
   finishCalledButton: document.querySelector("#finishCalledButton"),
@@ -71,10 +95,13 @@ function bindEvents() {
     const name = elements.nameInput.value.trim();
     if (!name) return;
 
+    const partySize = Number(elements.partySizeInput.value);
     const ticket = {
+      company_slug: COMPANY_SLUG,
       number: nextNumber(),
       name,
-      service: elements.serviceInput.value,
+      service: partyLabel(partySize),
+      party_size: partySize,
       status: "waiting"
     };
 
@@ -91,7 +118,7 @@ function bindEvents() {
       }
 
       state.myTicketId = data.id;
-      localStorage.setItem(MY_TICKET_KEY, data.id);
+      localStorage.setItem(`${MY_TICKET_KEY}-${COMPANY_SLUG}`, data.id);
       await refreshFromSupabase();
     } else {
       const localTicket = {
@@ -120,13 +147,13 @@ function bindEvents() {
   });
 
   elements.loginButton.addEventListener("click", () => {
-    if (elements.pinInput.value.trim() !== ADMIN_PIN) {
+    if (elements.pinInput.value.trim() !== state.company.adminPin) {
       alert("PIN incorreto. PIN inicial: 1234");
       return;
     }
     elements.loginPanel.hidden = true;
     elements.adminPanel.hidden = false;
-    elements.avgInput.value = state.avgMinutes;
+    fillCompanyForm();
   });
 
   elements.logoutButton.addEventListener("click", () => {
@@ -135,20 +162,10 @@ function bindEvents() {
     elements.adminPanel.hidden = true;
   });
 
-  elements.avgInput.addEventListener("change", async () => {
-    state.avgMinutes = clamp(Number(elements.avgInput.value), 1, 60);
-
-    if (db) {
-      const { error } = await db
-        .from("queue_settings")
-        .update({ avg_minutes: state.avgMinutes, updated_at: new Date().toISOString() })
-        .eq("id", 1);
-
-      if (error) alert(`Nao consegui salvar o tempo: ${error.message}`);
-    } else {
-      persistLocalState();
-    }
-
+  elements.saveCompanyButton.addEventListener("click", saveCompanySettings);
+  elements.avgInput.addEventListener("change", () => {
+    state.avgMinutes = clamp(Number(elements.avgInput.value), 1, 240);
+    persistLocalState();
     render();
   });
 
@@ -163,29 +180,95 @@ function bindEvents() {
   });
 }
 
-async function refreshFromSupabase() {
-  const [{ data: settings, error: settingsError }, { data: tickets, error: ticketsError }] = await Promise.all([
-    db.from("queue_settings").select("avg_minutes").eq("id", 1).single(),
-    db.from("queue_tickets").select("*").order("created_at", { ascending: true })
-  ]);
+async function ensureCompany() {
+  if (!db) return;
 
-  if (settingsError || ticketsError) {
-    const message = settingsError?.message || ticketsError?.message;
-    elements.publicQueue.innerHTML = `<li class="panel muted">Erro ao carregar Supabase: ${escapeHtml(message)}</li>`;
+  const { data, error } = await db
+    .from("queue_companies")
+    .select("*")
+    .eq("slug", COMPANY_SLUG)
+    .maybeSingle();
+
+  if (error) throw error;
+
+  if (data) {
+    state.company = fromSupabaseCompany(data);
     return;
   }
 
-  state.avgMinutes = settings?.avg_minutes || 5;
+  const { data: created, error: createError } = await db
+    .from("queue_companies")
+    .insert(toSupabaseCompany(defaultCompany))
+    .select()
+    .single();
+
+  if (createError) throw createError;
+  state.company = fromSupabaseCompany(created);
+}
+
+async function refreshFromSupabase() {
+  try {
+    await ensureCompany();
+  } catch (error) {
+    elements.publicQueue.innerHTML = `<li class="panel muted">Erro ao carregar empresa: ${escapeHtml(error.message)}</li>`;
+    return;
+  }
+
+  const { data: tickets, error: ticketsError } = await db
+    .from("queue_tickets")
+    .select("*")
+    .eq("company_slug", COMPANY_SLUG)
+    .order("created_at", { ascending: true });
+
+  if (ticketsError) {
+    elements.publicQueue.innerHTML = `<li class="panel muted">Erro ao carregar fila: ${escapeHtml(ticketsError.message)}</li>`;
+    return;
+  }
+
   state.queue = (tickets || []).map(fromSupabaseTicket);
   state.currentTicketId = state.queue.find((ticket) => ticket.status === "called")?.id || null;
+  fillCompanyForm();
   render();
 }
 
 function subscribeToRealtime() {
-  db.channel("queue-realtime")
+  db.channel(`queue-${COMPANY_SLUG}`)
     .on("postgres_changes", { event: "*", schema: "public", table: "queue_tickets" }, refreshFromSupabase)
-    .on("postgres_changes", { event: "*", schema: "public", table: "queue_settings" }, refreshFromSupabase)
+    .on("postgres_changes", { event: "*", schema: "public", table: "queue_companies" }, refreshFromSupabase)
     .subscribe();
+}
+
+async function saveCompanySettings() {
+  const company = {
+    ...state.company,
+    name: elements.companyNameInput.value.trim() || state.company.name,
+    tables2: clamp(Number(elements.tables2Input.value), 0, 99),
+    tables4: clamp(Number(elements.tables4Input.value), 0, 99),
+    tables6: clamp(Number(elements.tables6Input.value), 0, 99),
+    dwell2: clamp(Number(elements.dwell2Input.value), 15, 240),
+    dwell4: clamp(Number(elements.dwell4Input.value), 15, 240),
+    dwell6: clamp(Number(elements.dwell6Input.value), 15, 240)
+  };
+
+  state.company = company;
+  state.avgMinutes = Math.round((company.dwell2 + company.dwell4 + company.dwell6) / 3);
+
+  if (db) {
+    const { error } = await db
+      .from("queue_companies")
+      .update({ ...toSupabaseCompany(company), updated_at: new Date().toISOString() })
+      .eq("slug", COMPANY_SLUG);
+
+    if (error) {
+      alert(`Nao consegui salvar: ${error.message}`);
+      return;
+    }
+    await refreshFromSupabase();
+  } else {
+    persistLocalState();
+  }
+
+  render();
 }
 
 async function callNextTicket() {
@@ -193,7 +276,6 @@ async function callNextTicket() {
   if (!waiting) return;
 
   if (db) {
-    await db.from("queue_tickets").update({ status: "done" }).eq("status", "called");
     const { error } = await db
       .from("queue_tickets")
       .update({ status: "called", called_at: new Date().toISOString() })
@@ -203,12 +285,8 @@ async function callNextTicket() {
       alert(`Nao consegui chamar: ${error.message}`);
       return;
     }
-
     await refreshFromSupabase();
   } else {
-    state.queue.forEach((ticket) => {
-      if (ticket.status === "called") ticket.status = "done";
-    });
     waiting.status = "called";
     waiting.calledAt = Date.now();
     state.currentTicketId = waiting.id;
@@ -241,15 +319,15 @@ async function finishCalledTicket() {
 }
 
 async function resetQueue() {
-  if (!confirm("Limpar toda a fila?")) return;
+  if (!confirm("Limpar toda a fila desta empresa?")) return;
 
   if (db) {
-    const { error } = await db.from("queue_tickets").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+    const { error } = await db.from("queue_tickets").delete().eq("company_slug", COMPANY_SLUG);
     if (error) {
       alert(`Nao consegui limpar: ${error.message}`);
       return;
     }
-    localStorage.removeItem(MY_TICKET_KEY);
+    localStorage.removeItem(`${MY_TICKET_KEY}-${COMPANY_SLUG}`);
     await refreshFromSupabase();
   } else {
     state.queue = [];
@@ -267,7 +345,6 @@ async function handleTicketAction(action, id) {
 
   if (db) {
     if (action === "call") {
-      await db.from("queue_tickets").update({ status: "done" }).eq("status", "called");
       const { error } = await db
         .from("queue_tickets")
         .update({ status: "called", called_at: new Date().toISOString() })
@@ -292,9 +369,6 @@ async function handleTicketAction(action, id) {
   }
 
   if (action === "call") {
-    state.queue.forEach((item) => {
-      if (item.status === "called") item.status = "done";
-    });
     ticket.status = "called";
     ticket.calledAt = Date.now();
     state.currentTicketId = ticket.id;
@@ -325,6 +399,7 @@ function showView(viewId) {
 function render() {
   const waitingTickets = getWaitingTickets();
   const current = getCurrentTicket();
+  elements.companyTitle.textContent = state.company.name;
   elements.statWaiting.textContent = waitingTickets.length;
   elements.statAvg.textContent = `${state.avgMinutes} min`;
   elements.callNextButton.disabled = waitingTickets.length === 0;
@@ -336,11 +411,22 @@ function render() {
   renderAdminQueue();
 }
 
+function fillCompanyForm() {
+  elements.companyNameInput.value = state.company.name;
+  elements.tables2Input.value = state.company.tables2;
+  elements.tables4Input.value = state.company.tables4;
+  elements.tables6Input.value = state.company.tables6;
+  elements.dwell2Input.value = state.company.dwell2;
+  elements.dwell4Input.value = state.company.dwell4;
+  elements.dwell6Input.value = state.company.dwell6;
+  elements.avgInput.value = state.avgMinutes;
+}
+
 function renderCalledBanner(current) {
   elements.calledBanner.hidden = !current;
   if (!current) return;
-  elements.calledName.textContent = `${current.number} - ${current.name}`;
-  elements.calledService.textContent = current.service;
+  elements.calledName.textContent = `${formatNumber(current.number)} - ${current.name}`;
+  elements.calledService.textContent = `Mesa para ${partyLabel(current.partySize)}`;
 }
 
 function renderMyTicket() {
@@ -349,22 +435,22 @@ function renderMyTicket() {
 
   if (!ticket) {
     elements.myTicket.innerHTML = `
-      <h2>Minha posicao</h2>
-      <p class="muted">Cadastre seu nome para acompanhar a fila.</p>
+      <h2>Minha senha</h2>
+      <p class="muted">Entre na lista para acompanhar a previsao.</p>
     `;
     return;
   }
 
   const ahead = countAhead(ticket);
-  const wait = ahead * state.avgMinutes;
+  const wait = estimateWait(ticket);
   const statusText = ticket.status === "called" ? "Chamado agora" : ticket.status === "done" ? "Finalizado" : "Aguardando";
 
   elements.myTicket.innerHTML = `
-    <h2>Minha posicao</h2>
-    <div class="ticket-number">${ticket.number}</div>
-    <p><strong>${escapeHtml(ticket.name)}</strong> - ${escapeHtml(ticket.service)}</p>
+    <h2>Minha senha</h2>
+    <div class="ticket-number">${formatNumber(ticket.number)}</div>
+    <p><strong>${escapeHtml(ticket.name)}</strong> - ${partyLabel(ticket.partySize)}</p>
     <div class="ticket-grid">
-      <div class="metric"><strong>${ahead}</strong><span>na frente</span></div>
+      <div class="metric"><strong>${ahead}</strong><span>grupos na frente</span></div>
       <div class="metric"><strong>${wait} min</strong><span>espera estimada</span></div>
       <div class="metric"><strong>${statusText}</strong><span>status</span></div>
     </div>
@@ -375,13 +461,13 @@ function renderPublicQueue() {
   const visibleTickets = state.queue.filter((ticket) => ticket.status !== "done");
 
   if (visibleTickets.length === 0) {
-    elements.publicQueue.innerHTML = `<li class="panel muted">Nenhuma pessoa na fila.</li>`;
+    elements.publicQueue.innerHTML = `<li class="panel muted">Nenhum grupo na lista.</li>`;
     return;
   }
 
   elements.publicQueue.innerHTML = visibleTickets.map((ticket) => {
     const place = ticket.status === "called" ? "OK" : countAhead(ticket) + 1;
-    const wait = countAhead(ticket) * state.avgMinutes;
+    const wait = estimateWait(ticket);
     const calledClass = ticket.status === "called" ? " is-called" : "";
     const status = ticket.status === "called" ? "Chamado" : `${wait} min`;
     return `
@@ -389,7 +475,7 @@ function renderPublicQueue() {
         <span class="place">${place}</span>
         <span class="person">
           <strong>${formatNumber(ticket.number)} - ${escapeHtml(ticket.name)}</strong>
-          <span>${escapeHtml(ticket.service)}</span>
+          <span>${partyLabel(ticket.partySize)}</span>
         </span>
         <span class="time-chip">${status}</span>
       </li>
@@ -401,7 +487,7 @@ function renderAdminQueue() {
   const visibleTickets = state.queue.filter((ticket) => ticket.status !== "done");
 
   if (visibleTickets.length === 0) {
-    elements.adminQueue.innerHTML = `<p class="muted">Fila vazia.</p>`;
+    elements.adminQueue.innerHTML = `<p class="muted">Lista vazia.</p>`;
     return;
   }
 
@@ -412,7 +498,7 @@ function renderAdminQueue() {
         <span class="place">${formatNumber(ticket.number)}</span>
         <span class="person">
           <strong>${escapeHtml(ticket.name)}</strong>
-          <span>${escapeHtml(ticket.service)} - ${ticket.status}</span>
+          <span>${partyLabel(ticket.partySize)} - ${ticket.status} - ${estimateWait(ticket)} min</span>
         </span>
         <span class="mini-actions">
           <button type="button" data-action="call" data-id="${ticket.id}">Chamar</button>
@@ -428,12 +514,33 @@ function renderAdminQueue() {
   });
 }
 
+function estimateWait(ticket) {
+  if (ticket.status === "called" || ticket.status === "done") return 0;
+  const bucket = partyBucket(ticket.partySize);
+  const sameBucketOpen = state.queue
+    .filter((item) => item.status !== "done" && partyBucket(item.partySize) === bucket)
+    .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+  const index = Math.max(0, sameBucketOpen.findIndex((item) => item.id === ticket.id));
+  const tables = Math.max(1, tableCountFor(bucket));
+  return Math.floor(index / tables) * dwellFor(bucket);
+}
+
+function countAhead(ticket) {
+  if (ticket.status !== "waiting") return 0;
+  const bucket = partyBucket(ticket.partySize);
+  const createdAt = new Date(ticket.createdAt).getTime();
+  return state.queue.filter((item) => {
+    const itemCreatedAt = new Date(item.createdAt).getTime();
+    return item.status !== "done" && partyBucket(item.partySize) === bucket && itemCreatedAt < createdAt;
+  }).length;
+}
+
 function notifyCalled(ticket) {
   if (state.myTicketId !== ticket.id) return;
 
   if ("Notification" in window && Notification.permission === "granted") {
-    new Notification("Sua vez chegou", {
-      body: `${formatNumber(ticket.number)} - ${ticket.name}, dirija-se ao atendimento ${ticket.service}.`
+    new Notification("Sua mesa chegou", {
+      body: `${formatNumber(ticket.number)} - ${ticket.name}, sua mesa esta pronta.`
     });
   }
 }
@@ -464,31 +571,81 @@ function getCurrentTicket() {
   return state.queue.find((ticket) => ticket.id === state.currentTicketId && ticket.status === "called");
 }
 
-function countAhead(ticket) {
-  const createdAt = new Date(ticket.createdAt).getTime();
-  return state.queue.filter((item) => item.status === "waiting" && new Date(item.createdAt).getTime() < createdAt).length;
-}
-
 function nextNumber() {
   const max = state.queue.reduce((highest, ticket) => Math.max(highest, Number(ticket.number)), 0);
   return max + 1;
 }
 
+function partyBucket(size) {
+  if (Number(size) <= 2) return 2;
+  if (Number(size) <= 4) return 4;
+  return 6;
+}
+
+function partyLabel(size) {
+  const bucket = partyBucket(size);
+  if (bucket === 2) return "1-2 pessoas";
+  if (bucket === 4) return "3-4 pessoas";
+  return "5-6+ pessoas";
+}
+
+function tableCountFor(bucket) {
+  if (bucket === 2) return state.company.tables2;
+  if (bucket === 4) return state.company.tables4;
+  return state.company.tables6;
+}
+
+function dwellFor(bucket) {
+  if (bucket === 2) return state.company.dwell2;
+  if (bucket === 4) return state.company.dwell4;
+  return state.company.dwell6;
+}
+
 function fromSupabaseTicket(ticket) {
   return {
     id: ticket.id,
+    companySlug: ticket.company_slug || COMPANY_SLUG,
     number: ticket.number,
     name: ticket.name,
     service: ticket.service,
+    partySize: ticket.party_size || 2,
     status: ticket.status,
     createdAt: ticket.created_at,
     calledAt: ticket.called_at
   };
 }
 
+function fromSupabaseCompany(company) {
+  return {
+    slug: company.slug,
+    name: company.name,
+    adminPin: company.admin_pin || "1234",
+    tables2: company.tables_2,
+    tables4: company.tables_4,
+    tables6: company.tables_6,
+    dwell2: company.dwell_2,
+    dwell4: company.dwell_4,
+    dwell6: company.dwell_6
+  };
+}
+
+function toSupabaseCompany(company) {
+  return {
+    slug: company.slug,
+    name: company.name,
+    admin_pin: company.adminPin,
+    tables_2: company.tables2,
+    tables_4: company.tables4,
+    tables_6: company.tables6,
+    dwell_2: company.dwell2,
+    dwell_4: company.dwell4,
+    dwell_6: company.dwell6
+  };
+}
+
 function loadLocalState() {
   try {
-    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    const stored = JSON.parse(localStorage.getItem(`${STORAGE_KEY}-${COMPANY_SLUG}`));
     return { ...defaultState, ...stored, queue: stored?.queue || [] };
   } catch {
     return { ...defaultState };
@@ -496,11 +653,11 @@ function loadLocalState() {
 }
 
 function persistLocalState() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  localStorage.setItem(`${STORAGE_KEY}-${COMPANY_SLUG}`, JSON.stringify(state));
   if (state.myTicketId) {
-    localStorage.setItem(MY_TICKET_KEY, state.myTicketId);
+    localStorage.setItem(`${MY_TICKET_KEY}-${COMPANY_SLUG}`, state.myTicketId);
   } else {
-    localStorage.removeItem(MY_TICKET_KEY);
+    localStorage.removeItem(`${MY_TICKET_KEY}-${COMPANY_SLUG}`);
   }
 }
 
@@ -511,6 +668,16 @@ function formatNumber(number) {
 function clamp(value, min, max) {
   if (Number.isNaN(value)) return min;
   return Math.min(Math.max(value, min), max);
+}
+
+function slugify(value) {
+  return String(value)
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60) || "restaurante-demo";
 }
 
 function escapeHtml(value) {
