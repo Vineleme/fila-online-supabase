@@ -501,6 +501,7 @@ function bindEvents() {
 function applyAccessMode() {
   if (!ACCESS_MODE) return;
 
+  document.documentElement.dataset.accessMode = ACCESS_MODE;
   elements.tabsNav.hidden = true;
   showView(ACCESS_MODE === "admin" ? "adminView" : "clientView");
 }
@@ -871,6 +872,7 @@ function render() {
   elements.companyTitle.textContent = state.company.name;
   elements.statWaiting.textContent = waitingTickets.length;
   elements.statAvg.textContent = formatDuration(state.avgMinutes);
+  document.documentElement.dataset.accessMode = ACCESS_MODE || "";
   renderCompanyBrand();
   const canCallNext = waitingTickets.some((ticket) => tableAvailabilityFor(partyBucket(ticket.partySize)).available > 0);
   elements.callNextButton.disabled = !canCallNext;
