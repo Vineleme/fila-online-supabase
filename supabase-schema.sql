@@ -11,6 +11,9 @@ create table if not exists public.queue_companies (
   tables_2 integer not null default 4 check (tables_2 between 0 and 99),
   tables_4 integer not null default 4 check (tables_4 between 0 and 99),
   tables_6 integer not null default 1 check (tables_6 between 0 and 99),
+  used_2 integer not null default 0 check (used_2 between 0 and 99),
+  used_4 integer not null default 0 check (used_4 between 0 and 99),
+  used_6 integer not null default 0 check (used_6 between 0 and 99),
   dwell_2 integer not null default 50 check (dwell_2 between 15 and 240),
   dwell_4 integer not null default 70 check (dwell_4 between 15 and 240),
   dwell_6 integer not null default 90 check (dwell_6 between 15 and 240),
@@ -32,6 +35,11 @@ create table if not exists public.queue_tickets (
 alter table public.queue_tickets
   add column if not exists company_slug text not null default 'restaurante-demo',
   add column if not exists party_size integer not null default 2 check (party_size between 1 and 20);
+
+alter table public.queue_companies
+  add column if not exists used_2 integer not null default 0 check (used_2 between 0 and 99),
+  add column if not exists used_4 integer not null default 0 check (used_4 between 0 and 99),
+  add column if not exists used_6 integer not null default 0 check (used_6 between 0 and 99);
 
 create index if not exists queue_tickets_status_created_idx
   on public.queue_tickets (status, created_at);
