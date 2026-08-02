@@ -10,7 +10,7 @@ create table if not exists public.queue_companies (
   admin_pin text not null default '1234',
   tables_2 integer not null default 4 check (tables_2 between 0 and 99),
   tables_4 integer not null default 4 check (tables_4 between 0 and 99),
-  tables_6 integer not null default 2 check (tables_6 between 0 and 99),
+  tables_6 integer not null default 1 check (tables_6 between 0 and 99),
   dwell_2 integer not null default 50 check (dwell_2 between 15 and 240),
   dwell_4 integer not null default 70 check (dwell_4 between 15 and 240),
   dwell_6 integer not null default 90 check (dwell_6 between 15 and 240),
@@ -42,7 +42,7 @@ values (1, 5)
 on conflict (id) do nothing;
 
 insert into public.queue_companies (slug, name, admin_pin, tables_2, tables_4, tables_6, dwell_2, dwell_4, dwell_6)
-values ('restaurante-demo', 'Restaurante Demo', '1234', 4, 4, 2, 50, 70, 90)
+values ('restaurante-demo', 'Restaurante Demo', '1234', 4, 4, 1, 50, 70, 90)
 on conflict (slug) do nothing;
 
 grant usage on schema public to anon;
