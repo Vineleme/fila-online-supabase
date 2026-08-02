@@ -539,14 +539,11 @@ function renderMyTicket() {
   elements.myTicket.innerHTML = `
     <h2>Minha senha</h2>
     <div class="ticket-number">${formatNumber(ticket.number)}</div>
-    <p><strong>${formatNumber(ticket.number)} - ${escapeHtml(ticket.name)}</strong></p>
-    <p class="muted">${partyLabel(ticket.partySize)}</p>
     <div class="ticket-grid">
       <div class="metric"><strong>${ahead}</strong><span>grupos na frente</span></div>
       <div class="metric wait-metric"><strong>${formatDuration(wait)}</strong><span>espera estimada</span></div>
       <div class="metric"><strong>${statusText}</strong><span>status</span></div>
     </div>
-    ${ticket.status !== "done" ? `<p class="muted">Esta senha ja esta ativa neste aparelho.</p>` : ""}
   `;
 }
 
@@ -557,20 +554,7 @@ function renderPublicQueue() {
     elements.publicQueue.innerHTML = `<li class="panel muted">Depois do cadastro, esta tela mostra apenas a sua senha e sua previsao.</li>`;
     return;
   }
-
-  const ahead = countAhead(ticket);
-  const wait = estimateWait(ticket);
-  const status = ticket.status === "called" ? "Sua mesa esta pronta" : ticket.status === "done" ? "Atendimento finalizado" : "Voce esta na lista";
-  elements.publicQueue.innerHTML = `
-    <li class="queue-item${ticket.status === "called" ? " is-called" : ""}">
-      <span class="place">${ticket.status === "called" ? "OK" : ahead + 1}</span>
-      <span class="person">
-        <strong>${status}</strong>
-        <span>Senha ${formatNumber(ticket.number)} - ${escapeHtml(ticket.name)} - ${ahead} grupos na frente - ${formatDuration(wait)} estimados</span>
-      </span>
-      <span class="time-chip">${partyLabel(ticket.partySize)}</span>
-    </li>
-  `;
+  elements.publicQueue.innerHTML = "";
 }
 
 function renderAdminQueue() {
