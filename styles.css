@@ -338,6 +338,33 @@ h2 {
   gap: 12px;
 }
 
+.table-status {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.table-card {
+  display: grid;
+  gap: 4px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  background: #f9fbfa;
+}
+
+.table-card strong {
+  font-size: 0.96rem;
+}
+
+.table-card span {
+  font-weight: 800;
+}
+
+.table-card small {
+  color: var(--muted);
+}
+
 .mini-actions {
   display: flex;
   gap: 8px;
@@ -364,7 +391,8 @@ h2 {
   .admin-grid,
   .ticket-grid,
   .admin-actions,
-  .config-grid {
+  .config-grid,
+  .table-status {
     grid-template-columns: 1fr;
   }
 
