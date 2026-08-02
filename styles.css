@@ -180,8 +180,7 @@ h2 {
   display: block;
 }
 
-.layout,
-.admin-grid {
+.layout {
   display: grid;
   grid-template-columns: minmax(280px, 0.85fr) minmax(0, 1.15fr);
   gap: 18px;
@@ -404,22 +403,34 @@ h2 {
 
 .admin-shell {
   display: grid;
-  gap: 14px;
+  gap: 16px;
 }
 
 .admin-tabs {
-  display: flex;
-  gap: 8px;
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px;
+  background: var(--panel);
   overflow-x: auto;
 }
 
 .admin-tab {
-  min-width: 110px;
+  min-width: 124px;
+  background: transparent;
+  font-weight: 800;
 }
 
 .admin-tab.is-active {
   background: var(--brand);
   color: #fff;
+}
+
+.admin-workspace {
+  display: grid;
 }
 
 .admin-tab-panel {
@@ -428,6 +439,26 @@ h2 {
 
 .admin-tab-panel.is-active {
   display: grid;
+}
+
+.config-panel {
+  max-width: 760px;
+}
+
+#adminQueuePanel.is-active {
+  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+  gap: 18px;
+}
+
+.admin-queue-controls,
+.admin-queue-list {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+}
+
+.admin-queue-list {
+  min-width: 0;
 }
 
 .config-grid {
@@ -528,8 +559,10 @@ h2 {
 .manual-add {
   display: grid;
   gap: 12px;
-  border-top: 1px solid var(--line);
-  padding-top: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 16px;
+  background: var(--brand-soft);
 }
 
 .manual-add h3 {
@@ -560,12 +593,20 @@ h2 {
 
   .stats,
   .layout,
-  .admin-grid,
+  #adminQueuePanel.is-active,
   .ticket-grid,
   .admin-actions,
   .config-grid,
   .table-status {
     grid-template-columns: 1fr;
+  }
+
+  .admin-tabs {
+    width: 100%;
+  }
+
+  .admin-tab {
+    flex: 1 0 auto;
   }
 
   .stats {

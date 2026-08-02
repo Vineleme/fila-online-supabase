@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Fila Online</title>
-    <link rel="stylesheet" href="styles.css?v=mesas-1" />
+    <link rel="stylesheet" href="styles.css?v=desktop-1" />
   </head>
   <body>
     <main class="app-shell">
@@ -89,8 +89,8 @@
             <button class="admin-tab" data-admin-tab="adminConfigPanel" type="button">Configurar</button>
           </div>
 
-          <div class="admin-grid">
-          <section id="adminConfigPanel" class="panel admin-tab-panel">
+          <div class="admin-workspace">
+          <section id="adminConfigPanel" class="panel admin-tab-panel config-panel">
             <div class="section-title">
               <h2>Controle</h2>
               <button id="logoutButton" class="ghost" type="button">Sair</button>
@@ -145,29 +145,33 @@
           </section>
 
           <section id="adminQueuePanel" class="panel admin-tab-panel is-active">
-            <form id="adminAddForm" class="manual-add">
-              <h3>Adicionar por telefone</h3>
-              <label>
-                Nome completo
-                <input id="adminNameInput" autocomplete="off" maxlength="80" placeholder="Nome e sobrenome" />
-              </label>
-              <label>
-                Quantas pessoas?
-                <select id="adminPartySizeInput">
-                  <option value="2">1-2 pessoas</option>
-                  <option value="4">3-4 pessoas</option>
-                  <option value="6">5-6+ pessoas</option>
-                </select>
-              </label>
-              <button class="primary" type="submit">Adicionar a fila</button>
-            </form>
-            <div class="admin-actions">
-              <button id="callNextButton" class="success" type="button">Chamar proximo</button>
-              <button id="finishCalledButton" type="button">Finalizar chamado</button>
-              <button id="resetButton" class="danger" type="button">Limpar fila</button>
+            <div class="admin-queue-controls">
+              <form id="adminAddForm" class="manual-add">
+                <h3>Adicionar por telefone</h3>
+                <label>
+                  Nome completo
+                  <input id="adminNameInput" autocomplete="off" maxlength="80" placeholder="Nome e sobrenome" />
+                </label>
+                <label>
+                  Quantas pessoas?
+                  <select id="adminPartySizeInput">
+                    <option value="2">1-2 pessoas</option>
+                    <option value="4">3-4 pessoas</option>
+                    <option value="6">5-6+ pessoas</option>
+                  </select>
+                </label>
+                <button class="primary" type="submit">Adicionar a fila</button>
+              </form>
+              <div class="admin-actions">
+                <button id="callNextButton" class="success" type="button">Chamar proximo</button>
+                <button id="finishCalledButton" type="button">Finalizar chamado</button>
+                <button id="resetButton" class="danger" type="button">Limpar fila</button>
+              </div>
             </div>
-            <h2>Pessoas na fila</h2>
-            <div id="adminQueue" class="admin-list"></div>
+            <div class="admin-queue-list">
+              <h2>Pessoas na fila</h2>
+              <div id="adminQueue" class="admin-list"></div>
+            </div>
           </section>
           </div>
         </div>
@@ -176,6 +180,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
-    <script src="app.js?v=mesas-1"></script>
+    <script src="app.js?v=desktop-1"></script>
   </body>
 </html>
