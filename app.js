@@ -12,6 +12,9 @@ const defaultCompany = {
   tables2: 4,
   tables4: 4,
   tables6: 1,
+  used2: 0,
+  used4: 0,
+  used6: 0,
   dwell2: 50,
   dwell4: 70,
   dwell6: 90,
@@ -61,6 +64,8 @@ const elements = {
   loginButton: document.querySelector("#loginButton"),
   loginPanel: document.querySelector("#loginPanel"),
   adminPanel: document.querySelector("#adminPanel"),
+  adminTabs: document.querySelectorAll(".admin-tab"),
+  adminTabPanels: document.querySelectorAll(".admin-tab-panel"),
   logoutButton: document.querySelector("#logoutButton"),
   companyNameInput: document.querySelector("#companyNameInput"),
   themeModeInput: document.querySelector("#themeModeInput"),
@@ -72,10 +77,10 @@ const elements = {
   dwell6Input: document.querySelector("#dwell6Input"),
   saveCompanyButton: document.querySelector("#saveCompanyButton"),
   tableStatus: document.querySelector("#tableStatus"),
+  tableHint: document.querySelector("#tableHint"),
   adminAddForm: document.querySelector("#adminAddForm"),
   adminNameInput: document.querySelector("#adminNameInput"),
   adminPartySizeInput: document.querySelector("#adminPartySizeInput"),
-  avgInput: document.querySelector("#avgInput"),
   callNextButton: document.querySelector("#callNextButton"),
   finishCalledButton: document.querySelector("#finishCalledButton"),
   resetButton: document.querySelector("#resetButton")
@@ -97,6 +102,10 @@ function boot() {
 function bindEvents() {
   elements.tabs.forEach((tab) => {
     tab.addEventListener("click", () => showView(tab.dataset.view));
+  });
+
+  elements.adminTabs.forEach((tab) => {
+    tab.addEventListener("click", () => showAdminPanel(tab.dataset.adminTab));
   });
 
   elements.joinForm.addEventListener("submit", async (event) => {
@@ -174,11 +183,6 @@ function bindEvents() {
 
   elements.saveCompanyButton.addEventListener("click", saveCompanySettings);
   elements.adminAddForm.addEventListener("submit", addTicketFromAdmin);
-  elements.avgInput.addEventListener("change", () => {
-    state.avgMinutes = clamp(Number(elements.avgInput.value), 1, 240);
-    persistLocalState();
-    render();
-  });
 
   elements.callNextButton.addEventListener("click", callNextTicket);
   elements.finishCalledButton.addEventListener("click", finishCalledTicket);
@@ -267,6 +271,9 @@ async function saveCompanySettings() {
     tables2: clamp(Number(elements.tables2Input.value), 0, 99),
     tables4: clamp(Number(elements.tables4Input.value), 0, 99),
     tables6: clamp(Number(elements.tables6Input.value), 0, 99),
+    used2: Math.min(usedCountFor(2), clamp(Number(elements.tables2Input.value), 0, 99)),
+    used4: Math.min(usedCountFor(4), clamp(Number(elements.tables4Input.value), 0, 99)),
+    used6: Math.min(usedCountFor(6), clamp(Number(elements.tables6Input.value), 0, 99)),
     dwell2: clamp(Number(elements.dwell2Input.value), 15, 240),
     dwell4: clamp(Number(elements.dwell4Input.value), 15, 240),
     dwell6: clamp(Number(elements.dwell6Input.value), 15, 240),
@@ -350,11 +357,13 @@ async function callNextTicket() {
       alert(`Nao consegui chamar: ${error.message}`);
       return;
     }
+    await changeUsedTables(partyBucket(waiting.partySize), 1);
     await refreshFromSupabase();
   } else {
     waiting.status = "called";
     waiting.calledAt = Date.now();
     state.currentTicketId = waiting.id;
+    changeUsedTablesLocal(partyBucket(waiting.partySize), 1);
     persistLocalState();
   }
 
@@ -373,10 +382,12 @@ async function finishCalledTicket() {
       alert(`Nao consegui finalizar: ${error.message}`);
       return;
     }
+    await changeUsedTables(partyBucket(current.partySize), -1);
     await refreshFromSupabase();
   } else {
     current.status = "done";
     state.currentTicketId = null;
+    changeUsedTablesLocal(partyBucket(current.partySize), -1);
     persistLocalState();
   }
 
@@ -419,14 +430,22 @@ async function handleTicketAction(action, id) {
         .from("queue_tickets")
         .update({ status: "called", called_at: new Date().toISOString() })
         .eq("id", id);
-      if (error) alert(`Nao consegui chamar: ${error.message}`);
+      if (error) {
+        alert(`Nao consegui chamar: ${error.message}`);
+        return;
+      }
+      await changeUsedTables(partyBucket(ticket.partySize), 1);
       playCallSound();
       notifyCalled(ticket);
     }
 
     if (action === "done") {
       const { error } = await db.from("queue_tickets").update({ status: "done" }).eq("id", id);
-      if (error) alert(`Nao consegui finalizar: ${error.message}`);
+      if (error) {
+        alert(`Nao consegui finalizar: ${error.message}`);
+        return;
+      }
+      await changeUsedTables(partyBucket(ticket.partySize), -1);
       if (state.myTicketId === id) {
         state.myTicketId = null;
         localStorage.removeItem(`${MY_TICKET_KEY}-${COMPANY_SLUG}`);
@@ -455,12 +474,14 @@ async function handleTicketAction(action, id) {
     ticket.status = "called";
     ticket.calledAt = Date.now();
     state.currentTicketId = ticket.id;
+    changeUsedTablesLocal(partyBucket(ticket.partySize), 1);
     playCallSound();
     notifyCalled(ticket);
   }
 
   if (action === "done") {
     ticket.status = "done";
+    changeUsedTablesLocal(partyBucket(ticket.partySize), -1);
     if (state.currentTicketId === ticket.id) state.currentTicketId = null;
     if (state.myTicketId === id) state.myTicketId = null;
   }
@@ -480,13 +501,20 @@ function showView(viewId) {
   elements.views.forEach((view) => view.classList.toggle("is-active", view.id === viewId));
 }
 
+function showAdminPanel(panelId) {
+  elements.adminTabs.forEach((tab) => tab.classList.toggle("is-active", tab.dataset.adminTab === panelId));
+  elements.adminTabPanels.forEach((panel) => panel.classList.toggle("is-active", panel.id === panelId));
+}
+
 function render() {
   const waitingTickets = getWaitingTickets();
   const current = getCurrentTicket();
   elements.companyTitle.textContent = state.company.name;
   elements.statWaiting.textContent = waitingTickets.length;
   elements.statAvg.textContent = formatDuration(state.avgMinutes);
-  elements.callNextButton.disabled = !waitingTickets.some((ticket) => tableAvailabilityFor(partyBucket(ticket.partySize)).available > 0);
+  const canCallNext = waitingTickets.some((ticket) => tableAvailabilityFor(partyBucket(ticket.partySize)).available > 0);
+  elements.callNextButton.disabled = !canCallNext;
+  elements.callNextButton.classList.toggle("is-ready", canCallNext);
   elements.finishCalledButton.disabled = !current;
   applyTheme();
 
@@ -506,7 +534,6 @@ function fillCompanyForm() {
   elements.dwell4Input.value = state.company.dwell4;
   elements.dwell6Input.value = state.company.dwell6;
   elements.themeModeInput.value = state.company.themeMode;
-  elements.avgInput.value = state.avgMinutes;
 }
 
 function renderCalledBanner() {
@@ -593,16 +620,28 @@ function renderTableStatus() {
   const rows = [2, 4, 6].map((bucket) => {
     const status = tableAvailabilityFor(bucket);
     const waiting = getWaitingTickets().filter((ticket) => partyBucket(ticket.partySize) === bucket).length;
+    const canCall = status.available > 0 && waiting > 0;
     return `
-      <div class="table-card">
-        <strong>${partyLabel(bucket)}</strong>
-        <span>${status.used} usadas de ${status.total}</span>
-        <small>${status.available} livres - ${waiting} aguardando</small>
+      <div class="table-card${canCall ? " is-ready" : ""}">
+        <div class="table-people" aria-hidden="true">${seatDots(bucket)}</div>
+        <strong>${tableLabel(bucket)}</strong>
+        <span class="availability">${status.available} de ${status.total} livres</span>
+        <small>${status.used} ocupadas - ${waiting} aguardando</small>
+        <div class="table-stepper">
+          <button type="button" data-table-action="free" data-bucket="${bucket}" ${status.used <= 0 ? "disabled" : ""}>-</button>
+          <span>ocupadas</span>
+          <button type="button" data-table-action="occupy" data-bucket="${bucket}" ${status.used >= status.total ? "disabled" : ""}>+</button>
+        </div>
+        ${canCall ? `<em>Pode chamar agora</em>` : ""}
       </div>
     `;
   });
 
   elements.tableStatus.innerHTML = rows.join("");
+  elements.tableHint.hidden = !getWaitingTickets().some((ticket) => tableAvailabilityFor(partyBucket(ticket.partySize)).available > 0);
+  elements.tableStatus.querySelectorAll("button").forEach((button) => {
+    button.addEventListener("click", () => handleTableButton(button.dataset.tableAction, Number(button.dataset.bucket)));
+  });
 }
 
 function applyTheme() {
@@ -700,12 +739,62 @@ function dwellFor(bucket) {
 
 function tableAvailabilityFor(bucket) {
   const total = Math.max(0, tableCountFor(bucket));
-  const used = state.queue.filter((ticket) => ticket.status === "called" && partyBucket(ticket.partySize) === bucket).length;
+  const used = Math.min(total, Math.max(0, usedCountFor(bucket)));
   return {
     total,
     used,
     available: Math.max(0, total - used)
   };
+}
+
+function usedCountFor(bucket) {
+  if (bucket === 2) return state.company.used2 || 0;
+  if (bucket === 4) return state.company.used4 || 0;
+  return state.company.used6 || 0;
+}
+
+function setUsedCountFor(bucket, value) {
+  const total = tableCountFor(bucket);
+  const used = clamp(Number(value), 0, total);
+  if (bucket === 2) state.company.used2 = used;
+  if (bucket === 4) state.company.used4 = used;
+  if (bucket === 6) state.company.used6 = used;
+}
+
+async function handleTableButton(action, bucket) {
+  const delta = action === "occupy" ? 1 : -1;
+  if (db) {
+    await changeUsedTables(bucket, delta);
+    await refreshFromSupabase();
+    return;
+  }
+
+  changeUsedTablesLocal(bucket, delta);
+  persistLocalState();
+  render();
+}
+
+function changeUsedTablesLocal(bucket, delta) {
+  setUsedCountFor(bucket, usedCountFor(bucket) + delta);
+}
+
+async function changeUsedTables(bucket, delta) {
+  const nextUsed = clamp(usedCountFor(bucket) + delta, 0, tableCountFor(bucket));
+  setUsedCountFor(bucket, nextUsed);
+
+  const { error } = await db
+    .from("queue_companies")
+    .update({
+      used_2: state.company.used2,
+      used_4: state.company.used4,
+      used_6: state.company.used6,
+      updated_at: new Date().toISOString()
+    })
+    .eq("slug", COMPANY_SLUG);
+
+  if (error) {
+    alert(`Nao consegui atualizar mesas: ${error.message}`);
+  }
 }
 
 function fromSupabaseTicket(ticket) {
@@ -730,6 +819,9 @@ function fromSupabaseCompany(company) {
     tables2: company.tables_2,
     tables4: company.tables_4,
     tables6: company.tables_6,
+    used2: company.used_2 || 0,
+    used4: company.used_4 || 0,
+    used6: company.used_6 || 0,
     dwell2: company.dwell_2,
     dwell4: company.dwell_4,
     dwell6: company.dwell_6,
@@ -746,6 +838,9 @@ function toSupabaseCompany(company) {
     tables_2: company.tables2,
     tables_4: company.tables4,
     tables_6: company.tables6,
+    used_2: company.used2 || 0,
+    used_4: company.used4 || 0,
+    used_6: company.used6 || 0,
     dwell_2: company.dwell2,
     dwell_4: company.dwell4,
     dwell_6: company.dwell6,
@@ -793,6 +888,17 @@ function clamp(value, min, max) {
 
 function hasFullName(value) {
   return value.trim().split(/\s+/).filter((part) => part.length >= 2).length >= 2;
+}
+
+function tableLabel(bucket) {
+  if (bucket === 2) return "Mesa para 2";
+  if (bucket === 4) return "Mesa para 4";
+  return "Mesa para 6+";
+}
+
+function seatDots(bucket) {
+  const count = bucket === 6 ? 6 : bucket;
+  return Array.from({ length: count }, () => `<span></span>`).join("") + (bucket === 6 ? `<b>+</b>` : "");
 }
 
 function slugify(value) {
