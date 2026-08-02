@@ -10,7 +10,7 @@
     <main class="app-shell">
       <section class="topbar" aria-label="Resumo da fila">
         <div>
-          <p class="eyebrow">Atendimento</p>
+          <p id="topLabel" class="eyebrow">Fila de espera</p>
           <h1 id="companyTitle">Fila Online</h1>
         </div>
         <div class="stats">
@@ -74,7 +74,7 @@
 
       <section id="adminView" class="view">
         <div id="loginPanel" class="panel compact">
-          <h2>Area administrativa</h2>
+          <h2>Administracao do restaurante</h2>
           <label>
             PIN
             <input id="pinInput" inputmode="numeric" autocomplete="off" placeholder="1234" />
@@ -180,6 +180,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
-    <script src="app.js?v=fila-ai-green-1"></script>
+    <script src="app.js?v=labels-1"></script>
   </body>
 </html>

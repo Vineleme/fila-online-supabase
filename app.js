@@ -48,6 +48,7 @@ const elements = {
   tabs: document.querySelectorAll(".tab"),
   tabsNav: document.querySelector(".tabs"),
   views: document.querySelectorAll(".view"),
+  topLabel: document.querySelector("#topLabel"),
   companyTitle: document.querySelector("#companyTitle"),
   joinForm: document.querySelector("#joinForm"),
   nameInput: document.querySelector("#nameInput"),
@@ -499,6 +500,7 @@ async function handleTicketAction(action, id) {
 function showView(viewId) {
   elements.tabs.forEach((tab) => tab.classList.toggle("is-active", tab.dataset.view === viewId));
   elements.views.forEach((view) => view.classList.toggle("is-active", view.id === viewId));
+  updateTopLabel();
 }
 
 function showAdminPanel(panelId) {
@@ -517,6 +519,7 @@ function render() {
   elements.callNextButton.classList.toggle("is-ready", canCallNext);
   elements.finishCalledButton.disabled = !current;
   applyTheme();
+  updateTopLabel();
 
   renderCalledBanner();
   renderMyTicket();
@@ -657,6 +660,11 @@ function applyTheme() {
   document.documentElement.style.setProperty("--brand-dark", brandDark);
   document.documentElement.style.setProperty("--brand-soft", brandSoft);
   document.documentElement.style.setProperty("--hero-accent", heroAccent);
+}
+
+function updateTopLabel() {
+  const isAdmin = document.querySelector("#adminView")?.classList.contains("is-active");
+  elements.topLabel.textContent = isAdmin ? "Administracao do restaurante" : "Fila de espera";
 }
 
 function estimateWait(ticket) {
