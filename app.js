@@ -98,6 +98,16 @@ function bindEvents() {
     event.preventDefault();
     const name = elements.nameInput.value.trim();
     if (!name) return;
+    if (!hasFullName(name)) {
+      alert("Digite nome e sobrenome para entrar na fila.");
+      elements.nameInput.focus();
+      return;
+    }
+    if (getMyTicket()) {
+      alert("Este aparelho ja tem uma senha ativa na fila.");
+      render();
+      return;
+    }
 
     const partySize = Number(elements.partySizeInput.value);
     const ticket = {
@@ -238,6 +248,10 @@ async function refreshFromSupabase() {
   }
 
   state.queue = (tickets || []).map(fromSupabaseTicket);
+  if (state.myTicketId && !state.queue.some((ticket) => ticket.id === state.myTicketId)) {
+    state.myTicketId = null;
+    localStorage.removeItem(`${MY_TICKET_KEY}-${COMPANY_SLUG}`);
+  }
   state.currentTicketId = state.queue.find((ticket) => ticket.status === "called")?.id || null;
   fillCompanyForm();
   render();
@@ -374,11 +388,19 @@ async function handleTicketAction(action, id) {
     if (action === "done") {
       const { error } = await db.from("queue_tickets").update({ status: "done" }).eq("id", id);
       if (error) alert(`Nao consegui finalizar: ${error.message}`);
+      if (state.myTicketId === id) {
+        state.myTicketId = null;
+        localStorage.removeItem(`${MY_TICKET_KEY}-${COMPANY_SLUG}`);
+      }
     }
 
     if (action === "remove") {
       const { error } = await db.from("queue_tickets").delete().eq("id", id);
       if (error) alert(`Nao consegui remover: ${error.message}`);
+      if (state.myTicketId === id) {
+        state.myTicketId = null;
+        localStorage.removeItem(`${MY_TICKET_KEY}-${COMPANY_SLUG}`);
+      }
     }
 
     await refreshFromSupabase();
@@ -401,6 +423,7 @@ async function handleTicketAction(action, id) {
   if (action === "done") {
     ticket.status = "done";
     if (state.currentTicketId === ticket.id) state.currentTicketId = null;
+    if (state.myTicketId === id) state.myTicketId = null;
   }
 
   if (action === "remove") {
@@ -423,7 +446,7 @@ function render() {
   const current = getCurrentTicket();
   elements.companyTitle.textContent = state.company.name;
   elements.statWaiting.textContent = waitingTickets.length;
-  elements.statAvg.textContent = `${state.avgMinutes} min`;
+  elements.statAvg.textContent = formatDuration(state.avgMinutes);
   elements.callNextButton.disabled = !waitingTickets.some((ticket) => tableAvailabilityFor(partyBucket(ticket.partySize)).available > 0);
   elements.finishCalledButton.disabled = !current;
 
@@ -455,8 +478,10 @@ function renderCalledBanner() {
 }
 
 function renderMyTicket() {
-  const ticket = state.queue.find((item) => item.id === state.myTicketId);
+  const ticket = getMyTicket();
   elements.myTicket.classList.toggle("is-called", ticket?.status === "called");
+  elements.myTicket.classList.toggle("is-waiting", ticket?.status === "waiting");
+  elements.joinForm.hidden = Boolean(ticket);
 
   if (!ticket) {
     elements.myTicket.innerHTML = `
@@ -477,14 +502,15 @@ function renderMyTicket() {
     <p class="muted">${partyLabel(ticket.partySize)}</p>
     <div class="ticket-grid">
       <div class="metric"><strong>${ahead}</strong><span>grupos na frente</span></div>
-      <div class="metric"><strong>${wait} min</strong><span>espera estimada</span></div>
+      <div class="metric wait-metric"><strong>${formatDuration(wait)}</strong><span>espera estimada</span></div>
       <div class="metric"><strong>${statusText}</strong><span>status</span></div>
     </div>
+    ${ticket.status !== "done" ? `<p class="muted">Esta senha ja esta ativa neste aparelho.</p>` : ""}
   `;
 }
 
 function renderPublicQueue() {
-  const ticket = state.queue.find((item) => item.id === state.myTicketId);
+  const ticket = getMyTicket();
 
   if (!ticket) {
     elements.publicQueue.innerHTML = `<li class="panel muted">Depois do cadastro, esta tela mostra apenas a sua senha e sua previsao.</li>`;
@@ -499,7 +525,7 @@ function renderPublicQueue() {
       <span class="place">${ticket.status === "called" ? "OK" : ahead + 1}</span>
       <span class="person">
         <strong>${status}</strong>
-        <span>Senha ${formatNumber(ticket.number)} - ${escapeHtml(ticket.name)} - ${ahead} grupos na frente - ${wait} min estimados</span>
+        <span>Senha ${formatNumber(ticket.number)} - ${escapeHtml(ticket.name)} - ${ahead} grupos na frente - ${formatDuration(wait)} estimados</span>
       </span>
       <span class="time-chip">${partyLabel(ticket.partySize)}</span>
     </li>
@@ -522,7 +548,7 @@ function renderAdminQueue() {
         <span class="place">${formatNumber(ticket.number)}</span>
         <span class="person">
           <strong>${escapeHtml(ticket.name)}</strong>
-          <span>${partyLabel(ticket.partySize)} - ${ticket.status} - ${estimateWait(ticket)} min</span>
+          <span>${partyLabel(ticket.partySize)} - ${ticket.status} - ${formatDuration(estimateWait(ticket))}</span>
         </span>
         <span class="mini-actions">
           <button type="button" data-action="call" data-id="${ticket.id}" ${canCall ? "" : "disabled"}>Chamar</button>
@@ -609,6 +635,10 @@ function getWaitingTickets() {
 
 function getCurrentTicket() {
   return state.queue.find((ticket) => ticket.id === state.currentTicketId && ticket.status === "called");
+}
+
+function getMyTicket() {
+  return state.queue.find((item) => item.id === state.myTicketId);
 }
 
 function nextNumber() {
@@ -715,9 +745,23 @@ function formatNumber(number) {
   return String(number).padStart(3, "0");
 }
 
+function formatDuration(minutes) {
+  const total = Math.max(0, Math.round(Number(minutes) || 0));
+  if (total < 60) return `${total} min`;
+
+  const hours = Math.floor(total / 60);
+  const rest = total % 60;
+  const hourLabel = hours === 1 ? "1h" : `${hours}h`;
+  return rest === 0 ? hourLabel : `${hourLabel} ${rest}min`;
+}
+
 function clamp(value, min, max) {
   if (Number.isNaN(value)) return min;
   return Math.min(Math.max(value, min), max);
+}
+
+function hasFullName(value) {
+  return value.trim().split(/\s+/).filter((part) => part.length >= 2).length >= 2;
 }
 
 function slugify(value) {
