@@ -3,15 +3,183 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Fila Online</title>
-    <link rel="stylesheet" href="styles.css?v=fila-ai-green-1" />
+    <title>FILA AÍ - Sistema de fila para restaurantes</title>
+    <link rel="stylesheet" href="styles.css?v=brand-1" />
   </head>
   <body>
-    <main class="app-shell">
-      <section class="topbar" aria-label="Resumo da fila">
+    <main id="landingPage" class="landing-shell">
+      <nav class="landing-nav" aria-label="Navegacao comercial">
+        <strong>FILA <span>AÍ</span></strong>
+          <div>
+          <a href="#como-funciona">Como funciona</a>
+          <a href="#planos">Planos</a>
+          <a class="nav-cta" href="?empresa=restaurante-demo&modo=admin">Ver admin</a>
+        </div>
+      </nav>
+
+      <section class="landing-hero">
+        <div class="hero-copy">
+          <p class="landing-eyebrow">Sistema de fila de espera para restaurantes</p>
+          <h1>A fila do restaurante com cara de aplicativo premium.</h1>
+          <p>O FILA AÍ transforma o QR Code da recepcao em uma experiencia bonita: cliente acompanha senha e previsao pelo celular, enquanto o dono controla mesas, horarios, capa e identidade do restaurante em tempo real.</p>
+          <div class="hero-actions">
+            <a class="landing-button primary" href="?empresa=restaurante-demo&modo=admin">Ver painel do restaurante</a>
+            <a class="landing-button secondary" href="#planos">Ver oferta comercial</a>
+          </div>
+          <div class="hero-proof">
+            <span>Sem aplicativo</span>
+            <span>Marca do restaurante</span>
+            <span>Pronto para vender</span>
+          </div>
+        </div>
+        <div class="hero-media">
+          <img src="assets/fila-ai-brand.png" alt="Identidade visual FILA AÍ" />
+        </div>
+      </section>
+
+      <section class="landing-section feature-band" aria-label="Beneficios principais">
+        <article>
+          <strong>01</strong>
+          <h2>Cliente acompanha sozinho</h2>
+          <p>Depois do cadastro, ele ve apenas a propria senha, tempo de espera e status. Nada de lista publica com nomes de outras pessoas.</p>
+        </article>
+        <article>
+          <strong>02</strong>
+          <h2>Dono controla tudo</h2>
+          <p>O painel mostra mesas, ocupacao, fila aberta ou fechada, horario de atendimento e chamada do proximo cliente.</p>
+        </article>
+        <article>
+          <strong>03</strong>
+          <h2>Visual do restaurante</h2>
+          <p>Cada cliente entra numa tela com nome, logo e capa da empresa. O produto parece feito sob medida para cada restaurante.</p>
+        </article>
+      </section>
+
+      <section id="como-funciona" class="landing-section split-section">
         <div>
-          <p id="topLabel" class="eyebrow">Fila de espera</p>
-          <h1 id="companyTitle">Fila Online</h1>
+          <p class="landing-eyebrow">Como vender para restaurantes</p>
+          <h2>Uma solucao simples para uma dor que todo restaurante entende.</h2>
+          <p>O restaurante imprime um QR Code na recepcao. O cliente entra na fila pelo celular. A equipe acompanha mesas disponiveis, horarios de fila e chamadas pelo painel administrativo.</p>
+        </div>
+        <div class="steps">
+          <span>1. Voce configura nome, capa, logo e horarios</span>
+          <span>2. Restaurante coloca o QR Code na entrada</span>
+          <span>3. Cliente entra, informa nome completo e grupo</span>
+          <span>4. Equipe chama a mesa certa quando houver disponibilidade</span>
+        </div>
+      </section>
+
+      <section class="landing-section dashboard-preview">
+        <div class="preview-card client-preview">
+          <small>Link do cliente</small>
+          <strong>Fila de espera personalizada</strong>
+          <span class="preview-ticket">027</span>
+          <p>0 grupos na frente · 8 min estimados</p>
+        </div>
+        <div class="preview-card admin-preview">
+          <small>Administrador</small>
+          <strong>Gestao visual do salao</strong>
+          <div class="mini-table-grid">
+            <span>2 lugares<br><b>2 livres</b></span>
+            <span>4 lugares<br><b>1 livre</b></span>
+            <span>6+ lugares<br><b>0 livre</b></span>
+          </div>
+        </div>
+      </section>
+
+      <section class="landing-section brand-story">
+        <div>
+          <p class="landing-eyebrow">Diferencial para vender</p>
+          <h2>O restaurante sente que ganhou uma tecnologia propria.</h2>
+        </div>
+        <div class="brand-grid">
+          <article>
+            <strong>Capa da empresa</strong>
+            <p>Use uma foto do salao, fachada ou prato principal no topo da fila.</p>
+          </article>
+          <article>
+            <strong>Logo visivel</strong>
+            <p>O cliente reconhece imediatamente onde esta entrando.</p>
+          </article>
+          <article>
+            <strong>Fila com horario</strong>
+            <p>Defina abertura e encerramento para evitar cadastro fora do atendimento.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="planos" class="landing-section pricing-section">
+        <div class="section-heading">
+          <p class="landing-eyebrow">Comece a vender</p>
+          <h2>Oferta inicial simples para validar no mercado.</h2>
+        </div>
+        <div class="pricing-grid">
+          <article>
+            <h3>Essencial</h3>
+            <strong>Fila online</strong>
+            <p>Ideal para restaurante que quer tirar a fila do papel e usar QR Code na recepcao.</p>
+          </article>
+          <article class="featured-plan">
+            <h3>Profissional</h3>
+            <strong>Fila + mesas</strong>
+            <p>Painel administrativo com controle visual de mesas, chamada e previsao por tamanho de grupo.</p>
+          </article>
+          <article>
+            <h3>Implantacao</h3>
+            <strong>Configurado para o restaurante</strong>
+            <p>Nome, link, QR Code, tempos medios e treinamento basico para a equipe comecar no mesmo dia.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="landing-section demo-section">
+        <div class="section-heading">
+          <p class="landing-eyebrow">Pagina teste</p>
+          <h2>Roteiro pronto para apresentar e oferecer 7 dias gratis.</h2>
+          <p>Mostre primeiro o painel do restaurante, configure capa e logo, depois abra a fila teste no celular para o cliente entender a experiencia em menos de um minuto.</p>
+        </div>
+        <div class="demo-grid">
+          <article>
+            <span>1</span>
+            <strong>Mostre a dor</strong>
+            <p>Fila em papel, cliente perguntando tempo, recepcao perdendo controle e nomes expostos.</p>
+          </article>
+          <article>
+            <span>2</span>
+            <strong>Mostre o painel</strong>
+            <p>Mesas disponiveis, horarios de fila, cadastro por telefone e chamada do proximo grupo.</p>
+          </article>
+          <article>
+            <span>3</span>
+            <strong>Feche com teste gratis</strong>
+            <p>Voce configura o restaurante, entrega QR Code e deixa ele usar por 7 dias antes do pagamento.</p>
+          </article>
+        </div>
+        <div class="hero-actions">
+          <a class="landing-button primary" href="?empresa=restaurante-demo&modo=admin">Abrir painel teste</a>
+          <a class="landing-button secondary" href="?empresa=restaurante-demo&modo=fila">Ver fila como cliente</a>
+        </div>
+      </section>
+
+      <section class="landing-section final-cta">
+        <p class="landing-eyebrow">FILA AÍ</p>
+        <h2>Transforme espera em uma experiencia organizada.</h2>
+        <p>Use a demonstracao administrativa para apresentar o produto hoje e fechar os primeiros restaurantes.</p>
+        <div class="hero-actions">
+          <a class="landing-button primary" href="?empresa=restaurante-demo&modo=admin">Abrir demo admin</a>
+          <a class="landing-button secondary" href="#como-funciona">Como apresentar</a>
+        </div>
+      </section>
+    </main>
+
+    <main id="appShell" class="app-shell" hidden>
+      <section class="topbar" aria-label="Resumo da fila">
+        <div class="brand-heading">
+          <img id="companyLogo" class="company-logo" alt="" hidden />
+          <div>
+            <p id="topLabel" class="eyebrow">Fila de espera</p>
+            <h1 id="companyTitle">Fila Online</h1>
+          </div>
         </div>
         <div class="stats">
           <div>
@@ -99,6 +267,16 @@
               Nome da empresa
               <input id="companyNameInput" maxlength="80" />
             </label>
+            <div class="config-grid brand-config">
+              <label>
+                Foto/logo da empresa
+                <input id="companyLogoUrlInput" type="url" placeholder="https://.../logo.png" />
+              </label>
+              <label>
+                Capa da empresa
+                <input id="companyCoverUrlInput" type="url" placeholder="https://.../capa.jpg" />
+              </label>
+            </div>
             <label>
               Aparencia do cliente
               <select id="themeModeInput">
@@ -106,6 +284,23 @@
                 <option value="dark">Fundo preto</option>
               </select>
             </label>
+            <div class="config-grid">
+              <label>
+                Fila
+                <select id="queueOpenInput">
+                  <option value="true">Aberta</option>
+                  <option value="false">Fechada</option>
+                </select>
+              </label>
+              <label>
+                Abre as
+                <input id="openTimeInput" type="time" />
+              </label>
+              <label>
+                Encerra as
+                <input id="closeTimeInput" type="time" />
+              </label>
+            </div>
             <div class="config-grid">
               <label>
                 Mesas para 2
@@ -180,6 +375,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
-    <script src="app.js?v=labels-2"></script>
+    <script src="app.js?v=brand-1"></script>
   </body>
 </html>

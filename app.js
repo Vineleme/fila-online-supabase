@@ -15,6 +15,11 @@ const defaultCompany = {
   used2: 0,
   used4: 0,
   used6: 0,
+  queueOpen: true,
+  openTime: "16:00",
+  closeTime: "19:00",
+  logoUrl: "assets/fila-ai-brand.png",
+  coverUrl: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=1800&q=80",
   dwell2: 50,
   dwell4: 70,
   dwell6: 90,
@@ -45,11 +50,14 @@ let state = loadLocalState();
 let audioContext;
 
 const elements = {
+  landingPage: document.querySelector("#landingPage"),
+  appShell: document.querySelector("#appShell"),
   tabs: document.querySelectorAll(".tab"),
   tabsNav: document.querySelector(".tabs"),
   views: document.querySelectorAll(".view"),
   topLabel: document.querySelector("#topLabel"),
   companyTitle: document.querySelector("#companyTitle"),
+  companyLogo: document.querySelector("#companyLogo"),
   joinForm: document.querySelector("#joinForm"),
   nameInput: document.querySelector("#nameInput"),
   partySizeInput: document.querySelector("#partySizeInput"),
@@ -69,7 +77,12 @@ const elements = {
   adminTabPanels: document.querySelectorAll(".admin-tab-panel"),
   logoutButton: document.querySelector("#logoutButton"),
   companyNameInput: document.querySelector("#companyNameInput"),
+  companyLogoUrlInput: document.querySelector("#companyLogoUrlInput"),
+  companyCoverUrlInput: document.querySelector("#companyCoverUrlInput"),
   themeModeInput: document.querySelector("#themeModeInput"),
+  queueOpenInput: document.querySelector("#queueOpenInput"),
+  openTimeInput: document.querySelector("#openTimeInput"),
+  closeTimeInput: document.querySelector("#closeTimeInput"),
   tables2Input: document.querySelector("#tables2Input"),
   tables4Input: document.querySelector("#tables4Input"),
   tables6Input: document.querySelector("#tables6Input"),
@@ -90,6 +103,15 @@ const elements = {
 boot();
 
 function boot() {
+  if (!ACCESS_MODE) {
+    elements.landingPage.hidden = false;
+    elements.appShell.hidden = true;
+    document.documentElement.dataset.theme = "landing";
+    return;
+  }
+
+  elements.landingPage.hidden = true;
+  elements.appShell.hidden = false;
   bindEvents();
   applyAccessMode();
   render();
@@ -113,6 +135,11 @@ function bindEvents() {
     event.preventDefault();
     const name = elements.nameInput.value.trim();
     if (!name) return;
+    if (!isQueueAcceptingEntries()) {
+      alert(`A fila esta fechada. Horario: ${state.company.openTime} as ${state.company.closeTime}.`);
+      render();
+      return;
+    }
     if (!hasFullName(name)) {
       alert("Digite nome e sobrenome para entrar na fila.");
       elements.nameInput.focus();
@@ -275,6 +302,11 @@ async function saveCompanySettings() {
     used2: Math.min(usedCountFor(2), clamp(Number(elements.tables2Input.value), 0, 99)),
     used4: Math.min(usedCountFor(4), clamp(Number(elements.tables4Input.value), 0, 99)),
     used6: Math.min(usedCountFor(6), clamp(Number(elements.tables6Input.value), 0, 99)),
+    queueOpen: elements.queueOpenInput.value === "true",
+    openTime: normalizeTime(elements.openTimeInput.value, state.company.openTime),
+    closeTime: normalizeTime(elements.closeTimeInput.value, state.company.closeTime),
+    logoUrl: normalizeUrl(elements.companyLogoUrlInput.value, state.company.logoUrl),
+    coverUrl: normalizeUrl(elements.companyCoverUrlInput.value, state.company.coverUrl),
     dwell2: clamp(Number(elements.dwell2Input.value), 15, 240),
     dwell4: clamp(Number(elements.dwell4Input.value), 15, 240),
     dwell6: clamp(Number(elements.dwell6Input.value), 15, 240),
@@ -514,6 +546,7 @@ function render() {
   elements.companyTitle.textContent = state.company.name;
   elements.statWaiting.textContent = waitingTickets.length;
   elements.statAvg.textContent = formatDuration(state.avgMinutes);
+  renderCompanyBrand();
   const canCallNext = waitingTickets.some((ticket) => tableAvailabilityFor(partyBucket(ticket.partySize)).available > 0);
   elements.callNextButton.disabled = !canCallNext;
   elements.callNextButton.classList.toggle("is-ready", canCallNext);
@@ -537,6 +570,25 @@ function fillCompanyForm() {
   elements.dwell4Input.value = state.company.dwell4;
   elements.dwell6Input.value = state.company.dwell6;
   elements.themeModeInput.value = state.company.themeMode;
+  elements.queueOpenInput.value = String(state.company.queueOpen);
+  elements.openTimeInput.value = state.company.openTime;
+  elements.closeTimeInput.value = state.company.closeTime;
+  elements.companyLogoUrlInput.value = state.company.logoUrl || "";
+  elements.companyCoverUrlInput.value = state.company.coverUrl || "";
+}
+
+function renderCompanyBrand() {
+  const coverUrl = normalizeUrl(state.company.coverUrl, defaultCompany.coverUrl);
+  const logoUrl = normalizeUrl(state.company.logoUrl, "");
+  document.documentElement.style.setProperty("--company-cover", `url("${coverUrl.replace(/"/g, "%22")}")`);
+
+  if (logoUrl) {
+    elements.companyLogo.src = logoUrl;
+    elements.companyLogo.hidden = false;
+  } else {
+    elements.companyLogo.removeAttribute("src");
+    elements.companyLogo.hidden = true;
+  }
 }
 
 function renderCalledBanner() {
@@ -550,14 +602,19 @@ function renderCalledBanner() {
 
 function renderMyTicket() {
   const ticket = getMyTicket();
+  const acceptingEntries = isQueueAcceptingEntries();
   elements.myTicket.classList.toggle("is-called", ticket?.status === "called");
   elements.myTicket.classList.toggle("is-waiting", ticket?.status === "waiting");
   elements.joinForm.hidden = Boolean(ticket);
+  elements.joinForm.classList.toggle("is-closed", !ticket && !acceptingEntries);
+  elements.joinForm.querySelectorAll("input, select, button").forEach((control) => {
+    control.disabled = !ticket && !acceptingEntries;
+  });
 
   if (!ticket) {
     elements.myTicket.innerHTML = `
       <h2>Minha senha</h2>
-      <p class="muted">Entre na lista para acompanhar a previsao.</p>
+      <p class="muted">${queueStatusText()}</p>
     `;
     return;
   }
@@ -581,7 +638,7 @@ function renderPublicQueue() {
   const ticket = getMyTicket();
 
   if (!ticket) {
-    elements.publicQueue.innerHTML = `<li class="panel muted">Depois do cadastro, esta tela mostra apenas a sua senha e sua previsao.</li>`;
+    elements.publicQueue.innerHTML = `<li class="panel muted">${queueStatusText()}</li>`;
     return;
   }
   elements.publicQueue.innerHTML = "";
@@ -838,6 +895,11 @@ function fromSupabaseCompany(company) {
     used2: company.used_2 || 0,
     used4: company.used_4 || 0,
     used6: company.used_6 || 0,
+    queueOpen: company.queue_open ?? true,
+    openTime: company.open_time || "16:00",
+    closeTime: company.close_time || "19:00",
+    logoUrl: company.logo_url || defaultCompany.logoUrl,
+    coverUrl: company.cover_url || defaultCompany.coverUrl,
     dwell2: company.dwell_2,
     dwell4: company.dwell_4,
     dwell6: company.dwell_6,
@@ -857,6 +919,11 @@ function toSupabaseCompany(company) {
     used_2: company.used2 || 0,
     used_4: company.used4 || 0,
     used_6: company.used6 || 0,
+    queue_open: company.queueOpen,
+    open_time: company.openTime,
+    close_time: company.closeTime,
+    logo_url: company.logoUrl,
+    cover_url: company.coverUrl,
     dwell_2: company.dwell2,
     dwell_4: company.dwell4,
     dwell_6: company.dwell6,
@@ -868,7 +935,12 @@ function toSupabaseCompany(company) {
 function loadLocalState() {
   try {
     const stored = JSON.parse(localStorage.getItem(`${STORAGE_KEY}-${COMPANY_SLUG}`));
-    return { ...defaultState, ...stored, queue: stored?.queue || [] };
+    return {
+      ...defaultState,
+      ...stored,
+      company: { ...defaultCompany, ...(stored?.company || {}) },
+      queue: stored?.queue || []
+    };
   } catch {
     return { ...defaultState };
   }
@@ -895,6 +967,52 @@ function formatDuration(minutes) {
   const rest = total % 60;
   const hourLabel = hours === 1 ? "1h" : `${hours}h`;
   return rest === 0 ? hourLabel : `${hourLabel} ${rest}min`;
+}
+
+function isQueueAcceptingEntries() {
+  if (!state.company.queueOpen) return false;
+  return isNowWithinWindow(state.company.openTime, state.company.closeTime);
+}
+
+function isNowWithinWindow(openTime, closeTime) {
+  const now = new Date();
+  const current = now.getHours() * 60 + now.getMinutes();
+  const open = timeToMinutes(openTime);
+  const close = timeToMinutes(closeTime);
+  if (open === close) return true;
+  if (open < close) return current >= open && current < close;
+  return current >= open || current < close;
+}
+
+function queueStatusText() {
+  if (isQueueAcceptingEntries()) {
+    return `Fila aberta das ${state.company.openTime} as ${state.company.closeTime}. Entre na lista para acompanhar a previsao.`;
+  }
+  return `Fila fechada agora. Atendimento da fila das ${state.company.openTime} as ${state.company.closeTime}.`;
+}
+
+function normalizeUrl(value, fallback) {
+  const candidate = String(value || "").trim();
+  if (!candidate) return fallback || "";
+
+  try {
+    const url = new URL(candidate, window.location.href);
+    if (!["http:", "https:"].includes(url.protocol) && !candidate.startsWith("assets/")) {
+      return fallback || "";
+    }
+    return candidate;
+  } catch {
+    return fallback || "";
+  }
+}
+
+function normalizeTime(value, fallback) {
+  return /^([01]\d|2[0-3]):[0-5]\d$/.test(value || "") ? value : fallback;
+}
+
+function timeToMinutes(value) {
+  const [hours, minutes] = normalizeTime(value, "00:00").split(":").map(Number);
+  return hours * 60 + minutes;
 }
 
 function clamp(value, min, max) {

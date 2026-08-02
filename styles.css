@@ -9,6 +9,7 @@
   --brand-dark: #084298;
   --brand-soft: #e7f0ff;
   --hero-accent: rgba(13, 110, 253, 0.62);
+  --company-cover: url("https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=1800&q=80");
   --success: #14824f;
   --success-soft: #dff8e9;
   --danger: #c73737;
@@ -43,6 +44,11 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--ink);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
 }
 
 button,
@@ -105,6 +111,350 @@ h2 {
   font-size: 1.08rem;
 }
 
+.landing-shell {
+  min-height: 100vh;
+  background:
+    linear-gradient(180deg, rgba(255, 122, 0, 0.07), transparent 36%),
+    #030405;
+  color: #fff;
+}
+
+.landing-nav,
+.landing-section,
+.landing-hero {
+  width: min(1160px, calc(100% - 32px));
+  margin: 0 auto;
+}
+
+.landing-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 22px 0;
+}
+
+.landing-nav strong {
+  font-size: 1.35rem;
+  letter-spacing: 0.02em;
+}
+
+.landing-nav span,
+.landing-eyebrow,
+.featured-plan h3 {
+  color: #ff7a00;
+}
+
+.landing-nav div {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  color: rgba(255, 255, 255, 0.76);
+  font-size: 0.94rem;
+}
+
+.nav-cta,
+.landing-button {
+  border-radius: 8px;
+  font-weight: 850;
+}
+
+.nav-cta {
+  padding: 10px 14px;
+  background: #ff7a00;
+  color: #090909;
+}
+
+.landing-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 0.94fr) minmax(360px, 1.06fr);
+  gap: 34px;
+  align-items: center;
+  min-height: min(760px, calc(100vh - 82px));
+  padding: 42px 0 72px;
+}
+
+.hero-copy {
+  display: grid;
+  gap: 22px;
+}
+
+.landing-eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 0.74rem;
+  font-weight: 900;
+}
+
+.hero-copy h1,
+.final-cta h2 {
+  max-width: 760px;
+  font-size: clamp(2.7rem, 6.8vw, 6rem);
+  line-height: 0.92;
+  letter-spacing: 0;
+}
+
+.hero-copy p,
+.split-section p,
+.final-cta p {
+  max-width: 650px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 1.08rem;
+  line-height: 1.65;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.landing-button {
+  display: inline-flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 18px;
+}
+
+.landing-button.primary {
+  background: #ff7a00;
+  color: #070707;
+}
+
+.landing-button.secondary {
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+}
+
+.hero-proof {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.hero-proof span {
+  border: 1px solid rgba(255, 122, 0, 0.35);
+  border-radius: 999px;
+  padding: 8px 11px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.86rem;
+}
+
+.hero-media {
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #050505;
+  box-shadow: 0 34px 90px rgba(0, 0, 0, 0.52);
+}
+
+.hero-media::after {
+  content: "Fila online com identidade do restaurante";
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  border: 1px solid rgba(255, 122, 0, 0.42);
+  border-radius: 999px;
+  padding: 9px 12px;
+  background: rgba(0, 0, 0, 0.62);
+  color: rgba(255, 255, 255, 0.86);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.hero-media img {
+  display: block;
+  width: 100%;
+}
+
+.landing-section {
+  padding: 72px 0;
+}
+
+.feature-band,
+.pricing-grid,
+.dashboard-preview {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.feature-band article,
+.pricing-grid article,
+.brand-grid article,
+.demo-grid article,
+.preview-card {
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 8px;
+  padding: 24px;
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.feature-band strong {
+  color: #ff7a00;
+}
+
+.feature-band h2,
+.split-section h2,
+.pricing-section h2,
+.preview-card strong {
+  margin-top: 10px;
+  font-size: clamp(1.6rem, 3vw, 2.6rem);
+  line-height: 1;
+}
+
+.feature-band p,
+.pricing-grid p {
+  color: rgba(255, 255, 255, 0.66);
+  line-height: 1.55;
+}
+
+.brand-story {
+  display: grid;
+  grid-template-columns: 0.8fr 1.2fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.brand-story h2,
+.demo-section h2 {
+  margin-top: 10px;
+  font-size: clamp(2rem, 4vw, 4rem);
+  line-height: 0.96;
+}
+
+.brand-grid,
+.demo-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.brand-grid article,
+.demo-grid article {
+  display: grid;
+  gap: 8px;
+}
+
+.brand-grid strong,
+.demo-grid strong {
+  color: #fff;
+  font-size: 1.25rem;
+}
+
+.brand-grid p,
+.demo-section p,
+.demo-grid p {
+  color: rgba(255, 255, 255, 0.66);
+  line-height: 1.55;
+}
+
+.demo-section {
+  display: grid;
+  gap: 22px;
+}
+
+.demo-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.demo-grid span {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  background: #ff7a00;
+  color: #060606;
+  font-weight: 950;
+}
+
+.split-section {
+  display: grid;
+  grid-template-columns: 0.95fr 1.05fr;
+  gap: 42px;
+  align-items: start;
+}
+
+.steps {
+  display: grid;
+  gap: 12px;
+}
+
+.steps span {
+  border-left: 3px solid #ff7a00;
+  border-radius: 8px;
+  padding: 18px 20px;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.86);
+  font-weight: 750;
+}
+
+.dashboard-preview {
+  grid-template-columns: 0.85fr 1.15fr;
+}
+
+.preview-card {
+  display: grid;
+  gap: 12px;
+}
+
+.preview-card small {
+  color: #ff7a00;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 900;
+}
+
+.preview-ticket {
+  color: #ff7a00;
+  font-size: clamp(4rem, 12vw, 9rem);
+  line-height: 0.9;
+  font-weight: 950;
+}
+
+.mini-table-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.mini-table-grid span {
+  border-radius: 8px;
+  padding: 16px;
+  background: rgba(255, 122, 0, 0.12);
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.mini-table-grid b {
+  color: #fff;
+}
+
+.section-heading {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.pricing-grid article strong {
+  display: block;
+  margin: 10px 0;
+  font-size: 1.6rem;
+}
+
+.featured-plan {
+  border-color: rgba(255, 122, 0, 0.58) !important;
+  background: rgba(255, 122, 0, 0.1) !important;
+}
+
+.final-cta {
+  display: grid;
+  gap: 18px;
+  padding-bottom: 96px;
+}
+
 .app-shell {
   width: min(1120px, calc(100% - 28px));
   margin: 0 auto;
@@ -121,9 +471,31 @@ h2 {
   border-radius: 8px;
   color: #fff;
   background:
-    linear-gradient(90deg, rgba(6, 23, 54, 0.9), var(--hero-accent)),
-    url("https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1800&q=80") center/cover;
+    linear-gradient(90deg, rgba(3, 7, 18, 0.92), rgba(3, 7, 18, 0.42), var(--hero-accent)),
+    var(--company-cover) center/cover;
   box-shadow: var(--shadow);
+}
+
+.brand-heading {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 16px;
+}
+
+.company-logo {
+  width: 78px;
+  height: 78px;
+  flex: 0 0 auto;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  border-radius: 8px;
+  object-fit: cover;
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.3);
+}
+
+.brand-heading h1 {
+  overflow-wrap: anywhere;
 }
 
 .eyebrow {
@@ -241,6 +613,10 @@ h2 {
 .ticket-panel.is-waiting {
   border-color: var(--brand);
   background: var(--brand-soft);
+}
+
+.panel.is-closed {
+  opacity: 0.68;
 }
 
 .ticket-number {
@@ -468,6 +844,10 @@ h2 {
   gap: 12px;
 }
 
+.brand-config {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .table-status {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -585,11 +965,53 @@ h2 {
 }
 
 @media (max-width: 760px) {
+  .landing-nav {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .landing-nav div {
+    width: 100%;
+    justify-content: space-between;
+    overflow-x: auto;
+  }
+
+  .landing-hero,
+  .feature-band,
+  .split-section,
+  .dashboard-preview,
+  .pricing-grid,
+  .brand-story,
+  .demo-grid,
+  .mini-table-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .landing-hero {
+    min-height: auto;
+    padding-top: 28px;
+  }
+
+  .hero-copy h1,
+  .final-cta h2 {
+    font-size: 3rem;
+  }
+
   .topbar,
   .called-banner,
   .section-title {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .brand-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .company-logo {
+    width: 68px;
+    height: 68px;
   }
 
   .stats,
@@ -598,6 +1020,7 @@ h2 {
   .ticket-grid,
   .admin-actions,
   .config-grid,
+  .brand-config,
   .table-status {
     grid-template-columns: 1fr;
   }

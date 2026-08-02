@@ -14,6 +14,11 @@ create table if not exists public.queue_companies (
   used_2 integer not null default 0 check (used_2 between 0 and 99),
   used_4 integer not null default 0 check (used_4 between 0 and 99),
   used_6 integer not null default 0 check (used_6 between 0 and 99),
+  queue_open boolean not null default true,
+  open_time text not null default '16:00',
+  close_time text not null default '19:00',
+  logo_url text not null default 'assets/fila-ai-brand.png',
+  cover_url text not null default 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=1800&q=80',
   dwell_2 integer not null default 50 check (dwell_2 between 15 and 240),
   dwell_4 integer not null default 70 check (dwell_4 between 15 and 240),
   dwell_6 integer not null default 90 check (dwell_6 between 15 and 240),
@@ -39,7 +44,12 @@ alter table public.queue_tickets
 alter table public.queue_companies
   add column if not exists used_2 integer not null default 0 check (used_2 between 0 and 99),
   add column if not exists used_4 integer not null default 0 check (used_4 between 0 and 99),
-  add column if not exists used_6 integer not null default 0 check (used_6 between 0 and 99);
+  add column if not exists used_6 integer not null default 0 check (used_6 between 0 and 99),
+  add column if not exists queue_open boolean not null default true,
+  add column if not exists open_time text not null default '16:00',
+  add column if not exists close_time text not null default '19:00',
+  add column if not exists logo_url text not null default 'assets/fila-ai-brand.png',
+  add column if not exists cover_url text not null default 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=1800&q=80';
 
 create index if not exists queue_tickets_status_created_idx
   on public.queue_tickets (status, created_at);
