@@ -10,7 +10,7 @@ const defaultCompany = {
   adminPin: "1234",
   tables2: 4,
   tables4: 4,
-  tables6: 2,
+  tables6: 1,
   dwell2: 50,
   dwell4: 70,
   dwell6: 90
