@@ -742,9 +742,10 @@ html[data-access-mode="fila"] .app-shell {
 
 html[data-access-mode="fila"] .topbar {
   min-height: 310px;
-  display: grid;
-  justify-items: center;
-  align-items: end;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
   gap: 18px;
   padding: 34px 18px 22px;
   text-align: center;
@@ -754,9 +755,17 @@ html[data-access-mode="fila"] .topbar {
 }
 
 html[data-access-mode="fila"] .brand-heading {
+  width: 100%;
   flex-direction: column;
   justify-content: center;
+  align-items: center;
   gap: 14px;
+}
+
+html[data-access-mode="fila"] .brand-heading > div {
+  width: 100%;
+  display: grid;
+  justify-items: center;
 }
 
 html[data-access-mode="fila"] .company-logo {
@@ -784,6 +793,7 @@ html[data-access-mode="fila"] .topbar .eyebrow {
 
 html[data-access-mode="fila"] .stats {
   width: min(100%, 430px);
+  margin-inline: auto;
   justify-content: center;
   gap: 0;
   overflow: hidden;
