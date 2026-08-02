@@ -275,10 +275,14 @@ h2 {
 
 .called-banner {
   display: flex;
+  position: sticky;
+  top: 12px;
+  z-index: 10;
   align-items: center;
   justify-content: space-between;
   gap: 18px;
   margin-bottom: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.9);
   border-radius: 8px;
   padding: 18px 20px;
   background: var(--success);
@@ -286,10 +290,33 @@ h2 {
   box-shadow: var(--shadow);
 }
 
+.called-banner:not([hidden]) {
+  animation: calledShake 0.8s ease-in-out infinite;
+}
+
 .called-banner strong {
   display: block;
   margin-top: 3px;
   font-size: 1.8rem;
+}
+
+@keyframes calledShake {
+  0%,
+  100% {
+    transform: translateX(0) scale(1);
+  }
+
+  25% {
+    transform: translateX(-4px) scale(1.01);
+  }
+
+  50% {
+    transform: translateX(4px) scale(1.01);
+  }
+
+  75% {
+    transform: translateX(-2px) scale(1.01);
+  }
 }
 
 .queue-section {
@@ -389,6 +416,18 @@ h2 {
 
 .table-card small {
   color: var(--muted);
+}
+
+.manual-add {
+  display: grid;
+  gap: 12px;
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+}
+
+.manual-add h3 {
+  margin: 0;
+  font-size: 1rem;
 }
 
 .mini-actions {
