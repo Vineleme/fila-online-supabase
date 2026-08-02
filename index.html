@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Fila Online</title>
-    <link rel="stylesheet" href="styles.css?v=restaurante-2" />
+    <link rel="stylesheet" href="styles.css?v=restaurante-3" />
   </head>
   <body>
     <main class="app-shell">
@@ -33,10 +33,10 @@
       <section id="clientView" class="view is-active">
         <div id="calledBanner" class="called-banner" hidden>
           <div>
-            <p>Senha chamada</p>
+            <p>Sua mesa foi chamada</p>
             <strong id="calledName">-</strong>
           </div>
-          <span id="calledService">Dirija-se ao atendimento</span>
+          <span id="calledService">Procure a recepcao</span>
         </div>
 
         <div class="layout">
@@ -66,7 +66,7 @@
 
         <section class="queue-section">
           <div class="section-title">
-            <h2>Fila atual</h2>
+            <h2>Acompanhamento</h2>
             <button id="notifyButton" class="ghost" type="button">Ativar notificacoes</button>
           </div>
           <ol id="publicQueue" class="queue-list"></ol>
@@ -121,6 +121,7 @@
             </div>
             <p class="muted">Base inicial sugerida: 50 min para casal, 70 min para 4 pessoas, 90 min para grupos grandes.</p>
             <button id="saveCompanyButton" class="primary" type="button">Salvar configuracao</button>
+            <div id="tableStatus" class="table-status" aria-live="polite"></div>
             <label>
               Tempo medio antigo
               <input id="avgInput" min="1" max="240" type="number" />
