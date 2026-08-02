@@ -14,6 +14,8 @@ create table if not exists public.queue_companies (
   dwell_2 integer not null default 50 check (dwell_2 between 15 and 240),
   dwell_4 integer not null default 70 check (dwell_4 between 15 and 240),
   dwell_6 integer not null default 90 check (dwell_6 between 15 and 240),
+  theme_mode text not null default 'light' check (theme_mode in ('light', 'dark')),
+  accent_color text not null default '#0d6efd' check (accent_color ~ '^#[0-9A-Fa-f]{6}$'),
   updated_at timestamptz not null default now()
 );
 
