@@ -57,7 +57,6 @@ const elements = {
   calledService: document.querySelector("#calledService"),
   statWaiting: document.querySelector("#statWaiting"),
   statAvg: document.querySelector("#statAvg"),
-  notifyButton: document.querySelector("#notifyButton"),
   pinInput: document.querySelector("#pinInput"),
   loginButton: document.querySelector("#loginButton"),
   loginPanel: document.querySelector("#loginPanel"),
@@ -73,6 +72,9 @@ const elements = {
   dwell6Input: document.querySelector("#dwell6Input"),
   saveCompanyButton: document.querySelector("#saveCompanyButton"),
   tableStatus: document.querySelector("#tableStatus"),
+  adminAddForm: document.querySelector("#adminAddForm"),
+  adminNameInput: document.querySelector("#adminNameInput"),
+  adminPartySizeInput: document.querySelector("#adminPartySizeInput"),
   avgInput: document.querySelector("#avgInput"),
   callNextButton: document.querySelector("#callNextButton"),
   finishCalledButton: document.querySelector("#finishCalledButton"),
@@ -154,16 +156,6 @@ function bindEvents() {
     elements.myTicket.scrollIntoView({ behavior: "smooth", block: "start" });
   });
 
-  elements.notifyButton.addEventListener("click", async () => {
-    if (!("Notification" in window)) {
-      alert("Este navegador nao suporta notificacoes.");
-      return;
-    }
-
-    const result = await Notification.requestPermission();
-    elements.notifyButton.textContent = result === "granted" ? "Notificacoes ativas" : "Ativar notificacoes";
-  });
-
   elements.loginButton.addEventListener("click", () => {
     if (elements.pinInput.value.trim() !== state.company.adminPin) {
       alert("PIN incorreto. PIN inicial: 1234");
@@ -181,6 +173,7 @@ function bindEvents() {
   });
 
   elements.saveCompanyButton.addEventListener("click", saveCompanySettings);
+  elements.adminAddForm.addEventListener("submit", addTicketFromAdmin);
   elements.avgInput.addEventListener("change", () => {
     state.avgMinutes = clamp(Number(elements.avgInput.value), 1, 240);
     persistLocalState();
@@ -299,6 +292,47 @@ async function saveCompanySettings() {
     persistLocalState();
   }
 
+  render();
+}
+
+async function addTicketFromAdmin(event) {
+  event.preventDefault();
+
+  const name = elements.adminNameInput.value.trim();
+  if (!hasFullName(name)) {
+    alert("Digite nome e sobrenome para adicionar a fila.");
+    elements.adminNameInput.focus();
+    return;
+  }
+
+  const partySize = Number(elements.adminPartySizeInput.value);
+  const ticket = {
+    company_slug: COMPANY_SLUG,
+    number: nextNumber(),
+    name,
+    service: partyLabel(partySize),
+    party_size: partySize,
+    status: "waiting"
+  };
+
+  if (db) {
+    const { error } = await db.from("queue_tickets").insert(ticket);
+    if (error) {
+      alert(`Nao consegui adicionar: ${error.message}`);
+      return;
+    }
+    await refreshFromSupabase();
+  } else {
+    state.queue.push({
+      ...ticket,
+      id: crypto.randomUUID(),
+      createdAt: Date.now(),
+      calledAt: null
+    });
+    persistLocalState();
+  }
+
+  elements.adminAddForm.reset();
   render();
 }
 
@@ -481,7 +515,7 @@ function renderCalledBanner() {
   elements.calledBanner.hidden = !shouldShow;
   if (!shouldShow) return;
   elements.calledName.textContent = `${formatNumber(myTicket.number)} - ${myTicket.name}`;
-  elements.calledService.textContent = `Mesa para ${partyLabel(myTicket.partySize)}`;
+  elements.calledService.textContent = `Voce foi chamado. Procure a recepcao.`;
 }
 
 function renderMyTicket() {
@@ -617,12 +651,7 @@ function countAhead(ticket) {
 
 function notifyCalled(ticket) {
   if (state.myTicketId !== ticket.id) return;
-
-  if ("Notification" in window && Notification.permission === "granted") {
-    new Notification("Sua mesa chegou", {
-      body: `${formatNumber(ticket.number)} - ${ticket.name}, sua mesa esta pronta.`
-    });
-  }
+  renderCalledBanner();
 }
 
 function playCallSound() {
