@@ -3,6 +3,7 @@ const MY_TICKET_KEY = "fila-online-my-ticket-v2";
 
 const params = new URLSearchParams(window.location.search);
 const COMPANY_SLUG = slugify(params.get("empresa") || "restaurante-demo");
+const ACCESS_MODE = normalizeAccessMode(params.get("modo") || params.get("tela") || params.get("view") || "");
 
 const defaultCompany = {
   slug: COMPANY_SLUG,
@@ -40,6 +41,7 @@ let audioContext;
 
 const elements = {
   tabs: document.querySelectorAll(".tab"),
+  tabsNav: document.querySelector(".tabs"),
   views: document.querySelectorAll(".view"),
   companyTitle: document.querySelector("#companyTitle"),
   joinForm: document.querySelector("#joinForm"),
@@ -78,6 +80,7 @@ boot();
 
 function boot() {
   bindEvents();
+  applyAccessMode();
   render();
 
   if (db) {
@@ -135,6 +138,7 @@ function bindEvents() {
 
     elements.joinForm.reset();
     render();
+    elements.myTicket.scrollIntoView({ behavior: "smooth", block: "start" });
   });
 
   elements.notifyButton.addEventListener("click", async () => {
@@ -179,6 +183,13 @@ function bindEvents() {
     state = loadLocalState();
     render();
   });
+}
+
+function applyAccessMode() {
+  if (!ACCESS_MODE) return;
+
+  elements.tabsNav.hidden = true;
+  showView(ACCESS_MODE === "admin" ? "adminView" : "clientView");
 }
 
 async function ensureCompany() {
@@ -717,6 +728,13 @@ function slugify(value) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 60) || "restaurante-demo";
+}
+
+function normalizeAccessMode(value) {
+  const mode = slugify(value);
+  if (["admin", "administrativo", "gestao", "gestor"].includes(mode)) return "admin";
+  if (["fila", "cliente", "qr", "publico"].includes(mode)) return "fila";
+  return "";
 }
 
 function escapeHtml(value) {
