@@ -664,7 +664,7 @@ function applyTheme() {
 
 function updateTopLabel() {
   const isAdmin = document.querySelector("#adminView")?.classList.contains("is-active");
-  elements.topLabel.textContent = isAdmin ? "Administracao do restaurante" : "Fila de espera";
+  elements.topLabel.textContent = isAdmin ? "Administrador" : "Fila de espera";
 }
 
 function estimateWait(ticket) {
