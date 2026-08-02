@@ -11,7 +11,7 @@
       <section class="topbar" aria-label="Resumo da fila">
         <div>
           <p class="eyebrow">Atendimento</p>
-          <h1>Fila Online</h1>
+          <h1 id="companyTitle">Fila Online</h1>
         </div>
         <div class="stats">
           <div>
@@ -19,8 +19,8 @@
             <small>aguardando</small>
           </div>
           <div>
-            <span id="statAvg">5 min</span>
-            <small>por pessoa</small>
+            <span id="statAvg">70 min</span>
+            <small>tempo medio</small>
           </div>
         </div>
       </section>
@@ -41,21 +41,21 @@
 
         <div class="layout">
           <form id="joinForm" class="panel">
-            <h2>Entrar na fila</h2>
+            <h2>Entrar na lista</h2>
             <label>
               Nome
               <input id="nameInput" name="name" autocomplete="name" required minlength="2" placeholder="Seu nome" />
             </label>
             <label>
-              Atendimento
-              <select id="serviceInput" name="service">
-                <option value="Recepcao">Recepcao</option>
-                <option value="Matricula">Matricula</option>
-                <option value="Financeiro">Financeiro</option>
-                <option value="Avaliacao">Avaliacao</option>
+              Quantas pessoas?
+              <select id="partySizeInput" name="partySize">
+                <option value="2">1 ou 2 pessoas</option>
+                <option value="4">3 ou 4 pessoas</option>
+                <option value="6">5 ou 6+ pessoas</option>
               </select>
             </label>
-            <button class="primary" type="submit">Cadastrar</button>
+            <p class="muted">A previsao usa mesas disponiveis e tempo medio de permanencia.</p>
+            <button class="primary" type="submit">Entrar na lista</button>
           </form>
 
           <article id="myTicket" class="panel ticket-panel" aria-live="polite">
@@ -90,8 +90,40 @@
               <button id="logoutButton" class="ghost" type="button">Sair</button>
             </div>
             <label>
-              Tempo medio por pessoa
-              <input id="avgInput" min="1" max="60" type="number" />
+              Nome da empresa
+              <input id="companyNameInput" maxlength="80" />
+            </label>
+            <div class="config-grid">
+              <label>
+                Mesas para 2
+                <input id="tables2Input" min="0" max="99" type="number" />
+              </label>
+              <label>
+                Tempo 1-2 pessoas
+                <input id="dwell2Input" min="15" max="240" type="number" />
+              </label>
+              <label>
+                Mesas para 4
+                <input id="tables4Input" min="0" max="99" type="number" />
+              </label>
+              <label>
+                Tempo 3-4 pessoas
+                <input id="dwell4Input" min="15" max="240" type="number" />
+              </label>
+              <label>
+                Mesas para 6+
+                <input id="tables6Input" min="0" max="99" type="number" />
+              </label>
+              <label>
+                Tempo 5-6+ pessoas
+                <input id="dwell6Input" min="15" max="240" type="number" />
+              </label>
+            </div>
+            <p class="muted">Base inicial sugerida: 50 min para casal, 70 min para 4 pessoas, 90 min para grupos grandes.</p>
+            <button id="saveCompanyButton" class="primary" type="button">Salvar configuracao</button>
+            <label>
+              Tempo medio antigo
+              <input id="avgInput" min="1" max="240" type="number" />
             </label>
             <div class="admin-actions">
               <button id="callNextButton" class="success" type="button">Chamar proximo</button>
