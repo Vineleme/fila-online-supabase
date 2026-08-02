@@ -1278,7 +1278,7 @@ function renderCalledBanner() {
   elements.calledBanner.hidden = !shouldShow;
   if (!shouldShow) return;
   elements.calledName.textContent = `${formatNumber(myTicket.number)} - ${myTicket.name}`;
-  elements.calledService.textContent = `Voce foi chamado. Procure a recepcao.`;
+  elements.calledService.textContent = "Voce tem 10 minutos para comparecer a recepcao. Fique atento.";
 }
 
 function renderMyTicket() {
@@ -1302,11 +1302,15 @@ function renderMyTicket() {
 
   const ahead = countAhead(ticket);
   const wait = estimateWait(ticket);
-  const statusText = ticket.status === "called" ? "Chamado agora" : ticket.status === "done" ? "Finalizado" : "Aguardando";
+  const statusText = ticket.status === "called" ? "Sua vez chegou" : ticket.status === "done" ? "Finalizado" : "Aguardando";
+  const calledNotice = ticket.status === "called"
+    ? `<p class="called-note">Sua vez chegou. Voce tem 10 minutos para comparecer a recepcao.</p>`
+    : "";
 
   elements.myTicket.innerHTML = `
     <h2>Minha senha</h2>
     <div class="ticket-number">${formatNumber(ticket.number)}</div>
+    ${calledNotice}
     <div class="ticket-grid">
       <div class="metric"><strong>${ahead}</strong><span>grupos na frente</span></div>
       <div class="metric wait-metric"><strong>${formatDuration(wait)}</strong><span>espera estimada</span></div>
@@ -1687,7 +1691,7 @@ function queueStatusText() {
   if (isQueueAcceptingEntries()) {
     return `Fila aberta das ${state.company.openTime} as ${state.company.closeTime}. Entre na lista para acompanhar a previsao.`;
   }
-  return `Fila fechada agora. Atendimento da fila das ${state.company.openTime} as ${state.company.closeTime}.`;
+  return `Reservas indisponiveis no momento. Tente novamente no proximo horario de atendimento, das ${state.company.openTime} as ${state.company.closeTime}. Obrigado.`;
 }
 
 function isCompanyCommerciallyActive() {
