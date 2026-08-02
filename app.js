@@ -88,6 +88,7 @@ const elements = {
   ownerRequestsList: document.querySelector("#ownerRequestsList"),
   ownerCompaniesList: document.querySelector("#ownerCompaniesList"),
   ownerTokensList: document.querySelector("#ownerTokensList"),
+  ownerBillingList: document.querySelector("#ownerBillingList"),
   tabs: document.querySelectorAll(".tab"),
   tabsNav: document.querySelector(".tabs"),
   views: document.querySelectorAll(".view"),
@@ -111,6 +112,11 @@ const elements = {
   adminPanel: document.querySelector("#adminPanel"),
   adminTabs: document.querySelectorAll(".admin-tab"),
   adminTabPanels: document.querySelectorAll(".admin-tab-panel"),
+  billingTitle: document.querySelector("#billingTitle"),
+  billingStatusText: document.querySelector("#billingStatusText"),
+  billingRequestForm: document.querySelector("#billingRequestForm"),
+  billingPlanInput: document.querySelector("#billingPlanInput"),
+  billingRequestMessage: document.querySelector("#billingRequestMessage"),
   logoutButton: document.querySelector("#logoutButton"),
   companyNameInput: document.querySelector("#companyNameInput"),
   companyLogoUrlInput: document.querySelector("#companyLogoUrlInput"),
@@ -263,11 +269,13 @@ async function refreshOwnerDashboard() {
   const [
     { data: requests, error: requestsError },
     { data: companies, error: companiesError },
-    { data: tokens, error: tokensError }
+    { data: tokens, error: tokensError },
+    { data: billing, error: billingError }
   ] = await Promise.all([
     db.from("trial_requests").select("*").order("created_at", { ascending: false }),
     db.from("queue_companies").select("*").order("created_at", { ascending: false }),
-    db.from("trial_tokens").select("*").order("created_at", { ascending: false })
+    db.from("trial_tokens").select("*").order("created_at", { ascending: false }),
+    db.from("subscription_requests").select("*").order("created_at", { ascending: false })
   ]);
 
   if (requestsError) {
@@ -286,6 +294,12 @@ async function refreshOwnerDashboard() {
     elements.ownerTokensList.innerHTML = `<p class="muted">Erro: ${escapeHtml(tokensError.message)}</p>`;
   } else {
     renderOwnerTokens(tokens || []);
+  }
+
+  if (billingError) {
+    elements.ownerBillingList.innerHTML = `<p class="muted">Erro: ${escapeHtml(billingError.message)}</p>`;
+  } else {
+    renderOwnerBilling(billing || []);
   }
 }
 
@@ -325,6 +339,9 @@ function renderOwnerCompanies(companies) {
     const trial = trialStatus(company);
     const adminUrl = `${origin}?empresa=${encodeURIComponent(company.slug)}&modo=admin`;
     const filaUrl = `${origin}?empresa=${encodeURIComponent(company.slug)}&modo=fila`;
+    const contactDigits = String(company.contact_phone || "").replace(/\D/g, "");
+    const notifyMessage = encodeURIComponent(`Sua pagina do FILA AI esta funcionando.\n\nAdmin: ${adminUrl}\nFila do cliente: ${filaUrl}\nPIN: ${company.admin_pin || "1234"}`);
+    const notifyUrl = contactDigits ? `https://api.whatsapp.com/send?phone=55${contactDigits}&text=${notifyMessage}` : "";
     return `
       <article class="owner-company owner-item">
         <div>
@@ -335,6 +352,7 @@ function renderOwnerCompanies(companies) {
         <div class="link-stack">
           <a href="${adminUrl}" target="_blank" rel="noreferrer">Admin</a>
           <a href="${filaUrl}" target="_blank" rel="noreferrer">Fila cliente</a>
+          ${notifyUrl ? `<a href="${notifyUrl}" target="_blank" rel="noreferrer">Avisar cliente</a>` : ""}
           <button type="button" data-company-action="paid" data-slug="${escapeHtml(company.slug)}">Pago</button>
           <button type="button" data-company-action="pending" data-slug="${escapeHtml(company.slug)}">Pendente</button>
           <button type="button" data-company-action="blocked" data-slug="${escapeHtml(company.slug)}">Bloquear</button>
@@ -387,6 +405,31 @@ function renderOwnerTokens(tokens) {
   });
 }
 
+function renderOwnerBilling(requests) {
+  if (!requests.length) {
+    elements.ownerBillingList.innerHTML = `<p class="muted">Nenhum pedido de plano ainda.</p>`;
+    return;
+  }
+
+  elements.ownerBillingList.innerHTML = requests.map((request) => `
+    <article class="owner-item">
+      <div>
+        <strong>${escapeHtml(request.company_name || request.company_slug)}</strong>
+        <span>Plano ${escapeHtml(request.plan)} - ${escapeHtml(request.status || "novo")}</span>
+        <small>${escapeHtml(request.contact_phone || "sem telefone")} - ${formatDate(request.created_at)}</small>
+      </div>
+      <div class="owner-actions">
+        <button type="button" data-billing-action="paid" data-billing-id="${request.id}" data-billing-slug="${escapeHtml(request.company_slug)}">Marcar pago</button>
+        <button type="button" data-billing-action="contacted" data-billing-id="${request.id}">Contatado</button>
+      </div>
+    </article>
+  `).join("");
+
+  elements.ownerBillingList.querySelectorAll("button").forEach((button) => {
+    button.addEventListener("click", () => handleOwnerBillingAction(button));
+  });
+}
+
 async function handleOwnerRequestAction(button) {
   const action = button.dataset.ownerAction;
   if (action === "contact") {
@@ -424,6 +467,30 @@ async function handleOwnerTokenAction(button) {
   if (error) {
     alert(`Nao consegui cancelar token: ${error.message}`);
     return;
+  }
+
+  await refreshOwnerDashboard();
+}
+
+async function handleOwnerBillingAction(button) {
+  const id = button.dataset.billingId;
+  const action = button.dataset.billingAction;
+  const status = action === "paid" ? "pago" : "contatado";
+  const { error } = await db
+    .from("subscription_requests")
+    .update({ status, updated_at: new Date().toISOString() })
+    .eq("id", id);
+
+  if (error) {
+    alert(`Nao consegui atualizar pedido: ${error.message}`);
+    return;
+  }
+
+  if (action === "paid") {
+    await db
+      .from("queue_companies")
+      .update({ owner_status: "ativo", payment_status: "pago", updated_at: new Date().toISOString() })
+      .eq("slug", button.dataset.billingSlug);
   }
 
   await refreshOwnerDashboard();
@@ -722,6 +789,7 @@ function bindEvents() {
 
   elements.saveCompanyButton.addEventListener("click", saveCompanySettings);
   elements.adminAddForm.addEventListener("submit", addTicketFromAdmin);
+  elements.billingRequestForm.addEventListener("submit", submitBillingRequest);
   elements.companyLogoFileInput.addEventListener("change", () => handleBrandFileUpload("logo"));
   elements.companyCoverFileInput.addEventListener("change", () => handleBrandFileUpload("cover"));
 
@@ -1120,10 +1188,58 @@ function render() {
   updateTopLabel();
 
   renderCalledBanner();
+  renderBillingStatus();
   renderMyTicket();
   renderPublicQueue();
   renderAdminQueue();
   renderTableStatus();
+}
+
+function renderBillingStatus() {
+  if (!elements.billingStatusText) return;
+
+  const trialText = state.company.trialEndsAt
+    ? trialStatus({ trial_ends_at: state.company.trialEndsAt })
+    : "sem periodo de teste definido";
+  const payment = state.company.paymentStatus || "pendente";
+  const ownerStatus = state.company.ownerStatus || "teste";
+
+  elements.billingStatusText.textContent = `Status: ${ownerStatus}. Pagamento: ${payment}. ${trialText}.`;
+  elements.billingRequestForm.hidden = payment === "pago" || ownerStatus === "ativo";
+  elements.billingRequestMessage.textContent = payment === "pago"
+    ? "Plano ativo. Obrigado por continuar usando o FILA AÍ."
+    : "";
+}
+
+async function submitBillingRequest(event) {
+  event.preventDefault();
+
+  if (!db) {
+    elements.billingRequestMessage.textContent = "Supabase indisponivel. Fale com o FILA AÍ pelo WhatsApp.";
+    return;
+  }
+
+  const payload = {
+    company_slug: state.company.slug,
+    company_name: state.company.name,
+    contact_phone: state.company.contactPhone || "",
+    plan: elements.billingPlanInput.value,
+    status: "novo"
+  };
+
+  const { error } = await db.from("subscription_requests").insert(payload);
+  if (error) {
+    elements.billingRequestMessage.textContent = `Nao consegui enviar: ${error.message}`;
+    return;
+  }
+
+  await db
+    .from("queue_companies")
+    .update({ payment_status: "solicitado", updated_at: new Date().toISOString() })
+    .eq("slug", state.company.slug);
+
+  elements.billingRequestMessage.textContent = "Pedido enviado. O FILA AÍ vai chamar voce para finalizar pagamento e contrato.";
+  await refreshFromSupabase();
 }
 
 function fillCompanyForm() {

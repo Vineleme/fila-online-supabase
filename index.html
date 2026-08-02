@@ -9,7 +9,7 @@
     <meta property="og:title" content="FILA AÍ - Fila de espera para restaurantes" />
     <meta property="og:description" content="Organize a fila do restaurante com QR Code, identidade da empresa e painel administrativo simples." />
     <meta property="og:image" content="assets/fila-ai-logo-white.png" />
-    <link rel="stylesheet" href="styles.css?v=tokens-2" />
+    <link rel="stylesheet" href="styles.css?v=tokens-4" />
   </head>
   <body>
     <main id="landingPage" class="landing-shell">
@@ -30,7 +30,7 @@
           <p>O FILA AÍ transforma o QR Code da recepcao em uma experiencia bonita: cliente acompanha senha e previsao pelo celular, enquanto o dono controla mesas, horarios, capa e identidade do restaurante em tempo real.</p>
           <div class="hero-actions">
             <a class="landing-button primary" href="#solicitar-teste">Quero testar 7 dias</a>
-          <a class="landing-button whatsapp" href="https://api.whatsapp.com/send?phone=5511943178179&text=Quero%20testar%20o%20FILA%20AI%20no%20meu%20restaurante" target="_blank" rel="noreferrer">Falar no WhatsApp</a>
+          <a class="landing-button whatsapp" href="https://api.whatsapp.com/send?phone=5511943678179&text=Quero%20testar%20o%20FILA%20AI%20no%20meu%20restaurante" target="_blank" rel="noreferrer">Falar no WhatsApp</a>
             <a class="landing-button secondary" href="#planos">Ver oferta comercial</a>
           </div>
           <div class="hero-proof">
@@ -205,7 +205,7 @@
           <a class="landing-button secondary" href="#como-funciona">Como apresentar</a>
         </div>
       </section>
-      <a class="floating-whatsapp" href="https://api.whatsapp.com/send?phone=5511943178179&text=Quero%20testar%20o%20FILA%20AI%20no%20meu%20restaurante" target="_blank" rel="noreferrer">WhatsApp</a>
+      <a class="floating-whatsapp" href="https://api.whatsapp.com/send?phone=5511943678179&text=Quero%20testar%20o%20FILA%20AI%20no%20meu%20restaurante" target="_blank" rel="noreferrer">WhatsApp</a>
     </main>
 
     <main id="activationShell" class="activation-shell" hidden>
@@ -292,6 +292,11 @@
         <section class="panel owner-companies-panel">
           <h2>Tokens gerados</h2>
           <div id="ownerTokensList" class="owner-list"></div>
+        </section>
+
+        <section class="panel owner-companies-panel">
+          <h2>Pedidos de plano</h2>
+          <div id="ownerBillingList" class="owner-list"></div>
         </section>
       </section>
     </main>
@@ -382,6 +387,25 @@
           </div>
 
           <div class="admin-workspace">
+          <section id="adminBillingPanel" class="panel billing-panel">
+            <div>
+              <p class="eyebrow">Teste e pagamento</p>
+              <h2 id="billingTitle">Seu acesso ao FILA AÍ</h2>
+              <p id="billingStatusText" class="muted">Carregando status do restaurante...</p>
+            </div>
+            <form id="billingRequestForm" class="billing-form">
+              <label>
+                Quero continuar no plano
+                <select id="billingPlanInput">
+                  <option value="mensal">Mensal</option>
+                  <option value="anual">Anual</option>
+                </select>
+              </label>
+              <button class="primary" type="submit">Quero continuar usando</button>
+            </form>
+            <p id="billingRequestMessage" class="muted" role="status"></p>
+          </section>
+
           <section id="adminConfigPanel" class="panel admin-tab-panel config-panel">
             <div class="section-title">
               <h2>Controle</h2>
@@ -502,6 +526,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
-    <script src="app.js?v=tokens-2"></script>
+    <script src="app.js?v=tokens-4"></script>
   </body>
 </html>
