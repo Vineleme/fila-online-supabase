@@ -9,7 +9,7 @@
     <meta property="og:title" content="FILA AÍ - Fila de espera para restaurantes" />
     <meta property="og:description" content="Organize a fila do restaurante com QR Code, identidade da empresa e painel administrativo simples." />
     <meta property="og:image" content="assets/fila-ai-logo-white.png" />
-    <link rel="stylesheet" href="styles.css?v=customer-1" />
+    <link rel="stylesheet" href="styles.css?v=tokens-1" />
   </head>
   <body>
     <main id="landingPage" class="landing-shell">
@@ -30,7 +30,7 @@
           <p>O FILA AÍ transforma o QR Code da recepcao em uma experiencia bonita: cliente acompanha senha e previsao pelo celular, enquanto o dono controla mesas, horarios, capa e identidade do restaurante em tempo real.</p>
           <div class="hero-actions">
             <a class="landing-button primary" href="#solicitar-teste">Quero testar 7 dias</a>
-          <a class="landing-button whatsapp" href="https://wa.me/5511943178179" target="_blank" rel="noreferrer">Falar no WhatsApp</a>
+          <a class="landing-button whatsapp" href="https://api.whatsapp.com/send?phone=5511943178179&text=Quero%20testar%20o%20FILA%20AI%20no%20meu%20restaurante" target="_blank" rel="noreferrer">Falar no WhatsApp</a>
             <a class="landing-button secondary" href="#planos">Ver oferta comercial</a>
           </div>
           <div class="hero-proof">
@@ -205,7 +205,33 @@
           <a class="landing-button secondary" href="#como-funciona">Como apresentar</a>
         </div>
       </section>
-      <a class="floating-whatsapp" href="https://wa.me/5511943178179" target="_blank" rel="noreferrer">WhatsApp</a>
+      <a class="floating-whatsapp" href="https://api.whatsapp.com/send?phone=5511943178179&text=Quero%20testar%20o%20FILA%20AI%20no%20meu%20restaurante" target="_blank" rel="noreferrer">WhatsApp</a>
+    </main>
+
+    <main id="activationShell" class="activation-shell" hidden>
+      <section class="activation-card">
+        <img src="assets/fila-ai-logo-white.png" alt="FILA AÍ" />
+        <p class="landing-eyebrow">Ativar teste gratis</p>
+        <h1>Configure seu restaurante em poucos segundos.</h1>
+        <p>Seu teste começa quando este token for ativado neste aparelho. Depois disso, os links de admin e fila ficam separados para o seu restaurante.</p>
+        <form id="activationForm" class="trial-form">
+          <label>
+            Nome do restaurante
+            <input id="activationRestaurantInput" required maxlength="90" placeholder="Nome que aparecera na fila" />
+          </label>
+          <label>
+            Nome do responsavel
+            <input id="activationOwnerInput" required maxlength="90" placeholder="Nome e sobrenome" />
+          </label>
+          <label>
+            WhatsApp
+            <input id="activationPhoneInput" required inputmode="tel" maxlength="30" placeholder="(11) 99999-9999" />
+          </label>
+          <button class="landing-button primary" type="submit">Ativar meu teste</button>
+          <p id="activationMessage" class="trial-message" role="status"></p>
+        </form>
+        <div id="activationResult" class="activation-result" hidden></div>
+      </section>
     </main>
 
     <main id="ownerShell" class="owner-shell" hidden>
@@ -234,21 +260,21 @@
 
         <div class="owner-grid">
           <section class="panel">
-            <h2>Novo restaurante manual</h2>
+            <h2>Gerar token de teste</h2>
             <form id="ownerCreateForm" class="owner-form">
               <label>
                 Restaurante
-                <input id="ownerCompanyNameInput" required maxlength="90" placeholder="Nome do restaurante" />
+                <input id="ownerCompanyNameInput" maxlength="90" placeholder="Opcional: nome do restaurante" />
               </label>
               <label>
                 WhatsApp
-                <input id="ownerCompanyPhoneInput" inputmode="tel" maxlength="30" placeholder="Contato financeiro" />
+                <input id="ownerCompanyPhoneInput" inputmode="tel" maxlength="30" placeholder="Opcional: contato financeiro" />
               </label>
               <label>
-                Valor mensal
-                <input id="ownerMonthlyPriceInput" inputmode="decimal" maxlength="20" placeholder="Ex: 97,00" />
+                Dias de teste
+                <input id="ownerTrialDaysInput" inputmode="numeric" maxlength="3" placeholder="7" />
               </label>
-              <button class="primary" type="submit">Criar teste de 7 dias</button>
+              <button class="primary" type="submit">Gerar link com token</button>
             </form>
           </section>
 
@@ -261,6 +287,11 @@
         <section class="panel owner-companies-panel">
           <h2>Restaurantes controlados</h2>
           <div id="ownerCompaniesList" class="owner-list"></div>
+        </section>
+
+        <section class="panel owner-companies-panel">
+          <h2>Tokens gerados</h2>
+          <div id="ownerTokensList" class="owner-list"></div>
         </section>
       </section>
     </main>
@@ -471,6 +502,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
-    <script src="app.js?v=customer-1"></script>
+    <script src="app.js?v=tokens-1"></script>
   </body>
 </html>

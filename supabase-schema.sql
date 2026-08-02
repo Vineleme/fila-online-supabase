@@ -46,6 +46,22 @@ create table if not exists public.trial_requests (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists public.trial_tokens (
+  token text primary key,
+  restaurant_name text not null default '',
+  owner_name text not null default '',
+  phone text not null default '',
+  trial_days integer not null default 7 check (trial_days between 1 and 30),
+  status text not null default 'novo',
+  used_at timestamptz,
+  trial_started_at timestamptz,
+  trial_ends_at timestamptz,
+  activated_slug text,
+  admin_pin text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values (
   'fila-ai-assets',
@@ -111,11 +127,13 @@ grant select, insert, update on public.queue_companies to anon;
 grant select, update on public.queue_settings to anon;
 grant select, insert, update, delete on public.queue_tickets to anon;
 grant select, insert, update on public.trial_requests to anon;
+grant select, insert, update on public.trial_tokens to anon;
 
 alter table public.queue_companies enable row level security;
 alter table public.queue_settings enable row level security;
 alter table public.queue_tickets enable row level security;
 alter table public.trial_requests enable row level security;
+alter table public.trial_tokens enable row level security;
 
 drop policy if exists "Public can read queue companies" on public.queue_companies;
 drop policy if exists "Public can create queue companies" on public.queue_companies;
@@ -129,6 +147,9 @@ drop policy if exists "Public can delete queue tickets" on public.queue_tickets;
 drop policy if exists "Public can read trial requests" on public.trial_requests;
 drop policy if exists "Public can create trial requests" on public.trial_requests;
 drop policy if exists "Public can update trial requests" on public.trial_requests;
+drop policy if exists "Public can read trial tokens" on public.trial_tokens;
+drop policy if exists "Public can create trial tokens" on public.trial_tokens;
+drop policy if exists "Public can update trial tokens" on public.trial_tokens;
 drop policy if exists "Public can read fila ai assets" on storage.objects;
 drop policy if exists "Public can upload fila ai assets" on storage.objects;
 drop policy if exists "Public can update fila ai assets" on storage.objects;
@@ -193,6 +214,22 @@ create policy "Public can create trial requests"
 
 create policy "Public can update trial requests"
   on public.trial_requests for update
+  to anon
+  using (true)
+  with check (true);
+
+create policy "Public can read trial tokens"
+  on public.trial_tokens for select
+  to anon
+  using (true);
+
+create policy "Public can create trial tokens"
+  on public.trial_tokens for insert
+  to anon
+  with check (true);
+
+create policy "Public can update trial tokens"
+  on public.trial_tokens for update
   to anon
   using (true)
   with check (true);

@@ -5,7 +5,8 @@ const OWNER_PIN = "7890";
 
 const params = new URLSearchParams(window.location.search);
 const COMPANY_SLUG = slugify(params.get("empresa") || "restaurante-demo");
-const ACCESS_MODE = normalizeAccessMode(params.get("modo") || params.get("tela") || params.get("view") || "");
+const TRIAL_TOKEN = (params.get("token") || "").trim();
+const ACCESS_MODE = normalizeAccessMode(params.get("modo") || params.get("tela") || params.get("view") || (TRIAL_TOKEN ? "ativar" : ""));
 
 const defaultCompany = {
   slug: COMPANY_SLUG,
@@ -62,6 +63,13 @@ const elements = {
   landingPage: document.querySelector("#landingPage"),
   appShell: document.querySelector("#appShell"),
   ownerShell: document.querySelector("#ownerShell"),
+  activationShell: document.querySelector("#activationShell"),
+  activationForm: document.querySelector("#activationForm"),
+  activationRestaurantInput: document.querySelector("#activationRestaurantInput"),
+  activationOwnerInput: document.querySelector("#activationOwnerInput"),
+  activationPhoneInput: document.querySelector("#activationPhoneInput"),
+  activationMessage: document.querySelector("#activationMessage"),
+  activationResult: document.querySelector("#activationResult"),
   trialRequestForm: document.querySelector("#trialRequestForm"),
   trialRestaurantInput: document.querySelector("#trialRestaurantInput"),
   trialOwnerInput: document.querySelector("#trialOwnerInput"),
@@ -76,9 +84,10 @@ const elements = {
   ownerCreateForm: document.querySelector("#ownerCreateForm"),
   ownerCompanyNameInput: document.querySelector("#ownerCompanyNameInput"),
   ownerCompanyPhoneInput: document.querySelector("#ownerCompanyPhoneInput"),
-  ownerMonthlyPriceInput: document.querySelector("#ownerMonthlyPriceInput"),
+  ownerTrialDaysInput: document.querySelector("#ownerTrialDaysInput"),
   ownerRequestsList: document.querySelector("#ownerRequestsList"),
   ownerCompaniesList: document.querySelector("#ownerCompaniesList"),
+  ownerTokensList: document.querySelector("#ownerTokensList"),
   tabs: document.querySelectorAll(".tab"),
   tabsNav: document.querySelector(".tabs"),
   views: document.querySelectorAll(".view"),
@@ -135,10 +144,22 @@ boot();
 function boot() {
   bindLandingEvents();
 
+  if (ACCESS_MODE === "ativar") {
+    elements.landingPage.hidden = true;
+    elements.appShell.hidden = true;
+    elements.ownerShell.hidden = true;
+    elements.activationShell.hidden = false;
+    document.documentElement.dataset.theme = "landing";
+    bindActivationEvents();
+    loadActivationToken();
+    return;
+  }
+
   if (ACCESS_MODE === "dono") {
     elements.landingPage.hidden = true;
     elements.appShell.hidden = true;
     elements.ownerShell.hidden = false;
+    elements.activationShell.hidden = true;
     document.documentElement.dataset.theme = "landing";
     bindOwnerEvents();
     return;
@@ -148,12 +169,14 @@ function boot() {
     elements.landingPage.hidden = false;
     elements.appShell.hidden = true;
     elements.ownerShell.hidden = true;
+    elements.activationShell.hidden = true;
     document.documentElement.dataset.theme = "landing";
     return;
   }
 
   elements.landingPage.hidden = true;
   elements.ownerShell.hidden = true;
+  elements.activationShell.hidden = true;
   elements.appShell.hidden = false;
   bindEvents();
   applyAccessMode();
@@ -163,6 +186,10 @@ function boot() {
     refreshFromSupabase();
     subscribeToRealtime();
   }
+}
+
+function bindActivationEvents() {
+  elements.activationForm.addEventListener("submit", activateTrialToken);
 }
 
 function bindLandingEvents() {
@@ -185,11 +212,10 @@ function bindOwnerEvents() {
   elements.ownerRefreshButton.addEventListener("click", refreshOwnerDashboard);
   elements.ownerCreateForm.addEventListener("submit", async (event) => {
     event.preventDefault();
-    await createTrialCompany({
+    await createTrialToken({
       restaurantName: elements.ownerCompanyNameInput.value.trim(),
-      ownerName: "",
       phone: elements.ownerCompanyPhoneInput.value.trim(),
-      monthlyPrice: elements.ownerMonthlyPriceInput.value.trim()
+      trialDays: elements.ownerTrialDaysInput.value.trim()
     });
     elements.ownerCreateForm.reset();
     await refreshOwnerDashboard();
@@ -234,9 +260,14 @@ async function refreshOwnerDashboard() {
     return;
   }
 
-  const [{ data: requests, error: requestsError }, { data: companies, error: companiesError }] = await Promise.all([
+  const [
+    { data: requests, error: requestsError },
+    { data: companies, error: companiesError },
+    { data: tokens, error: tokensError }
+  ] = await Promise.all([
     db.from("trial_requests").select("*").order("created_at", { ascending: false }),
-    db.from("queue_companies").select("*").order("created_at", { ascending: false })
+    db.from("queue_companies").select("*").order("created_at", { ascending: false }),
+    db.from("trial_tokens").select("*").order("created_at", { ascending: false })
   ]);
 
   if (requestsError) {
@@ -249,6 +280,12 @@ async function refreshOwnerDashboard() {
     elements.ownerCompaniesList.innerHTML = `<p class="muted">Erro: ${escapeHtml(companiesError.message)}</p>`;
   } else {
     renderOwnerCompanies(companies || []);
+  }
+
+  if (tokensError) {
+    elements.ownerTokensList.innerHTML = `<p class="muted">Erro: ${escapeHtml(tokensError.message)}</p>`;
+  } else {
+    renderOwnerTokens(tokens || []);
   }
 }
 
@@ -311,12 +348,51 @@ function renderOwnerCompanies(companies) {
   });
 }
 
+function renderOwnerTokens(tokens) {
+  if (!tokens.length) {
+    elements.ownerTokensList.innerHTML = `<p class="muted">Nenhum token gerado ainda.</p>`;
+    return;
+  }
+
+  const origin = window.location.origin + window.location.pathname;
+  elements.ownerTokensList.innerHTML = tokens.map((token) => {
+    const activationUrl = `${origin}?token=${encodeURIComponent(token.token)}`;
+    const status = token.used_at ? `usado em ${formatDate(token.used_at)}` : "ainda nao usado";
+    const countdown = token.trial_ends_at ? trialStatus({ trial_ends_at: token.trial_ends_at }) : `${token.trial_days || 7} dias apos ativar`;
+    return `
+      <article class="owner-item">
+        <div>
+          <strong>${escapeHtml(token.restaurant_name || "Token livre")}</strong>
+          <span>${escapeHtml(status)} - ${escapeHtml(countdown)}</span>
+          <small>${escapeHtml(token.token)} ${token.activated_slug ? `- restaurante: ${escapeHtml(token.activated_slug)}` : ""}</small>
+        </div>
+        <div class="link-stack">
+          <a href="${activationUrl}" target="_blank" rel="noreferrer">Abrir token</a>
+          <button type="button" data-token-copy="${activationUrl}">Copiar link</button>
+          ${token.used_at ? "" : `<button type="button" data-token-action="cancel" data-token="${escapeHtml(token.token)}">Cancelar</button>`}
+        </div>
+      </article>
+    `;
+  }).join("");
+
+  elements.ownerTokensList.querySelectorAll("[data-token-copy]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      await navigator.clipboard.writeText(button.dataset.tokenCopy);
+      button.textContent = "Copiado";
+    });
+  });
+
+  elements.ownerTokensList.querySelectorAll("[data-token-action]").forEach((button) => {
+    button.addEventListener("click", () => handleOwnerTokenAction(button));
+  });
+}
+
 async function handleOwnerRequestAction(button) {
   const action = button.dataset.ownerAction;
   if (action === "contact") {
     const digits = (button.dataset.phone || "").replace(/\D/g, "");
     if (!digits) return alert("Esse pedido nao tem telefone.");
-    window.open(`https://wa.me/55${digits}`, "_blank", "noopener");
+    window.open(`https://api.whatsapp.com/send?phone=55${digits}`, "_blank", "noopener");
     return;
   }
 
@@ -327,15 +403,53 @@ async function handleOwnerRequestAction(button) {
     return;
   }
 
-  await createTrialCompany({
+  await createTrialToken({
     restaurantName: request.restaurant_name,
-    ownerName: request.owner_name,
     phone: request.phone,
-    monthlyPrice: ""
+    trialDays: 7
   });
 
-  await db.from("trial_requests").update({ status: "liberado" }).eq("id", requestId);
+  await db.from("trial_requests").update({ status: "token gerado" }).eq("id", requestId);
   await refreshOwnerDashboard();
+}
+
+async function handleOwnerTokenAction(button) {
+  if (button.dataset.tokenAction !== "cancel") return;
+  const { error } = await db
+    .from("trial_tokens")
+    .update({ status: "cancelado", updated_at: new Date().toISOString() })
+    .eq("token", button.dataset.token)
+    .is("used_at", null);
+
+  if (error) {
+    alert(`Nao consegui cancelar token: ${error.message}`);
+    return;
+  }
+
+  await refreshOwnerDashboard();
+}
+
+async function createTrialToken({ restaurantName, phone, trialDays }) {
+  if (!db) return alert("Supabase nao configurado.");
+
+  const days = clamp(Number(trialDays || 7), 1, 30);
+  const token = generateToken();
+  const { error } = await db.from("trial_tokens").insert({
+    token,
+    restaurant_name: restaurantName || "",
+    phone: phone || "",
+    trial_days: days,
+    status: "novo"
+  });
+
+  if (error) {
+    alert(`Nao consegui gerar token: ${error.message}`);
+    return;
+  }
+
+  const link = `${window.location.origin + window.location.pathname}?token=${encodeURIComponent(token)}`;
+  await navigator.clipboard.writeText(link).catch(() => {});
+  alert(`Token gerado e link copiado: ${link}`);
 }
 
 async function handleOwnerCompanyAction(button) {
@@ -393,6 +507,130 @@ async function createTrialCompany({ restaurantName, ownerName, phone, monthlyPri
   }
 
   alert(`Teste criado para ${restaurantName}. PIN admin: ${adminPin}`);
+}
+
+async function loadActivationToken() {
+  if (!TRIAL_TOKEN) {
+    elements.activationForm.hidden = true;
+    elements.activationMessage.textContent = "Token nao informado.";
+    return;
+  }
+
+  if (!db) {
+    elements.activationForm.hidden = true;
+    elements.activationMessage.textContent = "Banco indisponivel. Fale com o FILA AÍ para ativar seu teste.";
+    return;
+  }
+
+  const { data: token, error } = await db.from("trial_tokens").select("*").eq("token", TRIAL_TOKEN).maybeSingle();
+  if (error || !token) {
+    elements.activationForm.hidden = true;
+    elements.activationMessage.textContent = "Token invalido ou nao encontrado.";
+    return;
+  }
+
+  if (token.status === "cancelado") {
+    elements.activationForm.hidden = true;
+    elements.activationMessage.textContent = "Este token foi cancelado.";
+    return;
+  }
+
+  if (token.used_at && token.activated_slug) {
+    elements.activationForm.hidden = true;
+    renderActivationLinks(token.activated_slug, token.admin_pin, token.trial_ends_at);
+    return;
+  }
+
+  elements.activationRestaurantInput.value = token.restaurant_name || "";
+  elements.activationPhoneInput.value = token.phone || "";
+  elements.activationMessage.textContent = `Token pronto. O teste de ${token.trial_days || 7} dias começa ao ativar.`;
+}
+
+async function activateTrialToken(event) {
+  event.preventDefault();
+
+  const restaurantName = elements.activationRestaurantInput.value.trim();
+  const ownerName = elements.activationOwnerInput.value.trim();
+  const phone = elements.activationPhoneInput.value.trim();
+  if (!restaurantName || !hasFullName(ownerName) || phone.length < 8) {
+    elements.activationMessage.textContent = "Preencha restaurante, responsavel e WhatsApp.";
+    return;
+  }
+
+  const { data: token, error } = await db.from("trial_tokens").select("*").eq("token", TRIAL_TOKEN).maybeSingle();
+  if (error || !token || token.status === "cancelado") {
+    elements.activationMessage.textContent = "Token invalido, cancelado ou indisponivel.";
+    return;
+  }
+
+  if (token.used_at && token.activated_slug) {
+    renderActivationLinks(token.activated_slug, token.admin_pin, token.trial_ends_at);
+    return;
+  }
+
+  const slug = await uniqueCompanySlug(restaurantName);
+  const now = new Date();
+  const days = clamp(Number(token.trial_days || 7), 1, 30);
+  const trialEnds = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+  const adminPin = randomPin();
+  const company = {
+    ...defaultCompany,
+    slug,
+    name: restaurantName,
+    adminPin,
+    ownerStatus: "teste",
+    paymentStatus: "pendente",
+    contactName: ownerName,
+    contactPhone: phone,
+    monthlyPrice: "",
+    trialStartedAt: now.toISOString(),
+    trialEndsAt: trialEnds.toISOString()
+  };
+
+  const { error: companyError } = await db.from("queue_companies").insert(toSupabaseCompany(company));
+  if (companyError) {
+    elements.activationMessage.textContent = `Nao consegui criar restaurante: ${companyError.message}`;
+    return;
+  }
+
+  const { error: tokenError } = await db
+    .from("trial_tokens")
+    .update({
+      status: "usado",
+      used_at: now.toISOString(),
+      trial_started_at: now.toISOString(),
+      trial_ends_at: trialEnds.toISOString(),
+      activated_slug: slug,
+      admin_pin: adminPin,
+      restaurant_name: restaurantName,
+      owner_name: ownerName,
+      phone,
+      updated_at: now.toISOString()
+    })
+    .eq("token", TRIAL_TOKEN)
+    .is("used_at", null);
+
+  if (tokenError) {
+    elements.activationMessage.textContent = `Restaurante criado, mas token nao atualizou: ${tokenError.message}`;
+    return;
+  }
+
+  elements.activationForm.hidden = true;
+  renderActivationLinks(slug, adminPin, trialEnds.toISOString());
+}
+
+function renderActivationLinks(slug, adminPin, trialEndsAt) {
+  const origin = window.location.origin + window.location.pathname;
+  const adminUrl = `${origin}?empresa=${encodeURIComponent(slug)}&modo=admin`;
+  const filaUrl = `${origin}?empresa=${encodeURIComponent(slug)}&modo=fila`;
+  elements.activationResult.hidden = false;
+  elements.activationResult.innerHTML = `
+    <strong>Teste ativado</strong>
+    <span>${trialStatus({ trial_ends_at: trialEndsAt })}</span>
+    <small>PIN admin: ${escapeHtml(adminPin || "1234")}</small>
+    <a href="${adminUrl}">Abrir painel administrador</a>
+    <a href="${filaUrl}">Abrir fila do cliente</a>
+  `;
 }
 
 function bindEvents() {
@@ -1382,6 +1620,11 @@ function randomPin() {
   return String(Math.floor(1000 + Math.random() * 9000));
 }
 
+function generateToken() {
+  const random = crypto.getRandomValues(new Uint32Array(2));
+  return `fila-${Date.now().toString(36)}-${Array.from(random, (part) => part.toString(36)).join("")}`;
+}
+
 function trialStatus(company) {
   if (!company.trial_ends_at) return "sem data de teste";
   const diff = new Date(company.trial_ends_at).getTime() - Date.now();
@@ -1439,6 +1682,7 @@ function slugify(value) {
 
 function normalizeAccessMode(value) {
   const mode = slugify(value);
+  if (["ativar", "activate", "token", "teste"].includes(mode)) return "ativar";
   if (["dono", "owner", "master", "central"].includes(mode)) return "dono";
   if (["admin", "administrativo", "gestao", "gestor"].includes(mode)) return "admin";
   if (["fila", "cliente", "qr", "publico"].includes(mode)) return "fila";
