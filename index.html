@@ -4,7 +4,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FILA AÍ - Sistema de fila para restaurantes</title>
-    <link rel="stylesheet" href="styles.css?v=brand-1" />
+    <meta name="description" content="FILA AÍ é um sistema de fila de espera para restaurantes com QR Code, painel administrativo, controle de mesas, chamada em tempo real e teste grátis de 7 dias." />
+    <meta name="theme-color" content="#050505" />
+    <meta property="og:title" content="FILA AÍ - Fila de espera para restaurantes" />
+    <meta property="og:description" content="Organize a fila do restaurante com QR Code, identidade da empresa e painel administrativo simples." />
+    <meta property="og:image" content="assets/fila-ai-logo-white.png" />
+    <link rel="stylesheet" href="styles.css?v=owner-1" />
   </head>
   <body>
     <main id="landingPage" class="landing-shell">
@@ -13,7 +18,8 @@
           <div>
           <a href="#como-funciona">Como funciona</a>
           <a href="#planos">Planos</a>
-          <a class="nav-cta" href="?empresa=restaurante-demo&modo=admin">Ver admin</a>
+          <a class="nav-cta" href="#solicitar-teste">Solicitar teste</a>
+          <a class="owner-link" href="?modo=dono">Central do dono</a>
         </div>
       </nav>
 
@@ -23,7 +29,8 @@
           <h1>A fila do restaurante com cara de aplicativo premium.</h1>
           <p>O FILA AÍ transforma o QR Code da recepcao em uma experiencia bonita: cliente acompanha senha e previsao pelo celular, enquanto o dono controla mesas, horarios, capa e identidade do restaurante em tempo real.</p>
           <div class="hero-actions">
-            <a class="landing-button primary" href="?empresa=restaurante-demo&modo=admin">Ver painel do restaurante</a>
+            <a class="landing-button primary" href="#solicitar-teste">Quero testar 7 dias</a>
+            <a class="landing-button whatsapp" href="#solicitar-teste">Falar com o FILA AÍ</a>
             <a class="landing-button secondary" href="#planos">Ver oferta comercial</a>
           </div>
           <div class="hero-proof">
@@ -33,7 +40,7 @@
           </div>
         </div>
         <div class="hero-media">
-          <img src="assets/fila-ai-brand.png" alt="Identidade visual FILA AÍ" />
+          <img src="assets/fila-ai-logo-white.png" alt="Identidade visual FILA AÍ" />
         </div>
       </section>
 
@@ -132,6 +139,34 @@
         </div>
       </section>
 
+      <section id="solicitar-teste" class="landing-section trial-section">
+        <div class="section-heading">
+          <p class="landing-eyebrow">Teste controlado por voce</p>
+          <h2>Ninguem ativa sozinho. O restaurante solicita e voce libera os 7 dias.</h2>
+          <p>Cada pedido fica salvo na sua central de dono. Depois voce cria o restaurante, entrega os links e acompanha quando o teste termina.</p>
+        </div>
+        <form id="trialRequestForm" class="trial-form">
+          <label>
+            Nome do restaurante
+            <input id="trialRestaurantInput" required minlength="2" maxlength="90" placeholder="Ex: Restaurante Villa Jardim" />
+          </label>
+          <label>
+            Seu nome
+            <input id="trialOwnerInput" required minlength="5" maxlength="90" placeholder="Nome e sobrenome" />
+          </label>
+          <label>
+            WhatsApp
+            <input id="trialPhoneInput" required inputmode="tel" maxlength="30" placeholder="(11) 99999-9999" />
+          </label>
+          <label>
+            Cidade
+            <input id="trialCityInput" maxlength="80" placeholder="Cidade / bairro" />
+          </label>
+          <button class="landing-button primary" type="submit">Solicitar meus 7 dias</button>
+          <p id="trialRequestMessage" class="trial-message" role="status"></p>
+        </form>
+      </section>
+
       <section class="landing-section demo-section">
         <div class="section-heading">
           <p class="landing-eyebrow">Pagina teste</p>
@@ -169,6 +204,63 @@
           <a class="landing-button primary" href="?empresa=restaurante-demo&modo=admin">Abrir demo admin</a>
           <a class="landing-button secondary" href="#como-funciona">Como apresentar</a>
         </div>
+      </section>
+    </main>
+
+    <main id="ownerShell" class="owner-shell" hidden>
+      <section class="owner-hero">
+        <div>
+          <p class="landing-eyebrow">FILA AÍ</p>
+          <h1>Central do dono</h1>
+          <p>Controle pedidos de teste, restaurantes ativos, vencimento dos 7 dias e links que voce entrega para cada cliente.</p>
+        </div>
+      </section>
+
+      <section id="ownerLoginPanel" class="panel compact">
+        <h2>Acesso do dono</h2>
+        <label>
+          PIN
+          <input id="ownerPinInput" inputmode="numeric" autocomplete="off" placeholder="PIN do dono" />
+        </label>
+        <button id="ownerLoginButton" class="primary" type="button">Entrar</button>
+      </section>
+
+      <section id="ownerPanel" class="owner-dashboard" hidden>
+        <div class="section-title">
+          <h2>Pedidos e restaurantes</h2>
+          <button id="ownerRefreshButton" class="ghost" type="button">Atualizar</button>
+        </div>
+
+        <div class="owner-grid">
+          <section class="panel">
+            <h2>Novo restaurante manual</h2>
+            <form id="ownerCreateForm" class="owner-form">
+              <label>
+                Restaurante
+                <input id="ownerCompanyNameInput" required maxlength="90" placeholder="Nome do restaurante" />
+              </label>
+              <label>
+                WhatsApp
+                <input id="ownerCompanyPhoneInput" inputmode="tel" maxlength="30" placeholder="Contato financeiro" />
+              </label>
+              <label>
+                Valor mensal
+                <input id="ownerMonthlyPriceInput" inputmode="decimal" maxlength="20" placeholder="Ex: 97,00" />
+              </label>
+              <button class="primary" type="submit">Criar teste de 7 dias</button>
+            </form>
+          </section>
+
+          <section class="panel">
+            <h2>Solicitacoes de teste</h2>
+            <div id="ownerRequestsList" class="owner-list"></div>
+          </section>
+        </div>
+
+        <section class="panel owner-companies-panel">
+          <h2>Restaurantes controlados</h2>
+          <div id="ownerCompaniesList" class="owner-list"></div>
+        </section>
       </section>
     </main>
 
@@ -375,6 +467,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
-    <script src="app.js?v=brand-1"></script>
+    <script src="app.js?v=owner-1"></script>
   </body>
 </html>

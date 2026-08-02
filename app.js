@@ -1,5 +1,6 @@
 const STORAGE_KEY = "fila-online-state-v2";
 const MY_TICKET_KEY = "fila-online-my-ticket-v2";
+const OWNER_PIN = "7890";
 
 const params = new URLSearchParams(window.location.search);
 const COMPANY_SLUG = slugify(params.get("empresa") || "restaurante-demo");
@@ -18,13 +19,20 @@ const defaultCompany = {
   queueOpen: true,
   openTime: "16:00",
   closeTime: "19:00",
-  logoUrl: "assets/fila-ai-brand.png",
+  logoUrl: "assets/fila-ai-logo-white.png",
   coverUrl: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=1800&q=80",
   dwell2: 50,
   dwell4: 70,
   dwell6: 90,
   themeMode: "light",
-  accentColor: "#0d6efd"
+  accentColor: "#0d6efd",
+  ownerStatus: "demo",
+  paymentStatus: "sem cobranca",
+  contactName: "",
+  contactPhone: "",
+  monthlyPrice: "",
+  trialStartedAt: null,
+  trialEndsAt: null
 };
 
 const defaultState = {
@@ -52,6 +60,24 @@ let audioContext;
 const elements = {
   landingPage: document.querySelector("#landingPage"),
   appShell: document.querySelector("#appShell"),
+  ownerShell: document.querySelector("#ownerShell"),
+  trialRequestForm: document.querySelector("#trialRequestForm"),
+  trialRestaurantInput: document.querySelector("#trialRestaurantInput"),
+  trialOwnerInput: document.querySelector("#trialOwnerInput"),
+  trialPhoneInput: document.querySelector("#trialPhoneInput"),
+  trialCityInput: document.querySelector("#trialCityInput"),
+  trialRequestMessage: document.querySelector("#trialRequestMessage"),
+  ownerLoginPanel: document.querySelector("#ownerLoginPanel"),
+  ownerPanel: document.querySelector("#ownerPanel"),
+  ownerPinInput: document.querySelector("#ownerPinInput"),
+  ownerLoginButton: document.querySelector("#ownerLoginButton"),
+  ownerRefreshButton: document.querySelector("#ownerRefreshButton"),
+  ownerCreateForm: document.querySelector("#ownerCreateForm"),
+  ownerCompanyNameInput: document.querySelector("#ownerCompanyNameInput"),
+  ownerCompanyPhoneInput: document.querySelector("#ownerCompanyPhoneInput"),
+  ownerMonthlyPriceInput: document.querySelector("#ownerMonthlyPriceInput"),
+  ownerRequestsList: document.querySelector("#ownerRequestsList"),
+  ownerCompaniesList: document.querySelector("#ownerCompaniesList"),
   tabs: document.querySelectorAll(".tab"),
   tabsNav: document.querySelector(".tabs"),
   views: document.querySelectorAll(".view"),
@@ -103,14 +129,27 @@ const elements = {
 boot();
 
 function boot() {
+  bindLandingEvents();
+
+  if (ACCESS_MODE === "dono") {
+    elements.landingPage.hidden = true;
+    elements.appShell.hidden = true;
+    elements.ownerShell.hidden = false;
+    document.documentElement.dataset.theme = "landing";
+    bindOwnerEvents();
+    return;
+  }
+
   if (!ACCESS_MODE) {
     elements.landingPage.hidden = false;
     elements.appShell.hidden = true;
+    elements.ownerShell.hidden = true;
     document.documentElement.dataset.theme = "landing";
     return;
   }
 
   elements.landingPage.hidden = true;
+  elements.ownerShell.hidden = true;
   elements.appShell.hidden = false;
   bindEvents();
   applyAccessMode();
@@ -120,6 +159,236 @@ function boot() {
     refreshFromSupabase();
     subscribeToRealtime();
   }
+}
+
+function bindLandingEvents() {
+  if (!elements.trialRequestForm) return;
+
+  elements.trialRequestForm.addEventListener("submit", submitTrialRequest);
+}
+
+function bindOwnerEvents() {
+  elements.ownerLoginButton.addEventListener("click", () => {
+    if (elements.ownerPinInput.value.trim() !== OWNER_PIN) {
+      alert("PIN do dono incorreto.");
+      return;
+    }
+    elements.ownerLoginPanel.hidden = true;
+    elements.ownerPanel.hidden = false;
+    refreshOwnerDashboard();
+  });
+
+  elements.ownerRefreshButton.addEventListener("click", refreshOwnerDashboard);
+  elements.ownerCreateForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    await createTrialCompany({
+      restaurantName: elements.ownerCompanyNameInput.value.trim(),
+      ownerName: "",
+      phone: elements.ownerCompanyPhoneInput.value.trim(),
+      monthlyPrice: elements.ownerMonthlyPriceInput.value.trim()
+    });
+    elements.ownerCreateForm.reset();
+    await refreshOwnerDashboard();
+  });
+}
+
+async function submitTrialRequest(event) {
+  event.preventDefault();
+
+  const request = {
+    restaurant_name: elements.trialRestaurantInput.value.trim(),
+    owner_name: elements.trialOwnerInput.value.trim(),
+    phone: elements.trialPhoneInput.value.trim(),
+    city: elements.trialCityInput.value.trim(),
+    status: "novo"
+  };
+
+  if (!request.restaurant_name || !hasFullName(request.owner_name) || request.phone.length < 8) {
+    elements.trialRequestMessage.textContent = "Preencha restaurante, nome completo e WhatsApp.";
+    return;
+  }
+
+  if (!db) {
+    elements.trialRequestMessage.textContent = "Banco indisponivel agora. Me chame no WhatsApp para liberar o teste.";
+    return;
+  }
+
+  const { error } = await db.from("trial_requests").insert(request);
+  if (error) {
+    elements.trialRequestMessage.textContent = `Nao consegui enviar: ${error.message}`;
+    return;
+  }
+
+  elements.trialRequestForm.reset();
+  elements.trialRequestMessage.textContent = "Pedido recebido. Voce vai liberar o teste pela central do dono.";
+}
+
+async function refreshOwnerDashboard() {
+  if (!db) {
+    elements.ownerRequestsList.innerHTML = `<p class="muted">Supabase nao configurado.</p>`;
+    elements.ownerCompaniesList.innerHTML = `<p class="muted">Supabase nao configurado.</p>`;
+    return;
+  }
+
+  const [{ data: requests, error: requestsError }, { data: companies, error: companiesError }] = await Promise.all([
+    db.from("trial_requests").select("*").order("created_at", { ascending: false }),
+    db.from("queue_companies").select("*").order("created_at", { ascending: false })
+  ]);
+
+  if (requestsError) {
+    elements.ownerRequestsList.innerHTML = `<p class="muted">Erro: ${escapeHtml(requestsError.message)}</p>`;
+  } else {
+    renderOwnerRequests(requests || []);
+  }
+
+  if (companiesError) {
+    elements.ownerCompaniesList.innerHTML = `<p class="muted">Erro: ${escapeHtml(companiesError.message)}</p>`;
+  } else {
+    renderOwnerCompanies(companies || []);
+  }
+}
+
+function renderOwnerRequests(requests) {
+  if (!requests.length) {
+    elements.ownerRequestsList.innerHTML = `<p class="muted">Nenhum pedido ainda.</p>`;
+    return;
+  }
+
+  elements.ownerRequestsList.innerHTML = requests.map((request) => `
+    <article class="owner-item">
+      <div>
+        <strong>${escapeHtml(request.restaurant_name)}</strong>
+        <span>${escapeHtml(request.owner_name)} - ${escapeHtml(request.phone || "sem telefone")}</span>
+        <small>${escapeHtml(request.city || "cidade nao informada")} - ${formatDate(request.created_at)}</small>
+      </div>
+      <div class="owner-actions">
+        <button type="button" data-owner-action="create" data-request-id="${request.id}">Liberar 7 dias</button>
+        <button type="button" data-owner-action="contact" data-phone="${escapeHtml(request.phone || "")}">WhatsApp</button>
+      </div>
+    </article>
+  `).join("");
+
+  elements.ownerRequestsList.querySelectorAll("button").forEach((button) => {
+    button.addEventListener("click", () => handleOwnerRequestAction(button));
+  });
+}
+
+function renderOwnerCompanies(companies) {
+  if (!companies.length) {
+    elements.ownerCompaniesList.innerHTML = `<p class="muted">Nenhum restaurante criado.</p>`;
+    return;
+  }
+
+  const origin = window.location.origin + window.location.pathname;
+  elements.ownerCompaniesList.innerHTML = companies.map((company) => {
+    const trial = trialStatus(company);
+    const adminUrl = `${origin}?empresa=${encodeURIComponent(company.slug)}&modo=admin`;
+    const filaUrl = `${origin}?empresa=${encodeURIComponent(company.slug)}&modo=fila`;
+    return `
+      <article class="owner-company owner-item">
+        <div>
+          <strong>${escapeHtml(company.name)}</strong>
+          <span>${escapeHtml(company.owner_status || "teste")} - ${escapeHtml(company.payment_status || "pagamento pendente")} - ${trial}</span>
+          <small>PIN admin: ${escapeHtml(company.admin_pin || "1234")} - slug: ${escapeHtml(company.slug)}</small>
+        </div>
+        <div class="link-stack">
+          <a href="${adminUrl}" target="_blank" rel="noreferrer">Admin</a>
+          <a href="${filaUrl}" target="_blank" rel="noreferrer">Fila cliente</a>
+          <button type="button" data-company-action="paid" data-slug="${escapeHtml(company.slug)}">Pago</button>
+          <button type="button" data-company-action="pending" data-slug="${escapeHtml(company.slug)}">Pendente</button>
+          <button type="button" data-company-action="blocked" data-slug="${escapeHtml(company.slug)}">Bloquear</button>
+        </div>
+      </article>
+    `;
+  }).join("");
+
+  elements.ownerCompaniesList.querySelectorAll("button").forEach((button) => {
+    button.addEventListener("click", () => handleOwnerCompanyAction(button));
+  });
+}
+
+async function handleOwnerRequestAction(button) {
+  const action = button.dataset.ownerAction;
+  if (action === "contact") {
+    const digits = (button.dataset.phone || "").replace(/\D/g, "");
+    if (!digits) return alert("Esse pedido nao tem telefone.");
+    window.open(`https://wa.me/55${digits}`, "_blank", "noopener");
+    return;
+  }
+
+  const requestId = button.dataset.requestId;
+  const { data: request, error } = await db.from("trial_requests").select("*").eq("id", requestId).single();
+  if (error) {
+    alert(`Nao consegui abrir pedido: ${error.message}`);
+    return;
+  }
+
+  await createTrialCompany({
+    restaurantName: request.restaurant_name,
+    ownerName: request.owner_name,
+    phone: request.phone,
+    monthlyPrice: ""
+  });
+
+  await db.from("trial_requests").update({ status: "liberado" }).eq("id", requestId);
+  await refreshOwnerDashboard();
+}
+
+async function handleOwnerCompanyAction(button) {
+  const slug = button.dataset.slug;
+  const action = button.dataset.companyAction;
+  const updates = {
+    paid: { owner_status: "ativo", payment_status: "pago" },
+    pending: { owner_status: "teste", payment_status: "pendente" },
+    blocked: { owner_status: "bloqueado", payment_status: "bloqueado", queue_open: false }
+  }[action];
+
+  if (!updates) return;
+
+  const { error } = await db
+    .from("queue_companies")
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq("slug", slug);
+
+  if (error) {
+    alert(`Nao consegui atualizar restaurante: ${error.message}`);
+    return;
+  }
+
+  await refreshOwnerDashboard();
+}
+
+async function createTrialCompany({ restaurantName, ownerName, phone, monthlyPrice }) {
+  if (!restaurantName) {
+    alert("Informe o nome do restaurante.");
+    return;
+  }
+
+  const slug = await uniqueCompanySlug(restaurantName);
+  const now = new Date();
+  const trialEnds = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const adminPin = randomPin();
+  const company = {
+    ...defaultCompany,
+    slug,
+    name: restaurantName,
+    adminPin,
+    ownerStatus: "teste",
+    paymentStatus: "pendente",
+    contactName: ownerName || "",
+    contactPhone: phone || "",
+    monthlyPrice: monthlyPrice || "",
+    trialStartedAt: now.toISOString(),
+    trialEndsAt: trialEnds.toISOString()
+  };
+
+  const { error } = await db.from("queue_companies").insert(toSupabaseCompany(company));
+  if (error) {
+    alert(`Nao consegui criar restaurante: ${error.message}`);
+    return;
+  }
+
+  alert(`Teste criado para ${restaurantName}. PIN admin: ${adminPin}`);
 }
 
 function bindEvents() {
@@ -904,7 +1173,14 @@ function fromSupabaseCompany(company) {
     dwell4: company.dwell_4,
     dwell6: company.dwell_6,
     themeMode: company.theme_mode || "light",
-    accentColor: company.accent_color || "#0d6efd"
+    accentColor: company.accent_color || "#0d6efd",
+    ownerStatus: company.owner_status || "teste",
+    paymentStatus: company.payment_status || "pendente",
+    contactName: company.contact_name || "",
+    contactPhone: company.contact_phone || "",
+    monthlyPrice: company.monthly_price || "",
+    trialStartedAt: company.trial_started_at || null,
+    trialEndsAt: company.trial_ends_at || null
   };
 }
 
@@ -928,7 +1204,14 @@ function toSupabaseCompany(company) {
     dwell_4: company.dwell4,
     dwell_6: company.dwell6,
     theme_mode: company.themeMode,
-    accent_color: company.accentColor
+    accent_color: company.accentColor,
+    owner_status: company.ownerStatus,
+    payment_status: company.paymentStatus,
+    contact_name: company.contactName,
+    contact_phone: company.contactPhone,
+    monthly_price: company.monthlyPrice,
+    trial_started_at: company.trialStartedAt,
+    trial_ends_at: company.trialEndsAt
   };
 }
 
@@ -970,6 +1253,7 @@ function formatDuration(minutes) {
 }
 
 function isQueueAcceptingEntries() {
+  if (!isCompanyCommerciallyActive()) return false;
   if (!state.company.queueOpen) return false;
   return isNowWithinWindow(state.company.openTime, state.company.closeTime);
 }
@@ -985,10 +1269,20 @@ function isNowWithinWindow(openTime, closeTime) {
 }
 
 function queueStatusText() {
+  if (!isCompanyCommerciallyActive()) {
+    return "Fila indisponivel no momento. Procure a recepcao do restaurante.";
+  }
   if (isQueueAcceptingEntries()) {
     return `Fila aberta das ${state.company.openTime} as ${state.company.closeTime}. Entre na lista para acompanhar a previsao.`;
   }
   return `Fila fechada agora. Atendimento da fila das ${state.company.openTime} as ${state.company.closeTime}.`;
+}
+
+function isCompanyCommerciallyActive() {
+  if (state.company.ownerStatus === "bloqueado") return false;
+  if (state.company.paymentStatus === "pago") return true;
+  if (!state.company.trialEndsAt) return true;
+  return new Date(state.company.trialEndsAt).getTime() >= Date.now();
 }
 
 function normalizeUrl(value, fallback) {
@@ -1008,6 +1302,46 @@ function normalizeUrl(value, fallback) {
 
 function normalizeTime(value, fallback) {
   return /^([01]\d|2[0-3]):[0-5]\d$/.test(value || "") ? value : fallback;
+}
+
+async function uniqueCompanySlug(name) {
+  const base = slugify(name);
+  let candidate = base;
+  let suffix = 2;
+
+  while (db) {
+    const { data, error } = await db.from("queue_companies").select("slug").eq("slug", candidate).maybeSingle();
+    if (error) throw error;
+    if (!data) return candidate;
+    candidate = `${base}-${suffix}`;
+    suffix += 1;
+  }
+
+  return candidate;
+}
+
+function randomPin() {
+  return String(Math.floor(1000 + Math.random() * 9000));
+}
+
+function trialStatus(company) {
+  if (!company.trial_ends_at) return "sem data de teste";
+  const diff = new Date(company.trial_ends_at).getTime() - Date.now();
+  const days = Math.ceil(diff / (24 * 60 * 60 * 1000));
+  if (days < 0) return `teste vencido ha ${Math.abs(days)} dia(s)`;
+  if (days === 0) return "teste vence hoje";
+  return `teste vence em ${days} dia(s)`;
+}
+
+function formatDate(value) {
+  if (!value) return "sem data";
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(new Date(value));
 }
 
 function timeToMinutes(value) {
@@ -1047,6 +1381,7 @@ function slugify(value) {
 
 function normalizeAccessMode(value) {
   const mode = slugify(value);
+  if (["dono", "owner", "master", "central"].includes(mode)) return "dono";
   if (["admin", "administrativo", "gestao", "gestor"].includes(mode)) return "admin";
   if (["fila", "cliente", "qr", "publico"].includes(mode)) return "fila";
   return "";

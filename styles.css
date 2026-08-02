@@ -153,6 +153,11 @@ h2 {
   font-size: 0.94rem;
 }
 
+.owner-link {
+  color: rgba(255, 255, 255, 0.46);
+  font-size: 0.82rem;
+}
+
 .nav-cta,
 .landing-button {
   border-radius: 8px;
@@ -228,6 +233,11 @@ h2 {
   color: #fff;
 }
 
+.landing-button.whatsapp {
+  background: #22c55e;
+  color: #041007;
+}
+
 .hero-proof {
   display: flex;
   flex-wrap: wrap;
@@ -244,11 +254,11 @@ h2 {
 
 .hero-media {
   position: relative;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 8px;
   overflow: hidden;
-  background: #050505;
-  box-shadow: 0 34px 90px rgba(0, 0, 0, 0.52);
+  background: #fbf7ef;
+  box-shadow: 0 34px 90px rgba(0, 0, 0, 0.48);
 }
 
 .hero-media::after {
@@ -268,6 +278,8 @@ h2 {
 .hero-media img {
   display: block;
   width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
 }
 
 .landing-section {
@@ -453,6 +465,149 @@ h2 {
   display: grid;
   gap: 18px;
   padding-bottom: 96px;
+}
+
+.trial-section {
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  gap: 28px;
+  align-items: start;
+}
+
+.trial-section h2 {
+  margin-top: 10px;
+  font-size: clamp(2rem, 4vw, 4rem);
+  line-height: 0.96;
+}
+
+.trial-form,
+.owner-form {
+  display: grid;
+  gap: 14px;
+}
+
+.trial-form {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 24px;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.trial-form label {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.trial-form input {
+  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(0, 0, 0, 0.34);
+  color: #fff;
+}
+
+.trial-message {
+  min-height: 22px;
+  color: #ffb25f;
+  font-weight: 750;
+}
+
+.owner-shell {
+  width: min(1180px, calc(100% - 28px));
+  margin: 0 auto;
+  padding: 26px 0 46px;
+  color: #fff;
+}
+
+.owner-hero {
+  min-height: 240px;
+  display: flex;
+  align-items: end;
+  border-radius: 8px;
+  padding: 28px;
+  margin-bottom: 18px;
+  background:
+    linear-gradient(90deg, rgba(3, 4, 5, 0.92), rgba(255, 122, 0, 0.26)),
+    url("assets/fila-ai-logo-white.png") center/cover;
+}
+
+.owner-hero h1 {
+  font-size: clamp(2.5rem, 7vw, 6rem);
+}
+
+.owner-hero p:not(.landing-eyebrow) {
+  max-width: 620px;
+  color: rgba(255, 255, 255, 0.74);
+  line-height: 1.55;
+}
+
+.owner-dashboard {
+  display: grid;
+  gap: 18px;
+}
+
+.owner-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.72fr) minmax(0, 1.28fr);
+  gap: 18px;
+}
+
+.owner-list {
+  display: grid;
+  gap: 10px;
+}
+
+.owner-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px;
+  background: var(--panel);
+}
+
+.owner-item strong,
+.owner-item span,
+.owner-item small {
+  display: block;
+}
+
+.owner-item span {
+  margin-top: 4px;
+  color: var(--muted);
+}
+
+.owner-item small {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.owner-actions,
+.link-stack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: end;
+}
+
+.owner-actions button,
+.link-stack button,
+.link-stack a {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  padding: 0 11px;
+  background: var(--brand-soft);
+  color: var(--brand);
+  font-size: 0.84rem;
+  font-weight: 850;
+}
+
+.link-stack a:first-child {
+  background: var(--brand);
+  color: #fff;
 }
 
 .app-shell {
@@ -982,6 +1137,8 @@ h2 {
   .dashboard-preview,
   .pricing-grid,
   .brand-story,
+  .trial-section,
+  .owner-grid,
   .demo-grid,
   .mini-table-grid {
     grid-template-columns: 1fr;
@@ -1043,7 +1200,13 @@ h2 {
   }
 
   .time-chip,
-  .mini-actions {
+  .mini-actions,
+  .owner-actions,
+  .link-stack {
     grid-column: 1 / -1;
+  }
+
+  .owner-item {
+    grid-template-columns: 1fr;
   }
 }

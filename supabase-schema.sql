@@ -17,13 +17,32 @@ create table if not exists public.queue_companies (
   queue_open boolean not null default true,
   open_time text not null default '16:00',
   close_time text not null default '19:00',
-  logo_url text not null default 'assets/fila-ai-brand.png',
+  logo_url text not null default 'assets/fila-ai-logo-white.png',
   cover_url text not null default 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=1800&q=80',
   dwell_2 integer not null default 50 check (dwell_2 between 15 and 240),
   dwell_4 integer not null default 70 check (dwell_4 between 15 and 240),
   dwell_6 integer not null default 90 check (dwell_6 between 15 and 240),
   theme_mode text not null default 'light' check (theme_mode in ('light', 'dark')),
   accent_color text not null default '#0d6efd' check (accent_color ~ '^#[0-9A-Fa-f]{6}$'),
+  owner_status text not null default 'teste',
+  payment_status text not null default 'pendente',
+  contact_name text not null default '',
+  contact_phone text not null default '',
+  monthly_price text not null default '',
+  trial_started_at timestamptz,
+  trial_ends_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.trial_requests (
+  id uuid primary key default gen_random_uuid(),
+  restaurant_name text not null,
+  owner_name text not null,
+  phone text not null,
+  city text not null default '',
+  status text not null default 'novo',
+  created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
@@ -48,8 +67,16 @@ alter table public.queue_companies
   add column if not exists queue_open boolean not null default true,
   add column if not exists open_time text not null default '16:00',
   add column if not exists close_time text not null default '19:00',
-  add column if not exists logo_url text not null default 'assets/fila-ai-brand.png',
-  add column if not exists cover_url text not null default 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=1800&q=80';
+  add column if not exists logo_url text not null default 'assets/fila-ai-logo-white.png',
+  add column if not exists cover_url text not null default 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=1800&q=80',
+  add column if not exists owner_status text not null default 'teste',
+  add column if not exists payment_status text not null default 'pendente',
+  add column if not exists contact_name text not null default '',
+  add column if not exists contact_phone text not null default '',
+  add column if not exists monthly_price text not null default '',
+  add column if not exists trial_started_at timestamptz,
+  add column if not exists trial_ends_at timestamptz,
+  add column if not exists created_at timestamptz not null default now();
 
 create index if not exists queue_tickets_status_created_idx
   on public.queue_tickets (status, created_at);
@@ -69,10 +96,12 @@ grant usage on schema public to anon;
 grant select, insert, update on public.queue_companies to anon;
 grant select, update on public.queue_settings to anon;
 grant select, insert, update, delete on public.queue_tickets to anon;
+grant select, insert, update on public.trial_requests to anon;
 
 alter table public.queue_companies enable row level security;
 alter table public.queue_settings enable row level security;
 alter table public.queue_tickets enable row level security;
+alter table public.trial_requests enable row level security;
 
 drop policy if exists "Public can read queue companies" on public.queue_companies;
 drop policy if exists "Public can create queue companies" on public.queue_companies;
@@ -83,6 +112,9 @@ drop policy if exists "Public can read queue tickets" on public.queue_tickets;
 drop policy if exists "Public can create queue tickets" on public.queue_tickets;
 drop policy if exists "Public can update queue tickets" on public.queue_tickets;
 drop policy if exists "Public can delete queue tickets" on public.queue_tickets;
+drop policy if exists "Public can read trial requests" on public.trial_requests;
+drop policy if exists "Public can create trial requests" on public.trial_requests;
+drop policy if exists "Public can update trial requests" on public.trial_requests;
 
 create policy "Public can read queue companies"
   on public.queue_companies for select
@@ -131,6 +163,22 @@ create policy "Public can delete queue tickets"
   on public.queue_tickets for delete
   to anon
   using (true);
+
+create policy "Public can read trial requests"
+  on public.trial_requests for select
+  to anon
+  using (true);
+
+create policy "Public can create trial requests"
+  on public.trial_requests for insert
+  to anon
+  with check (true);
+
+create policy "Public can update trial requests"
+  on public.trial_requests for update
+  to anon
+  using (true)
+  with check (true);
 
 do $$
 begin
