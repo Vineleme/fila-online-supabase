@@ -1,7 +1,8 @@
 const STORAGE_KEY = "fila-online-state-v2";
 const MY_TICKET_KEY = "fila-online-my-ticket-v2";
 const ASSETS_BUCKET = "fila-ai-assets";
-const OWNER_PIN = "7890";
+const OWNER_PIN_KEY = "fila-ai-owner-pin";
+const DEFAULT_OWNER_PIN = "7890";
 
 const params = new URLSearchParams(window.location.search);
 const COMPANY_SLUG = slugify(params.get("empresa") || "restaurante-demo");
@@ -34,7 +35,10 @@ const defaultCompany = {
   contactPhone: "",
   monthlyPrice: "",
   trialStartedAt: null,
-  trialEndsAt: null
+  trialEndsAt: null,
+  menuEnabled: false,
+  menuTitle: "Cardápio do restaurante",
+  menuPdfUrl: ""
 };
 
 const defaultState = {
@@ -85,6 +89,10 @@ const elements = {
   ownerCompanyNameInput: document.querySelector("#ownerCompanyNameInput"),
   ownerCompanyPhoneInput: document.querySelector("#ownerCompanyPhoneInput"),
   ownerTrialDaysInput: document.querySelector("#ownerTrialDaysInput"),
+  ownerCurrentPinInput: document.querySelector("#ownerCurrentPinInput"),
+  ownerNewPinInput: document.querySelector("#ownerNewPinInput"),
+  ownerChangePinButton: document.querySelector("#ownerChangePinButton"),
+  ownerPinMessage: document.querySelector("#ownerPinMessage"),
   ownerRequestsList: document.querySelector("#ownerRequestsList"),
   ownerCompaniesList: document.querySelector("#ownerCompaniesList"),
   ownerTokensList: document.querySelector("#ownerTokensList"),
@@ -124,6 +132,10 @@ const elements = {
   companyLogoFileInput: document.querySelector("#companyLogoFileInput"),
   companyCoverFileInput: document.querySelector("#companyCoverFileInput"),
   brandUploadStatus: document.querySelector("#brandUploadStatus"),
+  adminCurrentPinInput: document.querySelector("#adminCurrentPinInput"),
+  adminNewPinInput: document.querySelector("#adminNewPinInput"),
+  changeAdminPinButton: document.querySelector("#changeAdminPinButton"),
+  adminPinMessage: document.querySelector("#adminPinMessage"),
   themeModeInput: document.querySelector("#themeModeInput"),
   queueOpenInput: document.querySelector("#queueOpenInput"),
   openTimeInput: document.querySelector("#openTimeInput"),
@@ -135,6 +147,19 @@ const elements = {
   dwell4Input: document.querySelector("#dwell4Input"),
   dwell6Input: document.querySelector("#dwell6Input"),
   saveCompanyButton: document.querySelector("#saveCompanyButton"),
+  menuEnabledInput: document.querySelector("#menuEnabledInput"),
+  menuTitleInput: document.querySelector("#menuTitleInput"),
+  menuPdfUrlInput: document.querySelector("#menuPdfUrlInput"),
+  menuPdfFileInput: document.querySelector("#menuPdfFileInput"),
+  menuUploadStatus: document.querySelector("#menuUploadStatus"),
+  clientMenuPanel: document.querySelector("#clientMenuPanel"),
+  clientMenuLink: document.querySelector("#clientMenuLink"),
+  clientMenuTitle: document.querySelector("#clientMenuTitle"),
+  queueQrImage: document.querySelector("#queueQrImage"),
+  copyQueueLinkButton: document.querySelector("#copyQueueLinkButton"),
+  openQueueLinkButton: document.querySelector("#openQueueLinkButton"),
+  saveMenuSettingsButton: document.querySelector("#saveMenuSettingsButton"),
+  adminSupportLink: document.querySelector("#adminSupportLink"),
   tableStatus: document.querySelector("#tableStatus"),
   tableHint: document.querySelector("#tableHint"),
   adminAddForm: document.querySelector("#adminAddForm"),
@@ -204,9 +229,30 @@ function bindLandingEvents() {
   elements.trialRequestForm.addEventListener("submit", submitTrialRequest);
 }
 
+function getOwnerPin() {
+  return localStorage.getItem(OWNER_PIN_KEY) || DEFAULT_OWNER_PIN;
+}
+
+function changeOwnerPin() {
+  const current = elements.ownerCurrentPinInput.value.trim();
+  const next = elements.ownerNewPinInput.value.trim();
+  if (current !== getOwnerPin()) {
+    elements.ownerPinMessage.textContent = "PIN atual incorreto.";
+    return;
+  }
+  if (!/^\d{4,8}$/.test(next)) {
+    elements.ownerPinMessage.textContent = "Use um PIN de 4 a 8 números.";
+    return;
+  }
+  localStorage.setItem(OWNER_PIN_KEY, next);
+  elements.ownerCurrentPinInput.value = "";
+  elements.ownerNewPinInput.value = "";
+  elements.ownerPinMessage.textContent = "PIN do dono alterado neste navegador.";
+}
+
 function bindOwnerEvents() {
   elements.ownerLoginButton.addEventListener("click", () => {
-    if (elements.ownerPinInput.value.trim() !== OWNER_PIN) {
+    if (elements.ownerPinInput.value.trim() !== getOwnerPin()) {
       alert("PIN do dono incorreto.");
       return;
     }
@@ -216,6 +262,7 @@ function bindOwnerEvents() {
   });
 
   elements.ownerRefreshButton.addEventListener("click", refreshOwnerDashboard);
+  elements.ownerChangePinButton?.addEventListener("click", changeOwnerPin);
   elements.ownerCreateForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     await createTrialToken({
@@ -251,18 +298,18 @@ async function submitTrialRequest(event) {
 
   const { error } = await db.from("trial_requests").insert(request);
   if (error) {
-    elements.trialRequestMessage.textContent = `Nao consegui enviar: ${error.message}`;
+    elements.trialRequestMessage.textContent = `Não consegui enviar: ${error.message}`;
     return;
   }
 
   elements.trialRequestForm.reset();
-  elements.trialRequestMessage.textContent = "Pedido recebido. Voce vai liberar o teste pela central do dono.";
+  elements.trialRequestMessage.textContent = "Pedido recebido. Você vai liberar o teste pela central do dono.";
 }
 
 async function refreshOwnerDashboard() {
   if (!db) {
-    elements.ownerRequestsList.innerHTML = `<p class="muted">Supabase nao configurado.</p>`;
-    elements.ownerCompaniesList.innerHTML = `<p class="muted">Supabase nao configurado.</p>`;
+    elements.ownerRequestsList.innerHTML = `<p class="muted">Supabase não configurado.</p>`;
+    elements.ownerCompaniesList.innerHTML = `<p class="muted">Supabase não configurado.</p>`;
     return;
   }
 
@@ -314,7 +361,7 @@ function renderOwnerRequests(requests) {
       <div>
         <strong>${escapeHtml(request.restaurant_name)}</strong>
         <span>${escapeHtml(request.owner_name)} - ${escapeHtml(request.phone || "sem telefone")}</span>
-        <small>${escapeHtml(request.city || "cidade nao informada")} - ${formatDate(request.created_at)}</small>
+        <small>${escapeHtml(request.city || "cidade não informada")} - ${formatDate(request.created_at)}</small>
       </div>
       <div class="owner-actions">
         <button type="button" data-owner-action="create" data-request-id="${request.id}">Liberar 7 dias</button>
@@ -340,7 +387,7 @@ function renderOwnerCompanies(companies) {
     const adminUrl = `${origin}?empresa=${encodeURIComponent(company.slug)}&modo=admin`;
     const filaUrl = `${origin}?empresa=${encodeURIComponent(company.slug)}&modo=fila`;
     const contactDigits = String(company.contact_phone || "").replace(/\D/g, "");
-    const notifyMessage = encodeURIComponent(`Sua pagina do FILA AI esta funcionando.\n\nAdmin: ${adminUrl}\nFila do cliente: ${filaUrl}\nPIN: ${company.admin_pin || "1234"}`);
+    const notifyMessage = encodeURIComponent(`Sua página do FILA AI está funcionando.\n\nAdmin: ${adminUrl}\nFila do cliente: ${filaUrl}\nPIN: ${company.admin_pin || "1234"}`);
     const notifyUrl = contactDigits ? `https://api.whatsapp.com/send?phone=55${contactDigits}&text=${notifyMessage}` : "";
     return `
       <article class="owner-company owner-item">
@@ -375,7 +422,7 @@ function renderOwnerTokens(tokens) {
   const origin = window.location.origin + window.location.pathname;
   elements.ownerTokensList.innerHTML = tokens.map((token) => {
     const activationUrl = `${origin}?token=${encodeURIComponent(token.token)}`;
-    const status = token.used_at ? `usado em ${formatDate(token.used_at)}` : "ainda nao usado";
+    const status = token.used_at ? `usado em ${formatDate(token.used_at)}` : "ainda não usado";
     const countdown = token.trial_ends_at ? trialStatus({ trial_ends_at: token.trial_ends_at }) : `${token.trial_days || 7} dias apos ativar`;
     return `
       <article class="owner-item">
@@ -434,7 +481,7 @@ async function handleOwnerRequestAction(button) {
   const action = button.dataset.ownerAction;
   if (action === "contact") {
     const digits = (button.dataset.phone || "").replace(/\D/g, "");
-    if (!digits) return alert("Esse pedido nao tem telefone.");
+    if (!digits) return alert("Esse pedido não tem telefone.");
     window.open(`https://api.whatsapp.com/send?phone=55${digits}`, "_blank", "noopener");
     return;
   }
@@ -442,7 +489,7 @@ async function handleOwnerRequestAction(button) {
   const requestId = button.dataset.requestId;
   const { data: request, error } = await db.from("trial_requests").select("*").eq("id", requestId).single();
   if (error) {
-    alert(`Nao consegui abrir pedido: ${error.message}`);
+    alert(`Não consegui abrir pedido: ${error.message}`);
     return;
   }
 
@@ -465,7 +512,7 @@ async function handleOwnerTokenAction(button) {
     .is("used_at", null);
 
   if (error) {
-    alert(`Nao consegui cancelar token: ${error.message}`);
+    alert(`Não consegui cancelar token: ${error.message}`);
     return;
   }
 
@@ -482,7 +529,7 @@ async function handleOwnerBillingAction(button) {
     .eq("id", id);
 
   if (error) {
-    alert(`Nao consegui atualizar pedido: ${error.message}`);
+    alert(`Não consegui atualizar pedido: ${error.message}`);
     return;
   }
 
@@ -497,7 +544,7 @@ async function handleOwnerBillingAction(button) {
 }
 
 async function createTrialToken({ restaurantName, phone, trialDays }) {
-  if (!db) return alert("Supabase nao configurado.");
+  if (!db) return alert("Supabase não configurado.");
 
   const days = clamp(Number(trialDays || 7), 1, 30);
   const token = generateToken();
@@ -510,7 +557,7 @@ async function createTrialToken({ restaurantName, phone, trialDays }) {
   });
 
   if (error) {
-    alert(`Nao consegui gerar token: ${error.message}`);
+    alert(`Não consegui gerar token: ${error.message}`);
     return;
   }
 
@@ -536,7 +583,7 @@ async function handleOwnerCompanyAction(button) {
     .eq("slug", slug);
 
   if (error) {
-    alert(`Nao consegui atualizar restaurante: ${error.message}`);
+    alert(`Não consegui atualizar restaurante: ${error.message}`);
     return;
   }
 
@@ -569,7 +616,7 @@ async function createTrialCompany({ restaurantName, ownerName, phone, monthlyPri
 
   const { error } = await db.from("queue_companies").insert(toSupabaseCompany(company));
   if (error) {
-    alert(`Nao consegui criar restaurante: ${error.message}`);
+    alert(`Não consegui criar restaurante: ${error.message}`);
     return;
   }
 
@@ -579,7 +626,7 @@ async function createTrialCompany({ restaurantName, ownerName, phone, monthlyPri
 async function loadActivationToken() {
   if (!TRIAL_TOKEN) {
     elements.activationForm.hidden = true;
-    elements.activationMessage.textContent = "Token nao informado.";
+    elements.activationMessage.textContent = "Token não informado.";
     return;
   }
 
@@ -592,7 +639,7 @@ async function loadActivationToken() {
   const { data: token, error } = await db.from("trial_tokens").select("*").eq("token", TRIAL_TOKEN).maybeSingle();
   if (error || !token) {
     elements.activationForm.hidden = true;
-    elements.activationMessage.textContent = "Token invalido ou nao encontrado.";
+    elements.activationMessage.textContent = "Token inválido ou não encontrado.";
     return;
   }
 
@@ -626,7 +673,7 @@ async function activateTrialToken(event) {
 
   const { data: token, error } = await db.from("trial_tokens").select("*").eq("token", TRIAL_TOKEN).maybeSingle();
   if (error || !token || token.status === "cancelado") {
-    elements.activationMessage.textContent = "Token invalido, cancelado ou indisponivel.";
+    elements.activationMessage.textContent = "Token inválido, cancelado ou indisponível.";
     return;
   }
 
@@ -656,7 +703,7 @@ async function activateTrialToken(event) {
 
   const { error: companyError } = await db.from("queue_companies").insert(toSupabaseCompany(company));
   if (companyError) {
-    elements.activationMessage.textContent = `Nao consegui criar restaurante: ${companyError.message}`;
+    elements.activationMessage.textContent = `Não consegui criar restaurante: ${companyError.message}`;
     return;
   }
 
@@ -678,7 +725,7 @@ async function activateTrialToken(event) {
     .is("used_at", null);
 
   if (tokenError) {
-    elements.activationMessage.textContent = `Restaurante criado, mas token nao atualizou: ${tokenError.message}`;
+    elements.activationMessage.textContent = `Restaurante criado, mas o token não atualizou: ${tokenError.message}`;
     return;
   }
 
@@ -714,7 +761,7 @@ function bindEvents() {
     const name = elements.nameInput.value.trim();
     if (!name) return;
     if (!isQueueAcceptingEntries()) {
-      alert(`A fila esta fechada. Horario: ${state.company.openTime} as ${state.company.closeTime}.`);
+      alert(`A fila está fechada. Horário: ${state.company.openTime} às ${state.company.closeTime}.`);
       render();
       return;
     }
@@ -747,7 +794,7 @@ function bindEvents() {
         .single();
 
       if (error) {
-        alert(`Nao consegui cadastrar: ${error.message}`);
+        alert(`Não consegui cadastrar: ${error.message}`);
         return;
       }
 
@@ -792,6 +839,10 @@ function bindEvents() {
   elements.billingRequestForm.addEventListener("submit", submitBillingRequest);
   elements.companyLogoFileInput.addEventListener("change", () => handleBrandFileUpload("logo"));
   elements.companyCoverFileInput.addEventListener("change", () => handleBrandFileUpload("cover"));
+  elements.menuPdfFileInput?.addEventListener("change", handleMenuPdfUpload);
+  elements.saveMenuSettingsButton?.addEventListener("click", saveMenuSettings);
+  elements.copyQueueLinkButton?.addEventListener("click", copyQueueLink);
+  elements.changeAdminPinButton?.addEventListener("click", changeAdminPin);
 
   elements.callNextButton.addEventListener("click", callNextTicket);
   elements.finishCalledButton.addEventListener("click", finishCalledTicket);
@@ -893,7 +944,10 @@ async function saveCompanySettings() {
     dwell4: clamp(Number(elements.dwell4Input.value), 15, 240),
     dwell6: clamp(Number(elements.dwell6Input.value), 15, 240),
     themeMode: elements.themeModeInput.value === "dark" ? "dark" : "light",
-    accentColor: "#0d6efd"
+    accentColor: "#0d6efd",
+    menuEnabled: elements.menuEnabledInput?.checked || false,
+    menuTitle: elements.menuTitleInput?.value.trim() || state.company.menuTitle || "Cardápio do restaurante",
+    menuPdfUrl: normalizeUrl(elements.menuPdfUrlInput?.value, state.company.menuPdfUrl)
   };
 
   state.company = company;
@@ -906,7 +960,7 @@ async function saveCompanySettings() {
       .eq("slug", COMPANY_SLUG);
 
     if (error) {
-      alert(`Nao consegui salvar: ${error.message}`);
+      alert(`Não consegui salvar: ${error.message}`);
       return;
     }
     await refreshFromSupabase();
@@ -915,6 +969,126 @@ async function saveCompanySettings() {
   }
 
   render();
+}
+
+async function saveMenuSettings() {
+  const company = {
+    ...state.company,
+    menuEnabled: Boolean(elements.menuEnabledInput.checked),
+    menuTitle: elements.menuTitleInput.value.trim() || "Cardápio do restaurante",
+    menuPdfUrl: normalizeUrl(elements.menuPdfUrlInput.value, "")
+  };
+
+  state.company = company;
+
+  if (db) {
+    const { error } = await db
+      .from("queue_companies")
+      .update({
+        menu_enabled: company.menuEnabled,
+        menu_title: company.menuTitle,
+        menu_pdf_url: company.menuPdfUrl,
+        updated_at: new Date().toISOString()
+      })
+      .eq("slug", COMPANY_SLUG);
+
+    if (error) {
+      elements.menuUploadStatus.textContent = `Não consegui salvar: ${error.message}`;
+      return;
+    }
+    await refreshFromSupabase();
+  } else {
+    persistLocalState();
+    render();
+  }
+
+  elements.menuUploadStatus.textContent = "Menu salvo. O botão aparece na fila quando estiver ativo e com PDF cadastrado.";
+}
+
+async function handleMenuPdfUpload() {
+  const file = elements.menuPdfFileInput.files?.[0];
+  if (!file) return;
+
+  if (!db) {
+    alert("Upload precisa do Supabase configurado.");
+    elements.menuPdfFileInput.value = "";
+    return;
+  }
+
+  if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+    alert("Escolha um arquivo PDF.");
+    elements.menuPdfFileInput.value = "";
+    return;
+  }
+
+  if (file.size > 10 * 1024 * 1024) {
+    alert("Use um PDF de até 10 MB.");
+    elements.menuPdfFileInput.value = "";
+    return;
+  }
+
+  elements.menuUploadStatus.textContent = "Enviando PDF...";
+  elements.menuPdfFileInput.disabled = true;
+
+  const path = `${COMPANY_SLUG}/menu-${Date.now()}-${slugify(file.name)}.pdf`;
+  const { error } = await db.storage.from(ASSETS_BUCKET).upload(path, file, {
+    cacheControl: "3600",
+    upsert: true,
+    contentType: "application/pdf"
+  });
+
+  elements.menuPdfFileInput.disabled = false;
+  elements.menuPdfFileInput.value = "";
+
+  if (error) {
+    elements.menuUploadStatus.textContent = `Não consegui enviar PDF: ${error.message}`;
+    return;
+  }
+
+  const { data } = db.storage.from(ASSETS_BUCKET).getPublicUrl(path);
+  elements.menuPdfUrlInput.value = data.publicUrl;
+  elements.menuUploadStatus.textContent = "PDF enviado. Clique em Salvar menu para publicar.";
+}
+
+async function copyQueueLink() {
+  await navigator.clipboard.writeText(queueLink()).catch(() => {});
+  elements.copyQueueLinkButton.textContent = "Link copiado";
+  setTimeout(() => {
+    elements.copyQueueLinkButton.textContent = "Copiar link da fila";
+  }, 1800);
+}
+
+async function changeAdminPin() {
+  const current = elements.adminCurrentPinInput.value.trim();
+  const next = elements.adminNewPinInput.value.trim();
+  if (current !== state.company.adminPin) {
+    elements.adminPinMessage.textContent = "PIN atual incorreto.";
+    return;
+  }
+  if (!/^\d{4,8}$/.test(next)) {
+    elements.adminPinMessage.textContent = "Use um PIN de 4 a 8 números.";
+    return;
+  }
+
+  state.company.adminPin = next;
+  if (db) {
+    const { error } = await db
+      .from("queue_companies")
+      .update({ admin_pin: next, updated_at: new Date().toISOString() })
+      .eq("slug", COMPANY_SLUG);
+    if (error) {
+      elements.adminPinMessage.textContent = `Não consegui alterar: ${error.message}`;
+      return;
+    }
+    await refreshFromSupabase();
+  } else {
+    persistLocalState();
+  }
+
+  elements.adminCurrentPinInput.value = "";
+  elements.adminNewPinInput.value = "";
+  elements.pinInput.value = next;
+  elements.adminPinMessage.textContent = "PIN administrativo alterado.";
 }
 
 async function handleBrandFileUpload(type) {
@@ -936,7 +1110,7 @@ async function handleBrandFileUpload(type) {
   }
 
   if (file.size > 5 * 1024 * 1024) {
-    alert("Use uma imagem de ate 5 MB.");
+    alert("Use uma imagem de até 5 MB.");
     fileInput.value = "";
     return;
   }
@@ -958,13 +1132,13 @@ async function handleBrandFileUpload(type) {
 
   if (error) {
     elements.brandUploadStatus.textContent = previousStatus;
-    alert(`Nao consegui enviar imagem: ${error.message}`);
+    alert(`Não consegui enviar imagem: ${error.message}`);
     return;
   }
 
   const { data } = db.storage.from(ASSETS_BUCKET).getPublicUrl(path);
   urlInput.value = data.publicUrl;
-  elements.brandUploadStatus.textContent = "Imagem enviada. Clique em Salvar configuracao para aplicar no restaurante.";
+  elements.brandUploadStatus.textContent = "Imagem enviada. Clique em Salvar configuração para aplicar no restaurante.";
 }
 
 async function addTicketFromAdmin(event) {
@@ -990,7 +1164,7 @@ async function addTicketFromAdmin(event) {
   if (db) {
     const { error } = await db.from("queue_tickets").insert(ticket);
     if (error) {
-      alert(`Nao consegui adicionar: ${error.message}`);
+      alert(`Não consegui adicionar: ${error.message}`);
       return;
     }
     await refreshFromSupabase();
@@ -1019,7 +1193,7 @@ async function callNextTicket() {
       .eq("id", waiting.id);
 
     if (error) {
-      alert(`Nao consegui chamar: ${error.message}`);
+      alert(`Não consegui chamar: ${error.message}`);
       return;
     }
     await changeUsedTables(partyBucket(waiting.partySize), 1);
@@ -1044,7 +1218,7 @@ async function finishCalledTicket() {
   if (db) {
     const { error } = await db.from("queue_tickets").update({ status: "done" }).eq("id", current.id);
     if (error) {
-      alert(`Nao consegui finalizar: ${error.message}`);
+      alert(`Não consegui finalizar: ${error.message}`);
       return;
     }
     await changeUsedTables(partyBucket(current.partySize), -1);
@@ -1065,7 +1239,7 @@ async function resetQueue() {
   if (db) {
     const { error } = await db.from("queue_tickets").delete().eq("company_slug", COMPANY_SLUG);
     if (error) {
-      alert(`Nao consegui limpar: ${error.message}`);
+      alert(`Não consegui limpar: ${error.message}`);
       return;
     }
     localStorage.removeItem(`${MY_TICKET_KEY}-${COMPANY_SLUG}`);
@@ -1087,7 +1261,7 @@ async function handleTicketAction(action, id) {
   if (db) {
     if (action === "call") {
       if (tableAvailabilityFor(partyBucket(ticket.partySize)).available <= 0) {
-        alert("Nao ha mesa livre para esse tamanho de grupo.");
+        alert("Não há mesa livre para esse tamanho de grupo.");
         return;
       }
 
@@ -1096,7 +1270,7 @@ async function handleTicketAction(action, id) {
         .update({ status: "called", called_at: new Date().toISOString() })
         .eq("id", id);
       if (error) {
-        alert(`Nao consegui chamar: ${error.message}`);
+        alert(`Não consegui chamar: ${error.message}`);
         return;
       }
       await changeUsedTables(partyBucket(ticket.partySize), 1);
@@ -1107,7 +1281,7 @@ async function handleTicketAction(action, id) {
     if (action === "done") {
       const { error } = await db.from("queue_tickets").update({ status: "done" }).eq("id", id);
       if (error) {
-        alert(`Nao consegui finalizar: ${error.message}`);
+        alert(`Não consegui finalizar: ${error.message}`);
         return;
       }
       await changeUsedTables(partyBucket(ticket.partySize), -1);
@@ -1119,7 +1293,7 @@ async function handleTicketAction(action, id) {
 
     if (action === "remove") {
       const { error } = await db.from("queue_tickets").delete().eq("id", id);
-      if (error) alert(`Nao consegui remover: ${error.message}`);
+      if (error) alert(`Não consegui remover: ${error.message}`);
       if (state.myTicketId === id) {
         state.myTicketId = null;
         localStorage.removeItem(`${MY_TICKET_KEY}-${COMPANY_SLUG}`);
@@ -1132,7 +1306,7 @@ async function handleTicketAction(action, id) {
 
   if (action === "call") {
     if (tableAvailabilityFor(partyBucket(ticket.partySize)).available <= 0) {
-      alert("Nao ha mesa livre para esse tamanho de grupo.");
+      alert("Não há mesa livre para esse tamanho de grupo.");
       return;
     }
 
@@ -1189,6 +1363,8 @@ function render() {
 
   renderCalledBanner();
   renderBillingStatus();
+  renderClientMenu();
+  renderQueueQr();
   renderMyTicket();
   renderPublicQueue();
   renderAdminQueue();
@@ -1229,7 +1405,7 @@ async function submitBillingRequest(event) {
 
   const { error } = await db.from("subscription_requests").insert(payload);
   if (error) {
-    elements.billingRequestMessage.textContent = `Nao consegui enviar: ${error.message}`;
+    elements.billingRequestMessage.textContent = `Não consegui enviar: ${error.message}`;
     return;
   }
 
@@ -1238,7 +1414,7 @@ async function submitBillingRequest(event) {
     .update({ payment_status: "solicitado", updated_at: new Date().toISOString() })
     .eq("slug", state.company.slug);
 
-  elements.billingRequestMessage.textContent = "Pedido enviado. O FILA AÍ vai chamar voce para finalizar pagamento e contrato.";
+  elements.billingRequestMessage.textContent = "Pedido enviado. O FILA AÍ vai chamar você para finalizar pagamento e contrato.";
   await refreshFromSupabase();
 }
 
@@ -1256,6 +1432,27 @@ function fillCompanyForm() {
   elements.closeTimeInput.value = state.company.closeTime;
   elements.companyLogoUrlInput.value = state.company.logoUrl || "";
   elements.companyCoverUrlInput.value = state.company.coverUrl || "";
+  if (elements.menuEnabledInput) elements.menuEnabledInput.checked = Boolean(state.company.menuEnabled);
+  if (elements.menuTitleInput) elements.menuTitleInput.value = state.company.menuTitle || "Cardápio do restaurante";
+  if (elements.menuPdfUrlInput) elements.menuPdfUrlInput.value = state.company.menuPdfUrl || "";
+}
+
+function renderClientMenu() {
+  if (!elements.clientMenuPanel) return;
+  const menuUrl = normalizeUrl(state.company.menuPdfUrl, "");
+  const showMenu = Boolean(state.company.menuEnabled && menuUrl);
+  elements.clientMenuPanel.hidden = !showMenu;
+  if (!showMenu) return;
+  elements.clientMenuLink.href = menuUrl;
+  elements.clientMenuTitle.textContent = state.company.menuTitle || "Cardápio do restaurante";
+}
+
+function renderQueueQr() {
+  if (!elements.queueQrImage || !elements.openQueueLinkButton) return;
+  const filaUrl = queueLink();
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=320x320&margin=12&data=${encodeURIComponent(filaUrl)}`;
+  elements.queueQrImage.src = qrUrl;
+  elements.openQueueLinkButton.href = filaUrl;
 }
 
 function renderCompanyBrand() {
@@ -1278,7 +1475,7 @@ function renderCalledBanner() {
   elements.calledBanner.hidden = !shouldShow;
   if (!shouldShow) return;
   elements.calledName.textContent = `${formatNumber(myTicket.number)} - ${myTicket.name}`;
-  elements.calledService.textContent = "Voce tem 10 minutos para comparecer a recepcao. Fique atento.";
+  elements.calledService.textContent = "Você tem 10 minutos para comparecer à recepção. Fique atento.";
 }
 
 function renderMyTicket() {
@@ -1304,7 +1501,7 @@ function renderMyTicket() {
   const wait = estimateWait(ticket);
   const statusText = ticket.status === "called" ? "Sua vez chegou" : ticket.status === "done" ? "Finalizado" : "Aguardando";
   const calledNotice = ticket.status === "called"
-    ? `<p class="called-note">Sua vez chegou. Voce tem 10 minutos para comparecer a recepcao.</p>`
+    ? `<p class="called-note">Sua vez chegou. Você tem 10 minutos para comparecer à recepção.</p>`
     : "";
 
   elements.myTicket.innerHTML = `
@@ -1551,7 +1748,7 @@ async function changeUsedTables(bucket, delta) {
     .eq("slug", COMPANY_SLUG);
 
   if (error) {
-    alert(`Nao consegui atualizar mesas: ${error.message}`);
+    alert(`Não consegui atualizar mesas: ${error.message}`);
   }
 }
 
@@ -1596,7 +1793,10 @@ function fromSupabaseCompany(company) {
     contactPhone: company.contact_phone || "",
     monthlyPrice: company.monthly_price || "",
     trialStartedAt: company.trial_started_at || null,
-    trialEndsAt: company.trial_ends_at || null
+    trialEndsAt: company.trial_ends_at || null,
+    menuEnabled: company.menu_enabled || false,
+    menuTitle: company.menu_title || "Cardápio do restaurante",
+    menuPdfUrl: company.menu_pdf_url || ""
   };
 }
 
@@ -1627,7 +1827,10 @@ function toSupabaseCompany(company) {
     contact_phone: company.contactPhone,
     monthly_price: company.monthlyPrice,
     trial_started_at: company.trialStartedAt,
-    trial_ends_at: company.trialEndsAt
+    trial_ends_at: company.trialEndsAt,
+    menu_enabled: company.menuEnabled || false,
+    menu_title: company.menuTitle || "Cardápio do restaurante",
+    menu_pdf_url: company.menuPdfUrl || ""
   };
 }
 
@@ -1686,12 +1889,12 @@ function isNowWithinWindow(openTime, closeTime) {
 
 function queueStatusText() {
   if (!isCompanyCommerciallyActive()) {
-    return "Fila indisponivel no momento. Procure a recepcao do restaurante.";
+    return "Fila indisponível no momento. Procure a recepção do restaurante.";
   }
   if (isQueueAcceptingEntries()) {
-    return `Fila aberta das ${state.company.openTime} as ${state.company.closeTime}. Entre na lista para acompanhar a previsao.`;
+    return `Fila aberta das ${state.company.openTime} às ${state.company.closeTime}. Entre na lista para acompanhar a previsão.`;
   }
-  return `Reservas indisponiveis no momento. Tente novamente no proximo horario de atendimento, das ${state.company.openTime} as ${state.company.closeTime}. Obrigado.`;
+  return `Reservas indisponíveis no momento. Tente novamente no próximo horário de atendimento, das ${state.company.openTime} às ${state.company.closeTime}. Obrigado.`;
 }
 
 function isCompanyCommerciallyActive() {
@@ -1718,6 +1921,10 @@ function normalizeUrl(value, fallback) {
 
 function normalizeTime(value, fallback) {
   return /^([01]\d|2[0-3]):[0-5]\d$/.test(value || "") ? value : fallback;
+}
+
+function queueLink() {
+  return `${window.location.origin + window.location.pathname}?empresa=${encodeURIComponent(COMPANY_SLUG)}&modo=fila`;
 }
 
 async function uniqueCompanySlug(name) {

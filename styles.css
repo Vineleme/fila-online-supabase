@@ -471,6 +471,69 @@ h2 {
   font-size: 1.6rem;
 }
 
+.single-offer {
+  display: grid;
+  justify-items: center;
+}
+
+.offer-card {
+  display: grid;
+  width: min(920px, 100%);
+  grid-template-columns: minmax(0, 0.9fr) minmax(280px, 1fr);
+  gap: 24px;
+  align-items: center;
+  border: 1px solid rgba(255, 122, 0, 0.34);
+  border-radius: 8px;
+  padding: clamp(22px, 4vw, 38px);
+  background:
+    linear-gradient(135deg, rgba(255, 122, 0, 0.18), rgba(34, 197, 94, 0.08)),
+    rgba(255, 255, 255, 0.06);
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.34);
+}
+
+.offer-card h3 {
+  margin: 8px 0 12px;
+  color: #fff;
+  font-size: clamp(2rem, 5vw, 4rem);
+  line-height: 0.95;
+}
+
+.offer-card strong {
+  display: block;
+  color: #22c55e;
+  font-size: clamp(2.2rem, 6vw, 4.6rem);
+  line-height: 1;
+}
+
+.offer-card span {
+  display: block;
+  margin-top: 12px;
+  color: rgba(255, 255, 255, 0.76);
+  line-height: 1.5;
+}
+
+.offer-card ul {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.offer-card li {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.07);
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 720;
+}
+
+.offer-card .landing-button {
+  grid-column: 1 / -1;
+  width: fit-content;
+}
+
 .featured-plan {
   border-color: rgba(255, 122, 0, 0.58) !important;
   background: rgba(255, 122, 0, 0.1) !important;
@@ -1448,6 +1511,117 @@ html[data-access-mode="admin"] #adminQueuePanel.is-active {
   font-size: 1rem;
 }
 
+.pin-box,
+.qr-panel,
+.menu-admin-panel {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.pin-box {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  background: var(--brand-soft);
+}
+
+.pin-box h3,
+.qr-panel h3 {
+  margin: 0;
+}
+
+.switch-row {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 42px;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 12px;
+  background: var(--panel);
+  color: var(--ink);
+  font-weight: 850;
+}
+
+.switch-row input {
+  width: 20px;
+  min-height: 20px;
+  accent-color: var(--brand);
+}
+
+.client-menu-panel {
+  margin-top: 16px;
+}
+
+.client-menu-button {
+  display: grid;
+  gap: 3px;
+  border: 1px solid rgba(34, 197, 94, 0.44);
+  border-radius: 8px;
+  padding: 16px 18px;
+  background: linear-gradient(135deg, #22c55e, #84cc16);
+  color: #041007;
+  text-align: center;
+  box-shadow: 0 18px 42px rgba(34, 197, 94, 0.26);
+}
+
+.client-menu-button span {
+  font-size: 1.1rem;
+  font-weight: 950;
+}
+
+.client-menu-button small {
+  color: rgba(4, 16, 7, 0.76);
+  font-weight: 780;
+}
+
+.qr-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 168px;
+  gap: 18px;
+  align-items: center;
+  padding: 16px;
+  background: var(--brand-soft);
+}
+
+.qr-panel img {
+  width: 168px;
+  height: 168px;
+  border: 8px solid #fff;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.qr-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.ghost-link,
+.support-button {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  padding: 0 14px;
+  font-weight: 850;
+}
+
+.ghost-link {
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.support-button {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: #041007;
+  box-shadow: 0 16px 34px rgba(34, 197, 94, 0.24);
+}
+
 .billing-panel {
   width: min(100%, 980px);
   grid-template-columns: minmax(0, 1fr) minmax(220px, 320px);
@@ -1492,6 +1666,7 @@ html[data-access-mode="admin"] #adminQueuePanel.is-active {
   .split-section,
   .dashboard-preview,
   .pricing-grid,
+  .offer-card,
   .brand-story,
   .trial-section,
   .owner-grid,
@@ -1576,6 +1751,7 @@ html[data-access-mode="admin"] #adminQueuePanel.is-active {
   .stats,
   .layout,
   .billing-panel,
+  .qr-panel,
   #adminQueuePanel.is-active,
   .ticket-grid,
   .admin-actions,
@@ -1583,6 +1759,14 @@ html[data-access-mode="admin"] #adminQueuePanel.is-active {
   .brand-config,
   .table-status {
     grid-template-columns: 1fr;
+  }
+
+  .offer-card .landing-button {
+    width: 100%;
+  }
+
+  .qr-panel img {
+    justify-self: center;
   }
 
   .admin-tabs {

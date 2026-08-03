@@ -31,6 +31,9 @@ create table if not exists public.queue_companies (
   monthly_price text not null default '',
   trial_started_at timestamptz,
   trial_ends_at timestamptz,
+  menu_enabled boolean not null default false,
+  menu_title text not null default 'Cardápio do restaurante',
+  menu_pdf_url text not null default '',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -78,8 +81,8 @@ values (
   'fila-ai-assets',
   'fila-ai-assets',
   true,
-  5242880,
-  array['image/png', 'image/jpeg', 'image/webp', 'image/gif']
+  10485760,
+  array['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'application/pdf']
 )
 on conflict (id) do update
 set
@@ -117,6 +120,9 @@ alter table public.queue_companies
   add column if not exists monthly_price text not null default '',
   add column if not exists trial_started_at timestamptz,
   add column if not exists trial_ends_at timestamptz,
+  add column if not exists menu_enabled boolean not null default false,
+  add column if not exists menu_title text not null default 'Cardápio do restaurante',
+  add column if not exists menu_pdf_url text not null default '',
   add column if not exists created_at timestamptz not null default now();
 
 create index if not exists queue_tickets_status_created_idx
