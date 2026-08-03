@@ -262,6 +262,7 @@ function bindLandingEvents() {
 function bindAccessEvents() {
   elements.accessForm?.addEventListener("submit", handleAccessLogin);
   fillSavedAccess();
+  trySavedAccessLogin();
 }
 
 function getOwnerPin() {
@@ -340,7 +341,7 @@ async function handleAccessLogin(event) {
       return;
     }
 
-    saveAccessChoice("owner", ownerAccount?.slug || user, passwordHash);
+    saveAccessChoice("owner", rawUser, passwordHash);
     sessionStorage.setItem(OWNER_AUTH_KEY, getOwnerPin());
     window.location.href = `${window.location.pathname}?modo=dono`;
     return;
@@ -2139,6 +2140,51 @@ function fillSavedAccess() {
   } catch {
     localStorage.removeItem(SAVED_ACCESS_KEY);
   }
+}
+
+async function trySavedAccessLogin() {
+  let saved;
+  try {
+    saved = JSON.parse(localStorage.getItem(SAVED_ACCESS_KEY) || "null");
+  } catch {
+    localStorage.removeItem(SAVED_ACCESS_KEY);
+    return;
+  }
+
+  if (!saved?.user || !saved?.passwordHash) return;
+  elements.accessMessage.textContent = "Entrando com acesso salvo...";
+
+  try {
+    if (saved.type === "owner") {
+      const ownerAccount = await findOwnerAccount(saved.user);
+      if (ownerAccount?.admin_pin === saved.passwordHash) {
+        sessionStorage.setItem(OWNER_AUTH_KEY, getOwnerPin());
+        window.location.href = `${window.location.pathname}?modo=dono`;
+        return;
+      }
+    }
+
+    if (saved.type === "restaurant") {
+      const { data, error } = await db
+        .from("queue_companies")
+        .select("slug, admin_pin")
+        .eq("slug", saved.user)
+        .maybeSingle();
+      if (error) throw error;
+      if (data?.admin_pin === saved.passwordHash) {
+        sessionStorage.setItem(adminAuthKey(data.slug), data.admin_pin);
+        window.location.href = `${window.location.pathname}?empresa=${encodeURIComponent(data.slug)}&modo=admin`;
+        return;
+      }
+    }
+  } catch {
+    // If saved access cannot be checked, keep the manual login available.
+  }
+
+  localStorage.removeItem(SAVED_ACCESS_KEY);
+  elements.accessPasswordInput.value = "";
+  elements.accessRememberInput.checked = false;
+  elements.accessMessage.textContent = "Acesso salvo expirou. Entre novamente.";
 }
 
 function adminAuthKey(slug) {
