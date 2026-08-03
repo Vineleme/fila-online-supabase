@@ -75,6 +75,7 @@ const elements = {
   accessForm: document.querySelector("#accessForm"),
   accessUserInput: document.querySelector("#accessUserInput"),
   accessPasswordInput: document.querySelector("#accessPasswordInput"),
+  toggleAccessPasswordButton: document.querySelector("#toggleAccessPasswordButton"),
   accessRememberInput: document.querySelector("#accessRememberInput"),
   accessMessage: document.querySelector("#accessMessage"),
   activationForm: document.querySelector("#activationForm"),
@@ -261,8 +262,15 @@ function bindLandingEvents() {
 
 function bindAccessEvents() {
   elements.accessForm?.addEventListener("submit", handleAccessLogin);
+  elements.toggleAccessPasswordButton?.addEventListener("click", toggleAccessPassword);
   fillSavedAccess();
   trySavedAccessLogin();
+}
+
+function toggleAccessPassword() {
+  const isHidden = elements.accessPasswordInput.type === "password";
+  elements.accessPasswordInput.type = isHidden ? "text" : "password";
+  elements.toggleAccessPasswordButton.textContent = isHidden ? "Esconder" : "Mostrar";
 }
 
 function getOwnerPin() {

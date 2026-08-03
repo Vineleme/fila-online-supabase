@@ -14,7 +14,7 @@
     <link rel="icon" type="image/png" sizes="48x48" href="assets/icons/icon-48.png?v=icon-2" />
     <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/icon-180.png?v=icon-2" />
     <link rel="manifest" href="site.webmanifest?v=icon-2" />
-    <link rel="stylesheet" href="styles.css?v=account-login-2" />
+    <link rel="stylesheet" href="styles.css?v=login-toggle-1" />
   </head>
   <body>
     <main id="landingPage" class="landing-shell">
@@ -245,7 +245,10 @@
           </label>
           <label>
             Senha
-            <input id="accessPasswordInput" type="password" autocomplete="current-password" placeholder="Senha" />
+            <span class="password-field">
+              <input id="accessPasswordInput" type="password" autocomplete="current-password" placeholder="Senha" />
+              <button id="toggleAccessPasswordButton" type="button">Mostrar</button>
+            </span>
           </label>
           <label class="remember-row">
             <input id="accessRememberInput" type="checkbox" />
@@ -673,6 +676,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
-    <script src="app.js?v=account-login-2"></script>
+    <script src="app.js?v=login-toggle-1"></script>
   </body>
 </html>
