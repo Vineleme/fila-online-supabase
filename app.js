@@ -1414,7 +1414,7 @@ async function submitBillingRequest(event) {
     .update({ payment_status: "solicitado", updated_at: new Date().toISOString() })
     .eq("slug", state.company.slug);
 
-  elements.billingRequestMessage.textContent = "Pedido enviado. O FILA AÍ vai chamar você para finalizar pagamento e contrato.";
+  elements.billingRequestMessage.textContent = "Pedido enviado. O FILA AÍ vai chamar você para finalizar o pagamento.";
   await refreshFromSupabase();
 }
 
