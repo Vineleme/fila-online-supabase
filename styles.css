@@ -861,6 +861,22 @@ html:has(.access-shell:not([hidden])) body {
   color: #fff;
 }
 
+.remember-row {
+  display: flex;
+  min-height: 34px;
+  align-items: center;
+  gap: 10px;
+  color: rgba(255, 255, 255, 0.74);
+  font-size: 0.9rem;
+  font-weight: 750;
+}
+
+.remember-row input {
+  width: 18px;
+  min-height: 18px;
+  accent-color: #22c55e;
+}
+
 .access-card .primary {
   background: linear-gradient(135deg, #f59e0b, #22c55e);
   color: #050505;

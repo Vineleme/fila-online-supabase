@@ -4,6 +4,7 @@ const ASSETS_BUCKET = "fila-ai-assets";
 const OWNER_PIN_KEY = "fila-ai-owner-pin";
 const OWNER_AUTH_KEY = "fila-ai-owner-auth";
 const ADMIN_AUTH_PREFIX = "fila-ai-admin-auth";
+const SAVED_ACCESS_KEY = "fila-ai-saved-access";
 const DEFAULT_OWNER_PIN = "7890";
 
 const params = new URLSearchParams(window.location.search);
@@ -74,6 +75,7 @@ const elements = {
   accessForm: document.querySelector("#accessForm"),
   accessUserInput: document.querySelector("#accessUserInput"),
   accessPasswordInput: document.querySelector("#accessPasswordInput"),
+  accessRememberInput: document.querySelector("#accessRememberInput"),
   accessMessage: document.querySelector("#accessMessage"),
   activationForm: document.querySelector("#activationForm"),
   activationRestaurantInput: document.querySelector("#activationRestaurantInput"),
@@ -96,6 +98,11 @@ const elements = {
   ownerCompanyNameInput: document.querySelector("#ownerCompanyNameInput"),
   ownerCompanyPhoneInput: document.querySelector("#ownerCompanyPhoneInput"),
   ownerTrialDaysInput: document.querySelector("#ownerTrialDaysInput"),
+  ownerAccountForm: document.querySelector("#ownerAccountForm"),
+  ownerAccountUserInput: document.querySelector("#ownerAccountUserInput"),
+  ownerAccountPasswordInput: document.querySelector("#ownerAccountPasswordInput"),
+  ownerAccountNameInput: document.querySelector("#ownerAccountNameInput"),
+  ownerAccountMessage: document.querySelector("#ownerAccountMessage"),
   ownerCurrentPinInput: document.querySelector("#ownerCurrentPinInput"),
   ownerNewPinInput: document.querySelector("#ownerNewPinInput"),
   ownerChangePinButton: document.querySelector("#ownerChangePinButton"),
@@ -254,6 +261,7 @@ function bindLandingEvents() {
 
 function bindAccessEvents() {
   elements.accessForm?.addEventListener("submit", handleAccessLogin);
+  fillSavedAccess();
 }
 
 function getOwnerPin() {
@@ -307,11 +315,13 @@ function bindOwnerEvents() {
     elements.ownerCreateForm.reset();
     await refreshOwnerDashboard();
   });
+  elements.ownerAccountForm?.addEventListener("submit", createRestaurantAccount);
 }
 
 async function handleAccessLogin(event) {
   event.preventDefault();
-  const user = slugify(elements.accessUserInput.value);
+  const rawUser = elements.accessUserInput.value.trim();
+  const user = slugify(rawUser);
   const password = elements.accessPasswordInput.value.trim();
 
   if (!user || !password) {
@@ -319,21 +329,27 @@ async function handleAccessLogin(event) {
     return;
   }
 
-  if (["dono", "owner", "fila-ai"].includes(user)) {
-    if (password !== getOwnerPin()) {
+  const passwordHash = await sha256(password);
+  const ownerAccount = await findOwnerAccount(rawUser);
+  if (ownerAccount || ["dono", "owner", "fila-ai"].includes(user)) {
+    const ownerPasswordOk = ownerAccount
+      ? passwordHash === ownerAccount.admin_pin
+      : password === getOwnerPin();
+    if (!ownerPasswordOk) {
       elements.accessMessage.textContent = "Usuário ou senha incorretos.";
       return;
     }
 
-    sessionStorage.setItem(OWNER_AUTH_KEY, password);
+    saveAccessChoice("owner", ownerAccount?.slug || user, passwordHash);
+    sessionStorage.setItem(OWNER_AUTH_KEY, getOwnerPin());
     window.location.href = `${window.location.pathname}?modo=dono`;
     return;
   }
 
-  await handleRestaurantAccess(user, password);
+  await handleRestaurantAccess(user, password, passwordHash);
 }
 
-async function handleRestaurantAccess(slug, pin) {
+async function handleRestaurantAccess(slug, password, passwordHash) {
   elements.accessMessage.textContent = "Validando acesso...";
 
   try {
@@ -355,16 +371,59 @@ async function handleRestaurantAccess(slug, pin) {
       return;
     }
 
-    if (pin !== adminPin) {
+    if (password !== adminPin && passwordHash !== adminPin) {
       elements.accessMessage.textContent = "Usuário ou senha incorretos.";
       return;
     }
 
-    sessionStorage.setItem(adminAuthKey(slug), pin);
+    saveAccessChoice("restaurant", slug, passwordHash);
+    sessionStorage.setItem(adminAuthKey(slug), adminPin);
     window.location.href = `${window.location.pathname}?empresa=${encodeURIComponent(slug)}&modo=admin`;
   } catch (error) {
     elements.accessMessage.textContent = `Não consegui validar: ${error.message}`;
   }
+}
+
+async function createRestaurantAccount(event) {
+  event.preventDefault();
+  const slug = slugify(elements.ownerAccountUserInput.value);
+  const password = elements.ownerAccountPasswordInput.value.trim();
+  const restaurantName = elements.ownerAccountNameInput.value.trim() || titleFromSlug(slug);
+
+  if (!slug || password.length < 4) {
+    elements.ownerAccountMessage.textContent = "Informe usuário e senha com pelo menos 4 caracteres.";
+    return;
+  }
+
+  const passwordHash = await sha256(password);
+  const company = {
+    ...defaultCompany,
+    slug,
+    name: restaurantName,
+    adminPin: passwordHash,
+    ownerStatus: "teste",
+    paymentStatus: "pendente",
+    trialStartedAt: new Date().toISOString(),
+    trialEndsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+  };
+
+  if (!db) {
+    elements.ownerAccountMessage.textContent = "Supabase indisponível agora.";
+    return;
+  }
+
+  const { error } = await db
+    .from("queue_companies")
+    .upsert(toSupabaseCompany(company), { onConflict: "slug" });
+
+  if (error) {
+    elements.ownerAccountMessage.textContent = `Não consegui criar: ${error.message}`;
+    return;
+  }
+
+  elements.ownerAccountForm.reset();
+  elements.ownerAccountMessage.textContent = `Conta criada. Usuário: ${slug}`;
+  await refreshOwnerDashboard();
 }
 
 async function submitTrialRequest(event) {
@@ -468,6 +527,7 @@ function renderOwnerRequests(requests) {
 }
 
 function renderOwnerCompanies(companies) {
+  companies = companies.filter((company) => company.owner_status !== "dono");
   if (!companies.length) {
     elements.ownerCompaniesList.innerHTML = `<p class="muted">Nenhum restaurante criado.</p>`;
     return;
@@ -479,14 +539,14 @@ function renderOwnerCompanies(companies) {
     const adminUrl = `${origin}?empresa=${encodeURIComponent(company.slug)}&modo=admin`;
     const filaUrl = `${origin}?empresa=${encodeURIComponent(company.slug)}&modo=fila`;
     const contactDigits = whatsappPhone(company.contact_phone);
-    const notifyMessage = encodeURIComponent(`Sua página do FILA AÍ está funcionando.\n\nAdministrador: ${adminUrl}\nFila do cliente: ${filaUrl}\nPIN do administrador: ${company.admin_pin || "1234"}`);
+    const notifyMessage = encodeURIComponent(`Sua página do FILA AÍ está funcionando.\n\nAdministrador: ${adminUrl}\nFila do cliente: ${filaUrl}\nUsuário: ${company.slug}`);
     const notifyUrl = contactDigits ? `https://api.whatsapp.com/send?phone=${contactDigits}&text=${notifyMessage}` : "";
     return `
       <article class="owner-company owner-item">
         <div>
           <strong>${escapeHtml(company.name)}</strong>
           <span>${escapeHtml(company.owner_status || "teste")} - ${escapeHtml(company.payment_status || "pagamento pendente")} - ${trial}</span>
-          <small>PIN do administrador: ${escapeHtml(company.admin_pin || "1234")} - identificador do link: ${escapeHtml(company.slug)}</small>
+          <small>Usuário do restaurante: ${escapeHtml(company.slug)}</small>
         </div>
         <div class="link-stack">
           <a href="${adminUrl}" target="_blank" rel="noreferrer">Administrador</a>
@@ -910,8 +970,10 @@ function bindEvents() {
     elements.myTicket.scrollIntoView({ behavior: "smooth", block: "start" });
   });
 
-  elements.loginButton.addEventListener("click", () => {
-    if (elements.pinInput.value.trim() !== state.company.adminPin) {
+  elements.loginButton.addEventListener("click", async () => {
+    const pin = elements.pinInput.value.trim();
+    const pinHash = await sha256(pin);
+    if (pin !== state.company.adminPin && pinHash !== state.company.adminPin) {
       alert("PIN incorreto. PIN inicial: 1234");
       return;
     }
@@ -1166,20 +1228,22 @@ async function copyQueueLink() {
 async function changeAdminPin() {
   const current = elements.adminCurrentPinInput.value.trim();
   const next = elements.adminNewPinInput.value.trim();
-  if (current !== state.company.adminPin) {
+  const currentHash = await sha256(current);
+  if (current !== state.company.adminPin && currentHash !== state.company.adminPin) {
     elements.adminPinMessage.textContent = "PIN atual incorreto.";
     return;
   }
-  if (!/^\d{4,8}$/.test(next)) {
-    elements.adminPinMessage.textContent = "Use um PIN de 4 a 8 números.";
+  if (next.length < 4) {
+    elements.adminPinMessage.textContent = "Use uma senha com pelo menos 4 caracteres.";
     return;
   }
 
-  state.company.adminPin = next;
+  const nextHash = await sha256(next);
+  state.company.adminPin = nextHash;
   if (db) {
     const { error } = await db
       .from("queue_companies")
-      .update({ admin_pin: next, updated_at: new Date().toISOString() })
+      .update({ admin_pin: nextHash, updated_at: new Date().toISOString() })
       .eq("slug", COMPANY_SLUG);
     if (error) {
       elements.adminPinMessage.textContent = `Não consegui alterar: ${error.message}`;
@@ -1192,7 +1256,7 @@ async function changeAdminPin() {
 
   elements.adminCurrentPinInput.value = "";
   elements.adminNewPinInput.value = "";
-  elements.pinInput.value = next;
+  elements.pinInput.value = "";
   elements.adminPinMessage.textContent = "PIN administrativo alterado.";
 }
 
@@ -2034,6 +2098,49 @@ function whatsappPhone(value) {
   return digits.startsWith("55") ? digits : `55${digits}`;
 }
 
+async function sha256(value) {
+  const data = new TextEncoder().encode(String(value));
+  const hash = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(hash), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+async function findOwnerAccount(user) {
+  if (!db) return null;
+  const slug = slugify(user);
+  const { data, error } = await db
+    .from("queue_companies")
+    .select("slug, admin_pin, owner_status")
+    .eq("slug", slug)
+    .maybeSingle();
+  if (error) throw error;
+  return data?.owner_status === "dono" ? data : null;
+}
+
+function saveAccessChoice(type, user, passwordHash) {
+  if (!elements.accessRememberInput?.checked) {
+    localStorage.removeItem(SAVED_ACCESS_KEY);
+    return;
+  }
+
+  localStorage.setItem(SAVED_ACCESS_KEY, JSON.stringify({
+    type,
+    user,
+    passwordHash,
+    savedAt: new Date().toISOString()
+  }));
+}
+
+function fillSavedAccess() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(SAVED_ACCESS_KEY) || "null");
+    if (!saved?.user) return;
+    elements.accessUserInput.value = saved.user;
+    elements.accessRememberInput.checked = true;
+  } catch {
+    localStorage.removeItem(SAVED_ACCESS_KEY);
+  }
+}
+
 function adminAuthKey(slug) {
   return `${ADMIN_AUTH_PREFIX}-${slug}`;
 }
@@ -2147,6 +2254,14 @@ function slugify(value) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 60) || "restaurante-demo";
+}
+
+function titleFromSlug(value) {
+  return String(value || "Restaurante")
+    .split("-")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }
 
 function normalizeAccessMode(value) {

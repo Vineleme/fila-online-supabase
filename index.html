@@ -14,7 +14,7 @@
     <link rel="icon" type="image/png" sizes="48x48" href="assets/icons/icon-48.png?v=icon-2" />
     <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/icon-180.png?v=icon-2" />
     <link rel="manifest" href="site.webmanifest?v=icon-2" />
-    <link rel="stylesheet" href="styles.css?v=single-login-1" />
+    <link rel="stylesheet" href="styles.css?v=account-login-1" />
   </head>
   <body>
     <main id="landingPage" class="landing-shell">
@@ -233,8 +233,7 @@
           <img src="assets/fila-ai-wordmark-outline.png" alt="FILA AÍ" />
         </a>
         <p class="landing-eyebrow">Área administrativa</p>
-        <h1>Entre na área administrativa.</h1>
-        <p>Digite seu usuário e senha. O dono acessa a central de restaurantes e cada restaurante acessa o próprio painel de fila, mesas, QR Code, cardápio e visualização do cliente.</p>
+        <h1>Área administrativa.</h1>
       </section>
 
       <section class="access-grid single-access-grid">
@@ -242,11 +241,15 @@
           <h2>Login administrativo</h2>
           <label>
             Usuário
-            <input id="accessUserInput" autocomplete="username" placeholder="dono ou restaurante-demo" />
+            <input id="accessUserInput" autocomplete="username" placeholder="Usuário" />
           </label>
           <label>
             Senha
-            <input id="accessPasswordInput" inputmode="numeric" autocomplete="current-password" placeholder="PIN de acesso" />
+            <input id="accessPasswordInput" type="password" autocomplete="current-password" placeholder="Senha" />
+          </label>
+          <label class="remember-row">
+            <input id="accessRememberInput" type="checkbox" />
+            Salvar acesso neste aparelho
           </label>
           <button class="primary" type="submit">Entrar</button>
           <p id="accessMessage" class="muted" role="status"></p>
@@ -339,10 +342,30 @@
           </section>
 
           <section class="panel">
-            <h2>Solicitações de teste</h2>
-            <div id="ownerRequestsList" class="owner-list"></div>
+            <h2>Criar acesso do restaurante</h2>
+            <form id="ownerAccountForm" class="owner-form">
+              <label>
+                Usuário do restaurante
+                <input id="ownerAccountUserInput" maxlength="80" placeholder="ex: restaurante-villa" />
+              </label>
+              <label>
+                Senha do restaurante
+                <input id="ownerAccountPasswordInput" type="password" maxlength="80" placeholder="Senha de acesso" />
+              </label>
+              <label>
+                Nome do restaurante
+                <input id="ownerAccountNameInput" maxlength="90" placeholder="Nome que aparecerá na fila" />
+              </label>
+              <button class="primary" type="submit">Criar conta do cliente</button>
+              <p id="ownerAccountMessage" class="muted" role="status"></p>
+            </form>
           </section>
         </div>
+
+        <section class="panel owner-companies-panel">
+          <h2>Solicitações de teste</h2>
+          <div id="ownerRequestsList" class="owner-list"></div>
+        </section>
 
         <section class="panel owner-companies-panel">
           <h2>Restaurantes controlados</h2>
@@ -650,6 +673,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
-    <script src="app.js?v=single-login-1"></script>
+    <script src="app.js?v=account-login-1"></script>
   </body>
 </html>
