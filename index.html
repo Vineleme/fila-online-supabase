@@ -14,7 +14,7 @@
     <link rel="icon" type="image/png" sizes="48x48" href="assets/icons/icon-48.png?v=icon-2" />
     <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/icon-180.png?v=icon-2" />
     <link rel="manifest" href="site.webmanifest?v=icon-2" />
-    <link rel="stylesheet" href="styles.css?v=offer-copy-1" />
+    <link rel="stylesheet" href="styles.css?v=access-1" />
   </head>
   <body>
     <main id="landingPage" class="landing-shell">
@@ -25,6 +25,7 @@
           <div>
           <a href="#como-funciona">Como funciona</a>
           <a href="#planos">Oferta</a>
+          <a href="?modo=acesso">Área administrativa</a>
           <a class="nav-cta" href="#solicitar-teste">Solicitar teste</a>
         </div>
       </nav>
@@ -224,6 +225,47 @@
         </div>
       </section>
       <a class="floating-whatsapp" href="https://api.whatsapp.com/send?phone=5511943678179&text=Quero%20testar%20o%20FILA%20A%C3%8D%20no%20meu%20restaurante" target="_blank" rel="noreferrer">Fale Conosco Agora</a>
+    </main>
+
+    <main id="accessShell" class="access-shell" hidden>
+      <section class="access-hero">
+        <a class="nav-brand-mark" href="./" aria-label="FILA AÍ">
+          <img src="assets/fila-ai-wordmark-outline.png" alt="FILA AÍ" />
+        </a>
+        <p class="landing-eyebrow">Área administrativa</p>
+        <h1>Entre no painel certo.</h1>
+        <p>Use o acesso do dono para controlar restaurantes e tokens. Use o acesso do restaurante para gerenciar fila, mesas, QR Code, cardápio e visualizar a fila como cliente.</p>
+      </section>
+
+      <section class="access-grid">
+        <form id="ownerAccessForm" class="panel access-card">
+          <h2>Dono do FILA AÍ</h2>
+          <label>
+            Login
+            <input id="ownerAccessLoginInput" autocomplete="username" placeholder="dono" />
+          </label>
+          <label>
+            PIN do dono
+            <input id="ownerAccessPinInput" inputmode="numeric" autocomplete="current-password" placeholder="7890" />
+          </label>
+          <button class="primary" type="submit">Entrar como dono</button>
+          <p id="ownerAccessMessage" class="muted" role="status"></p>
+        </form>
+
+        <form id="restaurantAccessForm" class="panel access-card">
+          <h2>Administrador do restaurante</h2>
+          <label>
+            Identificador do restaurante
+            <input id="restaurantSlugInput" autocomplete="organization" placeholder="restaurante-demo" />
+          </label>
+          <label>
+            PIN do administrador
+            <input id="restaurantPinInput" inputmode="numeric" autocomplete="current-password" placeholder="1234" />
+          </label>
+          <button class="primary" type="submit">Entrar no restaurante</button>
+          <p id="restaurantAccessMessage" class="muted" role="status"></p>
+        </form>
+      </section>
     </main>
 
     <main id="activationShell" class="activation-shell" hidden>
@@ -622,6 +664,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
-    <script src="app.js?v=copy-2"></script>
+    <script src="app.js?v=access-1"></script>
   </body>
 </html>

@@ -2,6 +2,8 @@ const STORAGE_KEY = "fila-online-state-v2";
 const MY_TICKET_KEY = "fila-online-my-ticket-v2";
 const ASSETS_BUCKET = "fila-ai-assets";
 const OWNER_PIN_KEY = "fila-ai-owner-pin";
+const OWNER_AUTH_KEY = "fila-ai-owner-auth";
+const ADMIN_AUTH_PREFIX = "fila-ai-admin-auth";
 const DEFAULT_OWNER_PIN = "7890";
 
 const params = new URLSearchParams(window.location.search);
@@ -65,9 +67,18 @@ let audioContext;
 
 const elements = {
   landingPage: document.querySelector("#landingPage"),
+  accessShell: document.querySelector("#accessShell"),
   appShell: document.querySelector("#appShell"),
   ownerShell: document.querySelector("#ownerShell"),
   activationShell: document.querySelector("#activationShell"),
+  ownerAccessForm: document.querySelector("#ownerAccessForm"),
+  ownerAccessLoginInput: document.querySelector("#ownerAccessLoginInput"),
+  ownerAccessPinInput: document.querySelector("#ownerAccessPinInput"),
+  ownerAccessMessage: document.querySelector("#ownerAccessMessage"),
+  restaurantAccessForm: document.querySelector("#restaurantAccessForm"),
+  restaurantSlugInput: document.querySelector("#restaurantSlugInput"),
+  restaurantPinInput: document.querySelector("#restaurantPinInput"),
+  restaurantAccessMessage: document.querySelector("#restaurantAccessMessage"),
   activationForm: document.querySelector("#activationForm"),
   activationRestaurantInput: document.querySelector("#activationRestaurantInput"),
   activationOwnerInput: document.querySelector("#activationOwnerInput"),
@@ -175,8 +186,20 @@ boot();
 function boot() {
   bindLandingEvents();
 
+  if (ACCESS_MODE === "acesso") {
+    elements.landingPage.hidden = true;
+    elements.accessShell.hidden = false;
+    elements.appShell.hidden = true;
+    elements.ownerShell.hidden = true;
+    elements.activationShell.hidden = true;
+    document.documentElement.dataset.theme = "landing";
+    bindAccessEvents();
+    return;
+  }
+
   if (ACCESS_MODE === "ativar") {
     elements.landingPage.hidden = true;
+    elements.accessShell.hidden = true;
     elements.appShell.hidden = true;
     elements.ownerShell.hidden = true;
     elements.activationShell.hidden = false;
@@ -188,6 +211,7 @@ function boot() {
 
   if (ACCESS_MODE === "dono") {
     elements.landingPage.hidden = true;
+    elements.accessShell.hidden = true;
     elements.appShell.hidden = true;
     elements.ownerShell.hidden = false;
     elements.activationShell.hidden = true;
@@ -198,6 +222,7 @@ function boot() {
 
   if (!ACCESS_MODE) {
     elements.landingPage.hidden = false;
+    elements.accessShell.hidden = true;
     elements.appShell.hidden = true;
     elements.ownerShell.hidden = true;
     elements.activationShell.hidden = true;
@@ -206,12 +231,14 @@ function boot() {
   }
 
   elements.landingPage.hidden = true;
+  elements.accessShell.hidden = true;
   elements.ownerShell.hidden = true;
   elements.activationShell.hidden = true;
   elements.appShell.hidden = false;
   bindEvents();
   applyAccessMode();
   render();
+  restoreAdminAccess();
 
   if (db) {
     refreshFromSupabase();
@@ -227,6 +254,11 @@ function bindLandingEvents() {
   if (!elements.trialRequestForm) return;
 
   elements.trialRequestForm.addEventListener("submit", submitTrialRequest);
+}
+
+function bindAccessEvents() {
+  elements.ownerAccessForm?.addEventListener("submit", handleOwnerAccess);
+  elements.restaurantAccessForm?.addEventListener("submit", handleRestaurantAccess);
 }
 
 function getOwnerPin() {
@@ -251,6 +283,12 @@ function changeOwnerPin() {
 }
 
 function bindOwnerEvents() {
+  if (sessionStorage.getItem(OWNER_AUTH_KEY) === getOwnerPin()) {
+    elements.ownerLoginPanel.hidden = true;
+    elements.ownerPanel.hidden = false;
+    refreshOwnerDashboard();
+  }
+
   elements.ownerLoginButton.addEventListener("click", () => {
     if (elements.ownerPinInput.value.trim() !== getOwnerPin()) {
       alert("PIN do dono incorreto.");
@@ -258,6 +296,7 @@ function bindOwnerEvents() {
     }
     elements.ownerLoginPanel.hidden = true;
     elements.ownerPanel.hidden = false;
+    sessionStorage.setItem(OWNER_AUTH_KEY, getOwnerPin());
     refreshOwnerDashboard();
   });
 
@@ -273,6 +312,63 @@ function bindOwnerEvents() {
     elements.ownerCreateForm.reset();
     await refreshOwnerDashboard();
   });
+}
+
+async function handleOwnerAccess(event) {
+  event.preventDefault();
+  const login = slugify(elements.ownerAccessLoginInput.value || "dono");
+  const pin = elements.ownerAccessPinInput.value.trim();
+
+  if (!["dono", "owner", "fila-ai"].includes(login) || pin !== getOwnerPin()) {
+    elements.ownerAccessMessage.textContent = "Login ou PIN do dono incorreto.";
+    return;
+  }
+
+  sessionStorage.setItem(OWNER_AUTH_KEY, pin);
+  window.location.href = `${window.location.pathname}?modo=dono`;
+}
+
+async function handleRestaurantAccess(event) {
+  event.preventDefault();
+  const slug = slugify(elements.restaurantSlugInput.value);
+  const pin = elements.restaurantPinInput.value.trim();
+
+  if (!slug || !pin) {
+    elements.restaurantAccessMessage.textContent = "Informe o identificador do restaurante e o PIN.";
+    return;
+  }
+
+  elements.restaurantAccessMessage.textContent = "Validando acesso...";
+
+  try {
+    let adminPin = defaultCompany.adminPin;
+    if (db) {
+      const { data, error } = await db
+        .from("queue_companies")
+        .select("admin_pin")
+        .eq("slug", slug)
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) {
+        elements.restaurantAccessMessage.textContent = "Restaurante não encontrado.";
+        return;
+      }
+      adminPin = data.admin_pin || "1234";
+    } else if (slug !== defaultCompany.slug) {
+      elements.restaurantAccessMessage.textContent = "Supabase indisponível. Teste apenas com restaurante-demo.";
+      return;
+    }
+
+    if (pin !== adminPin) {
+      elements.restaurantAccessMessage.textContent = "PIN do administrador incorreto.";
+      return;
+    }
+
+    sessionStorage.setItem(adminAuthKey(slug), pin);
+    window.location.href = `${window.location.pathname}?empresa=${encodeURIComponent(slug)}&modo=admin`;
+  } catch (error) {
+    elements.restaurantAccessMessage.textContent = `Não consegui validar: ${error.message}`;
+  }
 }
 
 async function submitTrialRequest(event) {
@@ -823,15 +919,15 @@ function bindEvents() {
       alert("PIN incorreto. PIN inicial: 1234");
       return;
     }
-    elements.loginPanel.hidden = true;
-    elements.adminPanel.hidden = false;
-    fillCompanyForm();
+    openAdminPanel();
+    sessionStorage.setItem(adminAuthKey(COMPANY_SLUG), state.company.adminPin);
   });
 
   elements.logoutButton.addEventListener("click", () => {
     elements.pinInput.value = "";
     elements.loginPanel.hidden = false;
     elements.adminPanel.hidden = true;
+    sessionStorage.removeItem(adminAuthKey(COMPANY_SLUG));
   });
 
   elements.saveCompanyButton.addEventListener("click", saveCompanySettings);
@@ -915,7 +1011,20 @@ async function refreshFromSupabase() {
   }
   state.currentTicketId = state.queue.find((ticket) => ticket.status === "called")?.id || null;
   fillCompanyForm();
+  restoreAdminAccess();
   render();
+}
+
+function openAdminPanel() {
+  elements.loginPanel.hidden = true;
+  elements.adminPanel.hidden = false;
+  fillCompanyForm();
+}
+
+function restoreAdminAccess() {
+  if (ACCESS_MODE !== "admin") return;
+  if (sessionStorage.getItem(adminAuthKey(COMPANY_SLUG)) !== state.company.adminPin) return;
+  openAdminPanel();
 }
 
 function subscribeToRealtime() {
@@ -1929,6 +2038,10 @@ function whatsappPhone(value) {
   return digits.startsWith("55") ? digits : `55${digits}`;
 }
 
+function adminAuthKey(slug) {
+  return `${ADMIN_AUTH_PREFIX}-${slug}`;
+}
+
 function queueLink() {
   return `${window.location.origin + window.location.pathname}?empresa=${encodeURIComponent(COMPANY_SLUG)}&modo=fila`;
 }
@@ -2042,6 +2155,7 @@ function slugify(value) {
 
 function normalizeAccessMode(value) {
   const mode = slugify(value);
+  if (["acesso", "login", "entrar", "area-administrativa", "administracao"].includes(mode)) return "acesso";
   if (["ativar", "activate", "token", "teste"].includes(mode)) return "ativar";
   if (["dono", "owner", "master", "central"].includes(mode)) return "dono";
   if (["admin", "administrativo", "gestao", "gestor"].includes(mode)) return "admin";

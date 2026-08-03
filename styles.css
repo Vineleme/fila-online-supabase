@@ -695,8 +695,80 @@ h2 {
   color: #f8fafc;
 }
 
-html:has(.owner-shell:not([hidden])) body {
+html:has(.owner-shell:not([hidden])) body,
+html:has(.access-shell:not([hidden])) body {
   background: #030405;
+}
+
+.access-shell {
+  width: min(1040px, calc(100% - 28px));
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 26px 0 46px;
+  color: #f8fafc;
+}
+
+.access-hero {
+  min-height: 260px;
+  display: grid;
+  align-content: end;
+  gap: 14px;
+  border-radius: 8px;
+  padding: clamp(22px, 5vw, 36px);
+  margin-bottom: 18px;
+  background:
+    linear-gradient(90deg, rgba(3, 4, 5, 0.94), rgba(255, 122, 0, 0.2)),
+    url("assets/fila-ai-symbol-outline.png") right center/contain no-repeat;
+}
+
+.access-hero .nav-brand-mark {
+  width: min(168px, 52vw);
+}
+
+.access-hero h1 {
+  max-width: 680px;
+  font-size: clamp(2.4rem, 7vw, 5.4rem);
+  line-height: 0.95;
+}
+
+.access-hero p:not(.landing-eyebrow) {
+  max-width: 680px;
+  color: rgba(255, 255, 255, 0.72);
+  line-height: 1.6;
+}
+
+.access-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.access-card {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: #0b0f12;
+  color: #f8fafc;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
+}
+
+.access-card h2 {
+  color: #fff;
+}
+
+.access-card label,
+.access-card .muted {
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.access-card input {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: #111827;
+  color: #fff;
+}
+
+.access-card .primary {
+  background: linear-gradient(135deg, #f59e0b, #22c55e);
+  color: #050505;
+  box-shadow: 0 14px 32px rgba(245, 158, 11, 0.18);
 }
 
 .activation-shell {
@@ -1740,10 +1812,24 @@ html[data-access-mode="admin"] #adminQueuePanel.is-active {
   .offer-card,
   .brand-story,
   .trial-section,
+  .access-grid,
   .owner-grid,
   .demo-grid,
   .mini-table-grid {
     grid-template-columns: 1fr;
+  }
+
+  .access-hero {
+    min-height: 220px;
+    background:
+      linear-gradient(180deg, rgba(3, 4, 5, 0.84), rgba(3, 4, 5, 0.96)),
+      url("assets/fila-ai-symbol-outline.png") center 24px/168px auto no-repeat;
+    padding-top: 180px;
+    text-align: center;
+  }
+
+  .access-hero .nav-brand-mark {
+    justify-self: center;
   }
 
   .landing-hero {
