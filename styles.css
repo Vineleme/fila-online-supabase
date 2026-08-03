@@ -829,6 +829,16 @@ html:has(.access-shell:not([hidden])) body {
   gap: 18px;
 }
 
+.single-access-grid {
+  grid-template-columns: minmax(0, 520px);
+  justify-content: center;
+}
+
+.single-access-card {
+  min-height: 360px;
+  align-content: center;
+}
+
 .access-card {
   border-color: rgba(255, 255, 255, 0.1);
   background: #0b0f12;

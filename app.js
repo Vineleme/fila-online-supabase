@@ -71,14 +71,10 @@ const elements = {
   appShell: document.querySelector("#appShell"),
   ownerShell: document.querySelector("#ownerShell"),
   activationShell: document.querySelector("#activationShell"),
-  ownerAccessForm: document.querySelector("#ownerAccessForm"),
-  ownerAccessLoginInput: document.querySelector("#ownerAccessLoginInput"),
-  ownerAccessPinInput: document.querySelector("#ownerAccessPinInput"),
-  ownerAccessMessage: document.querySelector("#ownerAccessMessage"),
-  restaurantAccessForm: document.querySelector("#restaurantAccessForm"),
-  restaurantSlugInput: document.querySelector("#restaurantSlugInput"),
-  restaurantPinInput: document.querySelector("#restaurantPinInput"),
-  restaurantAccessMessage: document.querySelector("#restaurantAccessMessage"),
+  accessForm: document.querySelector("#accessForm"),
+  accessUserInput: document.querySelector("#accessUserInput"),
+  accessPasswordInput: document.querySelector("#accessPasswordInput"),
+  accessMessage: document.querySelector("#accessMessage"),
   activationForm: document.querySelector("#activationForm"),
   activationRestaurantInput: document.querySelector("#activationRestaurantInput"),
   activationOwnerInput: document.querySelector("#activationOwnerInput"),
@@ -257,8 +253,7 @@ function bindLandingEvents() {
 }
 
 function bindAccessEvents() {
-  elements.ownerAccessForm?.addEventListener("submit", handleOwnerAccess);
-  elements.restaurantAccessForm?.addEventListener("submit", handleRestaurantAccess);
+  elements.accessForm?.addEventListener("submit", handleAccessLogin);
 }
 
 function getOwnerPin() {
@@ -314,31 +309,32 @@ function bindOwnerEvents() {
   });
 }
 
-async function handleOwnerAccess(event) {
+async function handleAccessLogin(event) {
   event.preventDefault();
-  const login = slugify(elements.ownerAccessLoginInput.value || "dono");
-  const pin = elements.ownerAccessPinInput.value.trim();
+  const user = slugify(elements.accessUserInput.value);
+  const password = elements.accessPasswordInput.value.trim();
 
-  if (!["dono", "owner", "fila-ai"].includes(login) || pin !== getOwnerPin()) {
-    elements.ownerAccessMessage.textContent = "Login ou PIN do dono incorreto.";
+  if (!user || !password) {
+    elements.accessMessage.textContent = "Informe usuário e senha.";
     return;
   }
 
-  sessionStorage.setItem(OWNER_AUTH_KEY, pin);
-  window.location.href = `${window.location.pathname}?modo=dono`;
+  if (["dono", "owner", "fila-ai"].includes(user)) {
+    if (password !== getOwnerPin()) {
+      elements.accessMessage.textContent = "Usuário ou senha incorretos.";
+      return;
+    }
+
+    sessionStorage.setItem(OWNER_AUTH_KEY, password);
+    window.location.href = `${window.location.pathname}?modo=dono`;
+    return;
+  }
+
+  await handleRestaurantAccess(user, password);
 }
 
-async function handleRestaurantAccess(event) {
-  event.preventDefault();
-  const slug = slugify(elements.restaurantSlugInput.value);
-  const pin = elements.restaurantPinInput.value.trim();
-
-  if (!slug || !pin) {
-    elements.restaurantAccessMessage.textContent = "Informe o identificador do restaurante e o PIN.";
-    return;
-  }
-
-  elements.restaurantAccessMessage.textContent = "Validando acesso...";
+async function handleRestaurantAccess(slug, pin) {
+  elements.accessMessage.textContent = "Validando acesso...";
 
   try {
     let adminPin = defaultCompany.adminPin;
@@ -350,24 +346,24 @@ async function handleRestaurantAccess(event) {
         .maybeSingle();
       if (error) throw error;
       if (!data) {
-        elements.restaurantAccessMessage.textContent = "Restaurante não encontrado.";
+        elements.accessMessage.textContent = "Usuário ou senha incorretos.";
         return;
       }
       adminPin = data.admin_pin || "1234";
     } else if (slug !== defaultCompany.slug) {
-      elements.restaurantAccessMessage.textContent = "Supabase indisponível. Teste apenas com restaurante-demo.";
+      elements.accessMessage.textContent = "Supabase indisponível. Teste apenas com restaurante-demo.";
       return;
     }
 
     if (pin !== adminPin) {
-      elements.restaurantAccessMessage.textContent = "PIN do administrador incorreto.";
+      elements.accessMessage.textContent = "Usuário ou senha incorretos.";
       return;
     }
 
     sessionStorage.setItem(adminAuthKey(slug), pin);
     window.location.href = `${window.location.pathname}?empresa=${encodeURIComponent(slug)}&modo=admin`;
   } catch (error) {
-    elements.restaurantAccessMessage.textContent = `Não consegui validar: ${error.message}`;
+    elements.accessMessage.textContent = `Não consegui validar: ${error.message}`;
   }
 }
 
