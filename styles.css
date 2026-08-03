@@ -278,18 +278,14 @@ h2 {
 .hero-media {
   position: relative;
   display: grid;
-  gap: 18px;
+  gap: 10px;
   place-items: center;
-  border: 1px solid rgba(255, 122, 0, 0.2);
-  border-radius: 8px;
+  border: 0;
+  border-radius: 0;
   overflow: visible;
-  padding: clamp(18px, 3vw, 30px);
-  background:
-    radial-gradient(circle at 72% 24%, rgba(255, 122, 0, 0.22), transparent 32%),
-    linear-gradient(145deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.025));
-  box-shadow:
-    0 34px 90px rgba(0, 0, 0, 0.48),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .hero-media img {
@@ -299,12 +295,7 @@ h2 {
 }
 
 .brand-showcase::before {
-  content: "";
-  position: absolute;
-  inset: 8%;
-  border-radius: 999px;
-  background: radial-gradient(circle, rgba(255, 122, 0, 0.12), transparent 66%);
-  filter: blur(18px);
+  display: none;
 }
 
 .brand-wordmark-stage,
@@ -319,8 +310,8 @@ h2 {
 
 .brand-symbol-stage {
   z-index: 1;
-  width: min(82%, 420px);
-  margin-top: -8px;
+  width: min(72%, 390px);
+  margin-top: -18px;
 }
 
 .brand-wordmark,
@@ -328,29 +319,15 @@ h2 {
   position: relative;
   z-index: 2;
   filter:
-    drop-shadow(0 14px 22px rgba(0, 0, 0, 0.38))
-    drop-shadow(0 0 10px rgba(255, 255, 255, 0.08));
+    drop-shadow(0 16px 24px rgba(0, 0, 0, 0.42))
+    drop-shadow(0 0 2px rgba(255, 255, 255, 0.56));
 }
 
-.brand-wordmark-glow,
-.brand-symbol-glow {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  opacity: 0.95;
+.brand-wordmark {
   filter:
-    blur(10px)
-    drop-shadow(0 0 18px rgba(255, 122, 0, 0.95))
-    drop-shadow(0 0 42px rgba(255, 122, 0, 0.72));
-  transform: scale(1.035);
-}
-
-.brand-wordmark-glow {
-  opacity: 1;
-  filter:
-    blur(8px)
-    drop-shadow(0 0 22px rgba(255, 122, 0, 1))
-    drop-shadow(0 0 58px rgba(255, 122, 0, 0.86));
+    drop-shadow(0 18px 26px rgba(0, 0, 0, 0.46))
+    drop-shadow(0 0 3px rgba(255, 255, 255, 0.72))
+    drop-shadow(0 0 12px rgba(255, 122, 0, 0.18));
 }
 
 .landing-section {
