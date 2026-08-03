@@ -157,12 +157,22 @@ h2 {
   padding: 22px 0;
 }
 
-.landing-nav strong {
-  font-size: 1.35rem;
-  letter-spacing: 0.02em;
+.nav-brand-mark {
+  display: inline-flex;
+  width: clamp(104px, 12vw, 148px);
+  align-items: center;
+  flex: 0 0 auto;
 }
 
-.landing-nav span,
+.nav-brand-mark img {
+  display: block;
+  width: 100%;
+  height: auto;
+  filter:
+    drop-shadow(0 0 2px rgba(255, 255, 255, 0.82))
+    drop-shadow(0 0 9px rgba(255, 122, 0, 0.34));
+}
+
 .landing-eyebrow,
 .featured-plan h3 {
   color: #ff7a00;
