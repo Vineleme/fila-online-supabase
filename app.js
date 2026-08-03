@@ -292,7 +292,7 @@ async function submitTrialRequest(event) {
   }
 
   if (!db) {
-    elements.trialRequestMessage.textContent = "Banco indisponivel agora. Me chame no WhatsApp para liberar o teste.";
+    elements.trialRequestMessage.textContent = "Banco indisponível agora. Me chame no WhatsApp para liberar o teste.";
     return;
   }
 
@@ -386,19 +386,19 @@ function renderOwnerCompanies(companies) {
     const trial = trialStatus(company);
     const adminUrl = `${origin}?empresa=${encodeURIComponent(company.slug)}&modo=admin`;
     const filaUrl = `${origin}?empresa=${encodeURIComponent(company.slug)}&modo=fila`;
-    const contactDigits = String(company.contact_phone || "").replace(/\D/g, "");
-    const notifyMessage = encodeURIComponent(`Sua página do FILA AI está funcionando.\n\nAdmin: ${adminUrl}\nFila do cliente: ${filaUrl}\nPIN: ${company.admin_pin || "1234"}`);
-    const notifyUrl = contactDigits ? `https://api.whatsapp.com/send?phone=55${contactDigits}&text=${notifyMessage}` : "";
+    const contactDigits = whatsappPhone(company.contact_phone);
+    const notifyMessage = encodeURIComponent(`Sua página do FILA AÍ está funcionando.\n\nAdministrador: ${adminUrl}\nFila do cliente: ${filaUrl}\nPIN do administrador: ${company.admin_pin || "1234"}`);
+    const notifyUrl = contactDigits ? `https://api.whatsapp.com/send?phone=${contactDigits}&text=${notifyMessage}` : "";
     return `
       <article class="owner-company owner-item">
         <div>
           <strong>${escapeHtml(company.name)}</strong>
           <span>${escapeHtml(company.owner_status || "teste")} - ${escapeHtml(company.payment_status || "pagamento pendente")} - ${trial}</span>
-          <small>PIN admin: ${escapeHtml(company.admin_pin || "1234")} - slug: ${escapeHtml(company.slug)}</small>
+          <small>PIN do administrador: ${escapeHtml(company.admin_pin || "1234")} - identificador do link: ${escapeHtml(company.slug)}</small>
         </div>
         <div class="link-stack">
-          <a href="${adminUrl}" target="_blank" rel="noreferrer">Admin</a>
-          <a href="${filaUrl}" target="_blank" rel="noreferrer">Fila cliente</a>
+          <a href="${adminUrl}" target="_blank" rel="noreferrer">Administrador</a>
+          <a href="${filaUrl}" target="_blank" rel="noreferrer">Fila do cliente</a>
           ${notifyUrl ? `<a href="${notifyUrl}" target="_blank" rel="noreferrer">Avisar cliente</a>` : ""}
           <button type="button" data-company-action="paid" data-slug="${escapeHtml(company.slug)}">Pago</button>
           <button type="button" data-company-action="pending" data-slug="${escapeHtml(company.slug)}">Pendente</button>
@@ -423,13 +423,13 @@ function renderOwnerTokens(tokens) {
   elements.ownerTokensList.innerHTML = tokens.map((token) => {
     const activationUrl = `${origin}?token=${encodeURIComponent(token.token)}`;
     const status = token.used_at ? `usado em ${formatDate(token.used_at)}` : "ainda não usado";
-    const countdown = token.trial_ends_at ? trialStatus({ trial_ends_at: token.trial_ends_at }) : `${token.trial_days || 7} dias apos ativar`;
+    const countdown = token.trial_ends_at ? trialStatus({ trial_ends_at: token.trial_ends_at }) : `${token.trial_days || 7} dias após ativar`;
     return `
       <article class="owner-item">
         <div>
           <strong>${escapeHtml(token.restaurant_name || "Token livre")}</strong>
           <span>${escapeHtml(status)} - ${escapeHtml(countdown)}</span>
-          <small>${escapeHtml(token.token)} ${token.activated_slug ? `- restaurante: ${escapeHtml(token.activated_slug)}` : ""}</small>
+          <small>${escapeHtml(token.token)} ${token.activated_slug ? `- restaurante ativado: ${escapeHtml(token.activated_slug)}` : ""}</small>
         </div>
         <div class="link-stack">
           <a href="${activationUrl}" target="_blank" rel="noreferrer">Abrir token</a>
@@ -462,7 +462,7 @@ function renderOwnerBilling(requests) {
     <article class="owner-item">
       <div>
         <strong>${escapeHtml(request.company_name || request.company_slug)}</strong>
-        <span>Plano ${escapeHtml(request.plan)} - ${escapeHtml(request.status || "novo")}</span>
+        <span>Plano ${escapeHtml(planLabel(request.plan))} - ${escapeHtml(statusLabel(request.status || "novo"))}</span>
         <small>${escapeHtml(request.contact_phone || "sem telefone")} - ${formatDate(request.created_at)}</small>
       </div>
       <div class="owner-actions">
@@ -480,9 +480,9 @@ function renderOwnerBilling(requests) {
 async function handleOwnerRequestAction(button) {
   const action = button.dataset.ownerAction;
   if (action === "contact") {
-    const digits = (button.dataset.phone || "").replace(/\D/g, "");
+    const digits = whatsappPhone(button.dataset.phone);
     if (!digits) return alert("Esse pedido não tem telefone.");
-    window.open(`https://api.whatsapp.com/send?phone=55${digits}`, "_blank", "noopener");
+    window.open(`https://api.whatsapp.com/send?phone=${digits}`, "_blank", "noopener");
     return;
   }
 
@@ -620,7 +620,7 @@ async function createTrialCompany({ restaurantName, ownerName, phone, monthlyPri
     return;
   }
 
-  alert(`Teste criado para ${restaurantName}. PIN admin: ${adminPin}`);
+  alert(`Teste criado para ${restaurantName}. PIN do administrador: ${adminPin}`);
 }
 
 async function loadActivationToken() {
@@ -632,7 +632,7 @@ async function loadActivationToken() {
 
   if (!db) {
     elements.activationForm.hidden = true;
-    elements.activationMessage.textContent = "Banco indisponivel. Fale com o FILA AÍ para ativar seu teste.";
+    elements.activationMessage.textContent = "Banco indisponível. Fale com o FILA AÍ para ativar seu teste.";
     return;
   }
 
@@ -667,7 +667,7 @@ async function activateTrialToken(event) {
   const ownerName = elements.activationOwnerInput.value.trim();
   const phone = elements.activationPhoneInput.value.trim();
   if (!restaurantName || !hasFullName(ownerName) || phone.length < 8) {
-    elements.activationMessage.textContent = "Preencha restaurante, responsavel e WhatsApp.";
+    elements.activationMessage.textContent = "Preencha restaurante, responsável e WhatsApp.";
     return;
   }
 
@@ -741,7 +741,7 @@ function renderActivationLinks(slug, adminPin, trialEndsAt) {
   elements.activationResult.innerHTML = `
     <strong>Teste ativado</strong>
     <span>${trialStatus({ trial_ends_at: trialEndsAt })}</span>
-    <small>PIN admin: ${escapeHtml(adminPin || "1234")}</small>
+    <small>PIN do administrador: ${escapeHtml(adminPin || "1234")}</small>
     <a href="${adminUrl}">Abrir painel administrador</a>
     <a href="${filaUrl}">Abrir fila do cliente</a>
   `;
@@ -771,7 +771,7 @@ function bindEvents() {
       return;
     }
     if (getMyTicket()) {
-      alert("Este aparelho ja tem uma senha ativa na fila.");
+      alert("Este aparelho já tem uma senha ativa na fila.");
       render();
       return;
     }
@@ -1391,7 +1391,7 @@ async function submitBillingRequest(event) {
   event.preventDefault();
 
   if (!db) {
-    elements.billingRequestMessage.textContent = "Supabase indisponivel. Fale com o FILA AÍ pelo WhatsApp.";
+    elements.billingRequestMessage.textContent = "Supabase indisponível. Fale com o FILA AÍ pelo WhatsApp.";
     return;
   }
 
@@ -1542,7 +1542,7 @@ function renderAdminQueue() {
         <span class="place">${formatNumber(ticket.number)}</span>
         <span class="person">
           <strong>${escapeHtml(ticket.name)}</strong>
-          <span>${partyLabel(ticket.partySize)} - ${ticket.status} - ${formatDuration(estimateWait(ticket))}</span>
+          <span>${partyLabel(ticket.partySize)} - ${statusLabel(ticket.status)} - ${formatDuration(estimateWait(ticket))}</span>
         </span>
         <span class="mini-actions">
           <button type="button" data-action="call" data-id="${ticket.id}" ${canCall ? "" : "disabled"}>Chamar</button>
@@ -1923,6 +1923,12 @@ function normalizeTime(value, fallback) {
   return /^([01]\d|2[0-3]):[0-5]\d$/.test(value || "") ? value : fallback;
 }
 
+function whatsappPhone(value) {
+  const digits = String(value || "").replace(/\D/g, "");
+  if (!digits) return "";
+  return digits.startsWith("55") ? digits : `55${digits}`;
+}
+
 function queueLink() {
   return `${window.location.origin + window.location.pathname}?empresa=${encodeURIComponent(COMPANY_SLUG)}&modo=fila`;
 }
@@ -1956,9 +1962,36 @@ function trialStatus(company) {
   if (!company.trial_ends_at) return "sem data de teste";
   const diff = new Date(company.trial_ends_at).getTime() - Date.now();
   const days = Math.ceil(diff / (24 * 60 * 60 * 1000));
-  if (days < 0) return `teste vencido ha ${Math.abs(days)} dia(s)`;
+  if (days < 0) return `teste vencido há ${Math.abs(days)} dia(s)`;
   if (days === 0) return "teste vence hoje";
   return `teste vence em ${days} dia(s)`;
+}
+
+function statusLabel(status) {
+  const labels = {
+    active: "ativo",
+    blocked: "bloqueado",
+    called: "Chamado",
+    contacted: "contatado",
+    done: "Finalizado",
+    new: "novo",
+    novo: "novo",
+    paid: "pago",
+    pending: "pendente",
+    teste: "teste",
+    waiting: "Aguardando"
+  };
+  return labels[status] || status || "novo";
+}
+
+function planLabel(plan) {
+  const labels = {
+    anual: "anual",
+    mensal: "mensal",
+    yearly: "anual",
+    monthly: "mensal"
+  };
+  return labels[plan] || plan || "mensal";
 }
 
 function formatDate(value) {
