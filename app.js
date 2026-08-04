@@ -18,6 +18,10 @@ const OWNER_PROSPECTS = [
   ["sp-mocoto", "Mocoto", "SP", "Sao Paulo", "(11) 2951-3056", "Media", "Casa muito conhecida, com relatos de espera acima de 2h."],
   ["sp-famiglia-mancini", "Famiglia Mancini", "SP", "Sao Paulo", "(11) 3255-6599 / (11) 3256-4320", "Media", "Fila em casa tradicional e turistica, principalmente em pico."],
   ["sp-yono", "Yono Sushi Aclimacao", "SP", "Sao Paulo", "(11) 5539-0022 / (11) 91988-2900", "Media", "Reclamacoes mencionam muita fila de espera na unidade."],
+  ["sp-bob-esponja", "Bob Esponja Burguer & Restaurante", "SP", "Sao Paulo", "contato@fanfoodtematicos.com.br", "Alta", "Restaurante tematico oficial, 2 andares, capacidade alta e avaliacoes citam grande fila de espera sem agendamento."],
+  ["sp-kuromoon", "KuroMoon", "SP", "Sao Paulo", "(11) 98915-2678", "Alta", "Boteco japones-coreano pequeno e hypado; avaliacoes citam fila grande, 2h de espera e desorganizacao para grupos."],
+  ["sp-caco", "Caco", "SP", "Sao Paulo", "(11) 97052-9007", "Alta", "Restaurante do momento em Pinheiros; conteudos citam mesas reservadas, fila de espera e muita exposicao no Instagram."],
+  ["sp-mundo-animal", "Mundo Animal Freguesia do O", "SP", "Sao Paulo", "(11) 99999-7725", "Media", "Rede de lanchonete tematica de grande apelo familiar; unidade SP com reservas e alto fluxo em fim de semana."],
   ["rj-lagostinne", "Lagostinne", "RJ", "Rio de Janeiro", "(21) 2466-1617", "Alta", "Reclamacao sobre demora excessiva na fila para conseguir mesa."],
   ["rj-pineapple", "Pineapple Drinkeria", "RJ", "Rio de Janeiro", "(21) 3148-2668 / (21) 97722-1261", "Alta", "Avaliacoes citam fila nominal, espera e revisao do sistema de fila."],
   ["rj-gurume", "Gurume Ipanema", "RJ", "Rio de Janeiro", "(21) 2540-7065 / (21) 99708-9865", "Alta", "Reclamacao sobre quase 1h de espera na fila."],
@@ -25,6 +29,7 @@ const OWNER_PROSPECTS = [
   ["rj-tower", "Tower Gourmet", "RJ", "Rio de Janeiro", "(21) 3153-7085 / (21) 95935-7710", "Media", "Relatos de fila enorme do lado de fora."],
   ["rj-romanella", "Romanella Grill", "RJ", "Rio de Janeiro", "(21) 2432-5277 / (21) 98548-5886", "Media", "Reclamacao sobre desrespeito a fila de espera."],
   ["rj-agridoce", "Casa Agridoce", "RJ", "Teresopolis", "(21) 99317-0608", "Media", "Conteudos sociais indicam fila frequente e alto fluxo."],
+  ["rj-fantastico", "Fantastico Restaurante", "RJ", "Rio de Janeiro", "(21) 99820-5930 / (21) 99735-3154", "Media", "Maior restaurante tematico do RJ, varias unidades e ate 500 pessoas por operacao; ja usa reserva/fila online, bom para abordagem de melhoria ou parceria."],
   ["mg-paladino", "Paladino", "MG", "Belo Horizonte", "(31) 99918-4169 / (31) 99854-7055", "Alta", "Reclamacao sobre fila de espera manipulada."],
   ["mg-xapuri", "Xapuri", "MG", "Belo Horizonte", "(31) 3496-6198", "Alta", "Reclamacoes sobre fila preferencial e desorganizacao."],
   ["mg-porto", "Restaurante do Porto", "MG", "Belo Horizonte", "(31) 3482-9870 / (31) 99773-0550", "Media", "Reclamacao cita fila de espera enorme em feriado."],
@@ -32,6 +37,7 @@ const OWNER_PROSPECTS = [
   ["mg-porcao", "Porcao BH", "MG", "Belo Horizonte", "(31) 3293-8787", "Media", "Reclamacao de longa espera mesmo com reserva."],
   ["mg-verdemar", "Verdemar Pampulha Cafe", "MG", "Belo Horizonte", "(31) 2391-0010 / (31) 4040-4455", "Media", "Reclamacao sobre demora excessiva no restaurante."],
   ["mg-cae", "Cae Restaurante Bar", "MG", "Belo Horizonte", "(31) 2528-2244", "Media", "Avaliacoes mencionam fila de espera."],
+  ["mg-the-house", "The House Food & Fun", "MG", "Belo Horizonte", "(31) 98514-0576", "Media", "Gastrobar tematico geek na Savassi, mais de 180 mil seguidores e avaliacoes recomendam reserva por ficar cheio."],
   ["mg-baby-beef", "Baby Beef BH", "MG", "Belo Horizonte", "(31) 3426-1100", "Media", "Reclamacao menciona grande demanda e fila de espera grande."],
   ["mg-celsinho", "Celsinho Grill", "MG", "Belo Horizonte", "(31) 2515-6762", "Media", "Casa de alto volume com sinais de fila em horarios de pico."]
 ].map(([id, name, state, city, phone, priority, pain]) => ({ id, name, state, city, phone, priority, pain }));
@@ -533,7 +539,7 @@ async function submitTrialRequest(event) {
   }
 
   elements.trialRequestForm.reset();
-  elements.trialRequestMessage.textContent = "Pedido recebido. Você vai liberar o teste pela central do dono.";
+  elements.trialRequestMessage.textContent = "Pedido recebido. Voce vai liberar o teste pelo painel CEO.";
 }
 
 async function refreshOwnerDashboard() {
