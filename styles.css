@@ -162,6 +162,7 @@ h2 {
   width: clamp(104px, 12vw, 148px);
   align-items: center;
   flex: 0 0 auto;
+  min-width: 0;
 }
 
 .nav-brand-mark img {
@@ -292,7 +293,7 @@ h2 {
 .hero-media {
   position: relative;
   display: grid;
-  gap: 10px;
+  gap: clamp(10px, 2vh, 18px);
   place-items: center;
   border: 0;
   border-radius: 0;
@@ -314,6 +315,8 @@ h2 {
 
 .brand-wordmark-stage,
 .brand-symbol-stage {
+  display: grid;
+  place-items: center;
   position: relative;
   width: 100%;
 }
@@ -324,8 +327,19 @@ h2 {
 
 .brand-symbol-stage {
   z-index: 1;
-  width: min(72%, 390px);
-  margin-top: -18px;
+  width: min(78%, 430px);
+  margin-top: clamp(-8px, -1.1vw, -16px);
+}
+
+.brand-wordmark {
+  width: min(100%, 620px);
+}
+
+.brand-symbol {
+  width: 100%;
+  max-height: min(42vh, 430px);
+  object-fit: contain;
+  object-position: center;
 }
 
 .brand-wordmark,
@@ -381,7 +395,7 @@ h2 {
   }
 
   .brand-symbol-stage {
-    width: min(70%, 400px);
+    width: min(76%, 430px);
   }
 }
 
@@ -2214,7 +2228,7 @@ html[data-access-mode="admin"] .admin-tab.is-active {
   }
 
   .nav-brand-mark {
-    width: 116px;
+    width: min(116px, 38vw);
   }
 
   .landing-nav div {
@@ -2255,7 +2269,8 @@ html[data-access-mode="admin"] .admin-tab.is-active {
 
   .landing-hero {
     min-height: auto;
-    padding-top: 18px;
+    overflow: hidden;
+    padding-top: 14px;
   }
 
   .hero-copy {
@@ -2266,9 +2281,12 @@ html[data-access-mode="admin"] .admin-tab.is-active {
 
   .mobile-hero-symbol {
     display: block;
-    width: min(48vw, 190px);
+    width: min(58vw, 218px);
+    max-height: 27svh;
     height: auto;
-    margin-bottom: 2px;
+    margin: 0 auto 4px;
+    object-fit: contain;
+    object-position: center;
     filter:
       drop-shadow(0 18px 28px rgba(0, 0, 0, 0.5))
       drop-shadow(0 0 2px rgba(255, 255, 255, 0.72))
@@ -2281,7 +2299,8 @@ html[data-access-mode="admin"] .admin-tab.is-active {
 
   .hero-copy h1,
   .final-cta h2 {
-    font-size: 2.7rem;
+    font-size: clamp(2.1rem, 12vw, 2.7rem);
+    line-height: 1;
   }
 
   .topbar,

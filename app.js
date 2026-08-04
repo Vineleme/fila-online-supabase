@@ -1,12 +1,9 @@
 const STORAGE_KEY = "fila-online-state-v2";
 const MY_TICKET_KEY = "fila-online-my-ticket-v2";
 const ASSETS_BUCKET = "fila-ai-assets";
-const OWNER_PIN_KEY = "fila-ai-owner-pin";
-const OWNER_AUTH_KEY = "fila-ai-owner-auth";
 const ADMIN_AUTH_PREFIX = "fila-ai-admin-auth";
 const SAVED_ACCESS_KEY = "fila-ai-saved-access";
 const PROSPECT_STATUS_KEY = "fila-ai-owner-prospect-status";
-const DEFAULT_OWNER_PIN = "7890";
 
 const OWNER_PROSPECTS = [
   ["sp-pecatto", "Pecatto Bar e Restaurante", "SP", "Sao Paulo", "(11) 99772-7738", "Alta", "Reclamacao direta sobre sistema de espera e acomodacao de mesas."],
@@ -127,8 +124,10 @@ const elements = {
   trialRequestMessage: document.querySelector("#trialRequestMessage"),
   ownerLoginPanel: document.querySelector("#ownerLoginPanel"),
   ownerPanel: document.querySelector("#ownerPanel"),
-  ownerPinInput: document.querySelector("#ownerPinInput"),
+  ownerEmailInput: document.querySelector("#ownerEmailInput"),
+  ownerPasswordInput: document.querySelector("#ownerPasswordInput"),
   ownerLoginButton: document.querySelector("#ownerLoginButton"),
+  ownerSignupButton: document.querySelector("#ownerSignupButton"),
   ownerLogoutButton: document.querySelector("#ownerLogoutButton"),
   ownerRefreshButton: document.querySelector("#ownerRefreshButton"),
   ownerCreateForm: document.querySelector("#ownerCreateForm"),
@@ -140,10 +139,7 @@ const elements = {
   ownerAccountPasswordInput: document.querySelector("#ownerAccountPasswordInput"),
   ownerAccountNameInput: document.querySelector("#ownerAccountNameInput"),
   ownerAccountMessage: document.querySelector("#ownerAccountMessage"),
-  ownerCurrentPinInput: document.querySelector("#ownerCurrentPinInput"),
-  ownerNewPinInput: document.querySelector("#ownerNewPinInput"),
-  ownerChangePinButton: document.querySelector("#ownerChangePinButton"),
-  ownerPinMessage: document.querySelector("#ownerPinMessage"),
+  ownerAuthMessage: document.querySelector("#ownerAuthMessage"),
   ownerRequestsList: document.querySelector("#ownerRequestsList"),
   ownerCompaniesList: document.querySelector("#ownerCompaniesList"),
   ownerTokensList: document.querySelector("#ownerTokensList"),
@@ -322,59 +318,25 @@ function toggleAccessPassword() {
   elements.toggleAccessPasswordButton.textContent = isHidden ? "Esconder" : "Mostrar";
 }
 
-function getOwnerPin() {
-  return localStorage.getItem(OWNER_PIN_KEY) || DEFAULT_OWNER_PIN;
-}
-
-function changeOwnerPin() {
-  const current = elements.ownerCurrentPinInput.value.trim();
-  const next = elements.ownerNewPinInput.value.trim();
-  if (current !== getOwnerPin()) {
-    elements.ownerPinMessage.textContent = "PIN atual incorreto.";
-    return;
-  }
-  if (!/^\d{4,8}$/.test(next)) {
-    elements.ownerPinMessage.textContent = "Use um PIN de 4 a 8 números.";
-    return;
-  }
-  localStorage.setItem(OWNER_PIN_KEY, next);
-  elements.ownerCurrentPinInput.value = "";
-  elements.ownerNewPinInput.value = "";
-  elements.ownerPinMessage.textContent = "PIN do dono alterado neste navegador.";
-}
-
 function bindOwnerEvents() {
   bindOwnerTabs();
   bindProspectEvents();
   renderProspectTable();
 
-  if (sessionStorage.getItem(OWNER_AUTH_KEY) === getOwnerPin()) {
-    elements.ownerLoginPanel.hidden = true;
-    elements.ownerPanel.hidden = false;
-    refreshOwnerDashboard();
-  }
+  restoreOwnerSession();
 
-  elements.ownerLoginButton.addEventListener("click", () => {
-    if (elements.ownerPinInput.value.trim() !== getOwnerPin()) {
-      alert("PIN do dono incorreto.");
-      return;
-    }
-    elements.ownerLoginPanel.hidden = true;
-    elements.ownerPanel.hidden = false;
-    sessionStorage.setItem(OWNER_AUTH_KEY, getOwnerPin());
-    refreshOwnerDashboard();
-  });
+  elements.ownerLoginButton.addEventListener("click", handleOwnerLogin);
+  elements.ownerSignupButton?.addEventListener("click", handleOwnerSignup);
 
-  elements.ownerLogoutButton?.addEventListener("click", () => {
-    sessionStorage.removeItem(OWNER_AUTH_KEY);
+  elements.ownerLogoutButton?.addEventListener("click", async () => {
+    if (db) await db.auth.signOut();
     localStorage.removeItem(SAVED_ACCESS_KEY);
-    elements.ownerPinInput.value = "";
+    elements.ownerPasswordInput.value = "";
     elements.ownerLoginPanel.hidden = false;
     elements.ownerPanel.hidden = true;
   });
 
   elements.ownerRefreshButton.addEventListener("click", refreshOwnerDashboard);
-  elements.ownerChangePinButton?.addEventListener("click", changeOwnerPin);
   elements.ownerCreateForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     await createTrialToken({
@@ -386,6 +348,113 @@ function bindOwnerEvents() {
     await refreshOwnerDashboard();
   });
   elements.ownerAccountForm?.addEventListener("submit", createRestaurantAccount);
+}
+
+async function restoreOwnerSession() {
+  if (!db) {
+    setOwnerAuthMessage("Supabase Auth e necessario para acessar o painel CEO.");
+    return;
+  }
+
+  const { data, error } = await db.auth.getSession();
+  if (error || !data.session) return;
+
+  const isCeo = await verifyCeoSession();
+  if (!isCeo) {
+    await db.auth.signOut();
+    setOwnerAuthMessage("Este usuario nao esta liberado como CEO.");
+    return;
+  }
+
+  showOwnerDashboard();
+}
+
+async function handleOwnerLogin() {
+  if (!db) {
+    setOwnerAuthMessage("Supabase Auth e necessario para acessar o painel CEO.");
+    return;
+  }
+
+  const email = elements.ownerEmailInput.value.trim();
+  const password = elements.ownerPasswordInput.value;
+  if (!email || !password) {
+    setOwnerAuthMessage("Informe e-mail e senha do CEO.");
+    return;
+  }
+
+  setOwnerAuthMessage("Validando acesso seguro...");
+  const { error } = await db.auth.signInWithPassword({ email, password });
+  if (error) {
+    setOwnerAuthMessage("E-mail ou senha incorretos.");
+    return;
+  }
+
+  const isCeo = await verifyCeoSession();
+  if (!isCeo) {
+    await db.auth.signOut();
+    setOwnerAuthMessage("Login valido, mas este usuario nao esta marcado como CEO.");
+    return;
+  }
+
+  elements.ownerPasswordInput.value = "";
+  showOwnerDashboard();
+}
+
+async function handleOwnerSignup() {
+  if (!db) {
+    setOwnerAuthMessage("Supabase Auth e necessario para criar o acesso CEO.");
+    return;
+  }
+
+  const email = elements.ownerEmailInput.value.trim();
+  const password = elements.ownerPasswordInput.value;
+  if (!email || password.length < 6) {
+    setOwnerAuthMessage("Informe o e-mail CEO e uma senha com pelo menos 6 caracteres.");
+    return;
+  }
+
+  setOwnerAuthMessage("Criando acesso CEO...");
+  const { data, error } = await db.auth.signUp({ email, password });
+  if (error) {
+    setOwnerAuthMessage(`Nao consegui criar acesso: ${error.message}`);
+    return;
+  }
+
+  if (!data.session) {
+    setOwnerAuthMessage("Acesso criado. Confirme o e-mail e depois entre como CEO.");
+    elements.ownerPasswordInput.value = "";
+    return;
+  }
+
+  const isCeo = await verifyCeoSession();
+  if (!isCeo) {
+    await db.auth.signOut();
+    setOwnerAuthMessage("Acesso criado, mas o e-mail ainda nao esta autorizado como CEO.");
+    return;
+  }
+
+  elements.ownerPasswordInput.value = "";
+  showOwnerDashboard();
+}
+
+async function verifyCeoSession() {
+  const { data, error } = await db.rpc("fila_is_ceo");
+  if (error) {
+    setOwnerAuthMessage(`Nao consegui verificar permissao de CEO: ${error.message}`);
+    return false;
+  }
+  return Boolean(data);
+}
+
+function showOwnerDashboard() {
+  elements.ownerLoginPanel.hidden = true;
+  elements.ownerPanel.hidden = false;
+  setOwnerAuthMessage("");
+  refreshOwnerDashboard();
+}
+
+function setOwnerAuthMessage(message) {
+  if (elements.ownerAuthMessage) elements.ownerAuthMessage.textContent = message;
 }
 
 function bindOwnerTabs() {
@@ -415,57 +484,57 @@ async function handleAccessLogin(event) {
   }
 
   const passwordHash = await sha256(password);
-  const ownerAccount = await findOwnerAccount(rawUser);
-  if (ownerAccount || ["dono", "owner", "fila-ai"].includes(user)) {
-    const ownerPasswordOk = ownerAccount
-      ? passwordHash === ownerAccount.admin_pin
-      : password === getOwnerPin();
-    if (!ownerPasswordOk) {
-      elements.accessMessage.textContent = "Usuário ou senha incorretos.";
-      return;
-    }
-
-    saveAccessChoice("owner", rawUser, passwordHash);
-    sessionStorage.setItem(OWNER_AUTH_KEY, getOwnerPin());
+  const isLocalOwnerUser = ["dono", "owner", "fila-ai"].includes(user);
+  if (isLocalOwnerUser) {
     window.location.href = `${window.location.pathname}?modo=dono`;
     return;
   }
 
-  await handleRestaurantAccess(user, password, passwordHash);
+  await handleRestaurantAccessSecure(user, password, passwordHash);
 }
 
-async function handleRestaurantAccess(slug, password, passwordHash) {
+async function handleRestaurantAccessSecure(slug, password, passwordHash) {
   elements.accessMessage.textContent = "Validando acesso...";
 
   try {
     let adminPin = defaultCompany.adminPin;
     if (db) {
-      const { data, error } = await db
-        .from("queue_companies")
-        .select("admin_pin")
-        .eq("slug", slug)
-        .maybeSingle();
-      if (error) throw error;
-      if (!data) {
-        elements.accessMessage.textContent = "Usuário ou senha incorretos.";
+      const { data: hashOk, error: hashError } = await db.rpc("fila_admin_authorized", {
+        p_company_slug: slug,
+        p_admin_pin: passwordHash
+      });
+      if (hashError) throw hashError;
+
+      let plainOk = false;
+      if (!hashOk) {
+        const { data, error } = await db.rpc("fila_admin_authorized", {
+          p_company_slug: slug,
+          p_admin_pin: password
+        });
+        if (error) throw error;
+        plainOk = Boolean(data);
+      }
+
+      if (!hashOk && !plainOk) {
+        elements.accessMessage.textContent = "Usuario ou senha incorretos.";
         return;
       }
-      adminPin = data.admin_pin || "1234";
+      adminPin = hashOk ? passwordHash : password;
     } else if (slug !== defaultCompany.slug) {
-      elements.accessMessage.textContent = "Supabase indisponível. Teste apenas com restaurante-demo.";
+      elements.accessMessage.textContent = "Supabase indisponivel. Teste apenas com restaurante-demo.";
       return;
     }
 
-    if (password !== adminPin && passwordHash !== adminPin) {
-      elements.accessMessage.textContent = "Usuário ou senha incorretos.";
+    if (!db && password !== adminPin && passwordHash !== adminPin) {
+      elements.accessMessage.textContent = "Usuario ou senha incorretos.";
       return;
     }
 
-    saveAccessChoice("restaurant", slug, passwordHash);
+    saveAccessChoice("restaurant", slug, adminPin);
     sessionStorage.setItem(adminAuthKey(slug), adminPin);
     window.location.href = `${window.location.pathname}?empresa=${encodeURIComponent(slug)}&modo=admin`;
   } catch (error) {
-    elements.accessMessage.textContent = `Não consegui validar: ${error.message}`;
+    elements.accessMessage.textContent = `Nao consegui validar: ${error.message}`;
   }
 }
 
@@ -639,6 +708,8 @@ function renderOwnerCompanies(companies) {
           ${notifyUrl ? `<a href="${notifyUrl}" target="_blank" rel="noreferrer">Avisar cliente</a>` : ""}
           <button type="button" data-company-action="paid" data-slug="${escapeHtml(company.slug)}">Pago</button>
           <button type="button" data-company-action="pending" data-slug="${escapeHtml(company.slug)}">Pendente</button>
+          <button type="button" data-company-action="reset-pin" data-slug="${escapeHtml(company.slug)}" data-company-name="${escapeHtml(company.name)}" data-contact-phone="${escapeHtml(company.contact_phone || "")}">Novo PIN</button>
+          <button type="button" data-company-action="send-pin" data-slug="${escapeHtml(company.slug)}" data-company-name="${escapeHtml(company.name)}" data-contact-phone="${escapeHtml(company.contact_phone || "")}">Enviar novo PIN</button>
           <button type="button" data-company-action="blocked" data-slug="${escapeHtml(company.slug)}">Bloquear</button>
         </div>
       </article>
@@ -1000,6 +1071,12 @@ async function createTrialToken({ restaurantName, phone, trialDays }) {
 async function handleOwnerCompanyAction(button) {
   const slug = button.dataset.slug;
   const action = button.dataset.companyAction;
+
+  if (action === "reset-pin" || action === "send-pin") {
+    await resetRestaurantPin(button, action === "send-pin");
+    return;
+  }
+
   const updates = {
     paid: { owner_status: "ativo", payment_status: "pago" },
     pending: { owner_status: "teste", payment_status: "pendente" },
@@ -1018,6 +1095,47 @@ async function handleOwnerCompanyAction(button) {
     return;
   }
 
+  await refreshOwnerDashboard();
+}
+
+async function resetRestaurantPin(button, shouldOpenWhatsapp) {
+  const slug = button.dataset.slug;
+  const restaurantName = button.dataset.companyName || slug;
+  const contactPhone = button.dataset.contactPhone || "";
+  const nextPin = randomPin();
+  const nextPinHash = await sha256(nextPin);
+  const adminUrl = `${window.location.origin + window.location.pathname}?empresa=${encodeURIComponent(slug)}&modo=admin`;
+  const message = `Olá! Conforme solicitado, gerei uma nova senha de acesso do FILA AÍ.\n\nRestaurante: ${restaurantName}\nUsuário: ${slug}\nNovo PIN: ${nextPin}\nPainel administrador: ${adminUrl}\n\nPor segurança, recomendo alterar esse PIN depois de entrar no painel.`;
+
+  button.disabled = true;
+  const originalText = button.textContent;
+  button.textContent = "Gerando...";
+
+  const { error } = await db.rpc("fila_ceo_reset_admin_pin", {
+    p_company_slug: slug,
+    p_next_admin_pin: nextPinHash
+  });
+
+  if (error) {
+    button.disabled = false;
+    button.textContent = originalText;
+    alert(`Não consegui gerar novo PIN: ${error.message}`);
+    return;
+  }
+
+  await navigator.clipboard.writeText(message).catch(() => {});
+
+  const digits = whatsappPhone(contactPhone);
+  if (shouldOpenWhatsapp && digits) {
+    window.open(`https://api.whatsapp.com/send?phone=${digits}&text=${encodeURIComponent(message)}`, "_blank", "noopener");
+  } else if (shouldOpenWhatsapp && !digits) {
+    alert(`Novo PIN gerado e mensagem copiada.\n\nTelefone do cliente não está cadastrado.\n\n${message}`);
+  } else {
+    alert(`Novo PIN gerado e mensagem copiada:\n\n${message}`);
+  }
+
+  button.disabled = false;
+  button.textContent = originalText;
   await refreshOwnerDashboard();
 }
 
@@ -1067,7 +1185,8 @@ async function loadActivationToken() {
     return;
   }
 
-  const { data: token, error } = await db.from("trial_tokens").select("*").eq("token", TRIAL_TOKEN).maybeSingle();
+  const { data, error } = await db.rpc("fila_trial_token_public", { p_token: TRIAL_TOKEN });
+  const token = Array.isArray(data) ? data[0] : data;
   if (error || !token) {
     elements.activationForm.hidden = true;
     elements.activationMessage.textContent = "Token inválido ou não encontrado.";
@@ -1082,7 +1201,7 @@ async function loadActivationToken() {
 
   if (token.used_at && token.activated_slug) {
     elements.activationForm.hidden = true;
-    renderActivationLinks(token.activated_slug, token.admin_pin, token.trial_ends_at);
+    renderActivationLinks(token.activated_slug, "", token.trial_ends_at);
     return;
   }
 
@@ -1102,66 +1221,20 @@ async function activateTrialToken(event) {
     return;
   }
 
-  const { data: token, error } = await db.from("trial_tokens").select("*").eq("token", TRIAL_TOKEN).maybeSingle();
-  if (error || !token || token.status === "cancelado") {
+  const { data, error } = await db.rpc("fila_activate_trial_token", {
+    p_token: TRIAL_TOKEN,
+    p_restaurant_name: restaurantName,
+    p_owner_name: ownerName,
+    p_phone: phone
+  });
+  const activation = Array.isArray(data) ? data[0] : data;
+  if (error || !activation) {
     elements.activationMessage.textContent = "Token inválido, cancelado ou indisponível.";
     return;
   }
 
-  if (token.used_at && token.activated_slug) {
-    renderActivationLinks(token.activated_slug, token.admin_pin, token.trial_ends_at);
-    return;
-  }
-
-  const slug = await uniqueCompanySlug(restaurantName);
-  const now = new Date();
-  const days = clamp(Number(token.trial_days || 7), 1, 30);
-  const trialEnds = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
-  const adminPin = randomPin();
-  const company = {
-    ...defaultCompany,
-    slug,
-    name: restaurantName,
-    adminPin,
-    ownerStatus: "teste",
-    paymentStatus: "pendente",
-    contactName: ownerName,
-    contactPhone: phone,
-    monthlyPrice: "",
-    trialStartedAt: now.toISOString(),
-    trialEndsAt: trialEnds.toISOString()
-  };
-
-  const { error: companyError } = await db.from("queue_companies").insert(toSupabaseCompany(company));
-  if (companyError) {
-    elements.activationMessage.textContent = `Não consegui criar restaurante: ${companyError.message}`;
-    return;
-  }
-
-  const { error: tokenError } = await db
-    .from("trial_tokens")
-    .update({
-      status: "usado",
-      used_at: now.toISOString(),
-      trial_started_at: now.toISOString(),
-      trial_ends_at: trialEnds.toISOString(),
-      activated_slug: slug,
-      admin_pin: adminPin,
-      restaurant_name: restaurantName,
-      owner_name: ownerName,
-      phone,
-      updated_at: now.toISOString()
-    })
-    .eq("token", TRIAL_TOKEN)
-    .is("used_at", null);
-
-  if (tokenError) {
-    elements.activationMessage.textContent = `Restaurante criado, mas o token não atualizou: ${tokenError.message}`;
-    return;
-  }
-
   elements.activationForm.hidden = true;
-  renderActivationLinks(slug, adminPin, trialEnds.toISOString());
+  renderActivationLinks(activation.activated_slug, activation.admin_pin, activation.trial_ends_at);
 }
 
 function renderActivationLinks(slug, adminPin, trialEndsAt) {
@@ -1172,7 +1245,7 @@ function renderActivationLinks(slug, adminPin, trialEndsAt) {
   elements.activationResult.innerHTML = `
     <strong>Teste ativado</strong>
     <span>${trialStatus({ trial_ends_at: trialEndsAt })}</span>
-    <small>PIN do administrador: ${escapeHtml(adminPin || "1234")}</small>
+    ${adminPin ? `<small>PIN do administrador: ${escapeHtml(adminPin)}</small>` : `<small>Use a senha enviada pelo FILA AI para acessar o administrador.</small>`}
     <a href="${adminUrl}">Abrir painel administrador</a>
     <a href="${filaUrl}">Abrir fila do cliente</a>
   `;
@@ -1299,27 +1372,19 @@ function applyAccessMode() {
 async function ensureCompany() {
   if (!db) return;
 
-  const { data, error } = await db
-    .from("queue_companies")
-    .select("*")
-    .eq("slug", COMPANY_SLUG)
-    .maybeSingle();
+  const adminPin = adminSessionPin();
+  const rpcName = adminPin ? "fila_admin_company" : "fila_public_company";
+  const args = adminPin
+    ? { p_company_slug: COMPANY_SLUG, p_admin_pin: adminPin }
+    : { p_company_slug: COMPANY_SLUG };
+  const { data, error } = await db.rpc(rpcName, args);
 
   if (error) throw error;
 
-  if (data) {
-    state.company = fromSupabaseCompany(data);
+  if (data?.[0]) {
+    state.company = fromSupabaseCompany(data[0]);
     return;
   }
-
-  const { data: created, error: createError } = await db
-    .from("queue_companies")
-    .insert(toSupabaseCompany(defaultCompany))
-    .select()
-    .single();
-
-  if (createError) throw createError;
-  state.company = fromSupabaseCompany(created);
 }
 
 async function refreshFromSupabase() {
@@ -1400,10 +1465,29 @@ async function saveCompanySettings() {
   state.avgMinutes = Math.round((company.dwell2 + company.dwell4 + company.dwell6) / 3);
 
   if (db) {
-    const { error } = await db
-      .from("queue_companies")
-      .update({ ...toSupabaseCompany(company), updated_at: new Date().toISOString() })
-      .eq("slug", COMPANY_SLUG);
+    const { error } = await db.rpc("fila_update_company", {
+      p_company_slug: COMPANY_SLUG,
+      p_admin_pin: adminSessionPin(),
+      p_name: company.name,
+      p_tables_2: company.tables2,
+      p_tables_4: company.tables4,
+      p_tables_6: company.tables6,
+      p_used_2: company.used2,
+      p_used_4: company.used4,
+      p_used_6: company.used6,
+      p_queue_open: company.queueOpen,
+      p_open_time: company.openTime,
+      p_close_time: company.closeTime,
+      p_logo_url: company.logoUrl,
+      p_cover_url: company.coverUrl,
+      p_dwell_2: company.dwell2,
+      p_dwell_4: company.dwell4,
+      p_dwell_6: company.dwell6,
+      p_theme_mode: company.themeMode,
+      p_menu_enabled: company.menuEnabled,
+      p_menu_title: company.menuTitle,
+      p_menu_pdf_url: company.menuPdfUrl
+    });
 
     if (error) {
       alert(`Não consegui salvar: ${error.message}`);
@@ -1428,15 +1512,13 @@ async function saveMenuSettings() {
   state.company = company;
 
   if (db) {
-    const { error } = await db
-      .from("queue_companies")
-      .update({
-        menu_enabled: company.menuEnabled,
-        menu_title: company.menuTitle,
-        menu_pdf_url: company.menuPdfUrl,
-        updated_at: new Date().toISOString()
-      })
-      .eq("slug", COMPANY_SLUG);
+    const { error } = await db.rpc("fila_update_menu", {
+      p_company_slug: COMPANY_SLUG,
+      p_admin_pin: adminSessionPin(),
+      p_menu_enabled: company.menuEnabled,
+      p_menu_title: company.menuTitle,
+      p_menu_pdf_url: company.menuPdfUrl
+    });
 
     if (error) {
       elements.menuUploadStatus.textContent = `Não consegui salvar: ${error.message}`;
@@ -1518,18 +1600,22 @@ async function changeAdminPin() {
   }
 
   const nextHash = await sha256(next);
-  state.company.adminPin = nextHash;
+  const previousAdminPin = state.company.adminPin;
   if (db) {
-    const { error } = await db
-      .from("queue_companies")
-      .update({ admin_pin: nextHash, updated_at: new Date().toISOString() })
-      .eq("slug", COMPANY_SLUG);
+    const { error } = await db.rpc("fila_change_admin_pin", {
+      p_company_slug: COMPANY_SLUG,
+      p_current_admin_pin: previousAdminPin,
+      p_next_admin_pin: nextHash
+    });
     if (error) {
       elements.adminPinMessage.textContent = `Não consegui alterar: ${error.message}`;
       return;
     }
+    state.company.adminPin = nextHash;
+    sessionStorage.setItem(adminAuthKey(COMPANY_SLUG), nextHash);
     await refreshFromSupabase();
   } else {
+    state.company.adminPin = nextHash;
     persistLocalState();
   }
 
@@ -1610,7 +1696,13 @@ async function addTicketFromAdmin(event) {
   };
 
   if (db) {
-    const { error } = await db.from("queue_tickets").insert(ticket);
+    const { error } = await db.rpc("fila_admin_add_ticket", {
+      p_company_slug: COMPANY_SLUG,
+      p_admin_pin: adminSessionPin(),
+      p_number: ticket.number,
+      p_name: ticket.name,
+      p_party_size: ticket.party_size
+    });
     if (error) {
       alert(`Não consegui adicionar: ${error.message}`);
       return;
@@ -1635,10 +1727,12 @@ async function callNextTicket() {
   if (!waiting) return;
 
   if (db) {
-    const { error } = await db
-      .from("queue_tickets")
-      .update({ status: "called", called_at: new Date().toISOString() })
-      .eq("id", waiting.id);
+    const { error } = await db.rpc("fila_admin_update_ticket", {
+      p_company_slug: COMPANY_SLUG,
+      p_admin_pin: adminSessionPin(),
+      p_ticket_id: waiting.id,
+      p_status: "called"
+    });
 
     if (error) {
       alert(`Não consegui chamar: ${error.message}`);
@@ -1664,7 +1758,12 @@ async function finishCalledTicket() {
   if (!current) return;
 
   if (db) {
-    const { error } = await db.from("queue_tickets").update({ status: "done" }).eq("id", current.id);
+    const { error } = await db.rpc("fila_admin_update_ticket", {
+      p_company_slug: COMPANY_SLUG,
+      p_admin_pin: adminSessionPin(),
+      p_ticket_id: current.id,
+      p_status: "done"
+    });
     if (error) {
       alert(`Não consegui finalizar: ${error.message}`);
       return;
@@ -1685,7 +1784,10 @@ async function resetQueue() {
   if (!confirm("Limpar toda a fila desta empresa?")) return;
 
   if (db) {
-    const { error } = await db.from("queue_tickets").delete().eq("company_slug", COMPANY_SLUG);
+    const { error } = await db.rpc("fila_admin_reset_queue", {
+      p_company_slug: COMPANY_SLUG,
+      p_admin_pin: adminSessionPin()
+    });
     if (error) {
       alert(`Não consegui limpar: ${error.message}`);
       return;
@@ -1713,10 +1815,12 @@ async function handleTicketAction(action, id) {
         return;
       }
 
-      const { error } = await db
-        .from("queue_tickets")
-        .update({ status: "called", called_at: new Date().toISOString() })
-        .eq("id", id);
+      const { error } = await db.rpc("fila_admin_update_ticket", {
+        p_company_slug: COMPANY_SLUG,
+        p_admin_pin: adminSessionPin(),
+        p_ticket_id: id,
+        p_status: "called"
+      });
       if (error) {
         alert(`Não consegui chamar: ${error.message}`);
         return;
@@ -1727,7 +1831,12 @@ async function handleTicketAction(action, id) {
     }
 
     if (action === "done") {
-      const { error } = await db.from("queue_tickets").update({ status: "done" }).eq("id", id);
+      const { error } = await db.rpc("fila_admin_update_ticket", {
+        p_company_slug: COMPANY_SLUG,
+        p_admin_pin: adminSessionPin(),
+        p_ticket_id: id,
+        p_status: "done"
+      });
       if (error) {
         alert(`Não consegui finalizar: ${error.message}`);
         return;
@@ -1740,7 +1849,11 @@ async function handleTicketAction(action, id) {
     }
 
     if (action === "remove") {
-      const { error } = await db.from("queue_tickets").delete().eq("id", id);
+      const { error } = await db.rpc("fila_admin_remove_ticket", {
+        p_company_slug: COMPANY_SLUG,
+        p_admin_pin: adminSessionPin(),
+        p_ticket_id: id
+      });
       if (error) alert(`Não consegui remover: ${error.message}`);
       if (state.myTicketId === id) {
         state.myTicketId = null;
@@ -1856,11 +1969,6 @@ async function submitBillingRequest(event) {
     elements.billingRequestMessage.textContent = `Não consegui enviar: ${error.message}`;
     return;
   }
-
-  await db
-    .from("queue_companies")
-    .update({ payment_status: "solicitado", updated_at: new Date().toISOString() })
-    .eq("slug", state.company.slug);
 
   elements.billingRequestMessage.textContent = "Pedido enviado. O FILA AÍ vai chamar você para finalizar o pagamento.";
   await refreshFromSupabase();
@@ -2185,19 +2293,20 @@ async function changeUsedTables(bucket, delta) {
   const nextUsed = clamp(usedCountFor(bucket) + delta, 0, tableCountFor(bucket));
   setUsedCountFor(bucket, nextUsed);
 
-  const { error } = await db
-    .from("queue_companies")
-    .update({
-      used_2: state.company.used2,
-      used_4: state.company.used4,
-      used_6: state.company.used6,
-      updated_at: new Date().toISOString()
-    })
-    .eq("slug", COMPANY_SLUG);
+  const { error } = await db.rpc("fila_set_used_tables", {
+    p_company_slug: COMPANY_SLUG,
+    p_admin_pin: adminSessionPin(),
+    p_bucket: bucket,
+    p_delta: delta
+  });
 
   if (error) {
     alert(`Não consegui atualizar mesas: ${error.message}`);
   }
+}
+
+function adminSessionPin() {
+  return sessionStorage.getItem(adminAuthKey(COMPANY_SLUG)) || state.company.adminPin || "";
 }
 
 function fromSupabaseTicket(ticket) {
@@ -2383,18 +2492,6 @@ async function sha256(value) {
   return Array.from(new Uint8Array(hash), (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
-async function findOwnerAccount(user) {
-  if (!db) return null;
-  const slug = slugify(user);
-  const { data, error } = await db
-    .from("queue_companies")
-    .select("slug, admin_pin, owner_status")
-    .eq("slug", slug)
-    .maybeSingle();
-  if (error) throw error;
-  return data?.owner_status === "dono" ? data : null;
-}
-
 function saveAccessChoice(type, user, passwordHash) {
   if (!elements.accessRememberInput?.checked) {
     localStorage.removeItem(SAVED_ACCESS_KEY);
@@ -2433,25 +2530,15 @@ async function trySavedAccessLogin() {
   elements.accessMessage.textContent = "Entrando com acesso salvo...";
 
   try {
-    if (saved.type === "owner") {
-      const ownerAccount = await findOwnerAccount(saved.user);
-      if (ownerAccount?.admin_pin === saved.passwordHash) {
-        sessionStorage.setItem(OWNER_AUTH_KEY, getOwnerPin());
-        window.location.href = `${window.location.pathname}?modo=dono`;
-        return;
-      }
-    }
-
     if (saved.type === "restaurant") {
-      const { data, error } = await db
-        .from("queue_companies")
-        .select("slug, admin_pin")
-        .eq("slug", saved.user)
-        .maybeSingle();
+      const { data, error } = await db.rpc("fila_admin_authorized", {
+        p_company_slug: saved.user,
+        p_admin_pin: saved.passwordHash
+      });
       if (error) throw error;
-      if (data?.admin_pin === saved.passwordHash) {
-        sessionStorage.setItem(adminAuthKey(data.slug), data.admin_pin);
-        window.location.href = `${window.location.pathname}?empresa=${encodeURIComponent(data.slug)}&modo=admin`;
+      if (data) {
+        sessionStorage.setItem(adminAuthKey(saved.user), saved.passwordHash);
+        window.location.href = `${window.location.pathname}?empresa=${encodeURIComponent(saved.user)}&modo=admin`;
         return;
       }
     }

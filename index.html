@@ -14,7 +14,7 @@
     <link rel="icon" type="image/png" sizes="48x48" href="assets/icons/icon-48.png?v=icon-2" />
     <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/icon-180.png?v=icon-2" />
     <link rel="manifest" href="site.webmanifest?v=icon-2" />
-    <link rel="stylesheet" href="styles.css?v=login-contrast-1" />
+    <link rel="stylesheet" href="styles.css?v=ceo-auth-mobile-1" />
   </head>
   <body>
     <main id="landingPage" class="landing-shell">
@@ -300,12 +300,18 @@
       </section>
 
       <section id="ownerLoginPanel" class="panel compact">
-        <h2>Acesso do dono</h2>
+        <h2>Acesso CEO</h2>
         <label>
-          PIN
-          <input id="ownerPinInput" inputmode="numeric" autocomplete="off" placeholder="PIN do dono" />
+          E-mail
+          <input id="ownerEmailInput" type="email" autocomplete="email" placeholder="voce@filaai.com.br" />
         </label>
-        <button id="ownerLoginButton" class="primary" type="button">Entrar</button>
+        <label>
+          Senha
+          <input id="ownerPasswordInput" type="password" autocomplete="current-password" placeholder="Senha do Supabase Auth" />
+        </label>
+        <button id="ownerLoginButton" class="primary" type="button">Entrar como CEO</button>
+        <button id="ownerSignupButton" class="ghost" type="button">Criar acesso CEO</button>
+        <p id="ownerAuthMessage" class="muted" role="status"></p>
         <a class="ghost-link" href="./">Voltar para pagina inicial</a>
       </section>
 
@@ -425,17 +431,8 @@
           </section>
 
           <section class="panel">
-            <h2>Senha da central</h2>
-            <label>
-              PIN atual
-              <input id="ownerCurrentPinInput" inputmode="numeric" autocomplete="off" placeholder="PIN atual" />
-            </label>
-            <label>
-              Novo PIN
-              <input id="ownerNewPinInput" inputmode="numeric" autocomplete="off" minlength="4" maxlength="8" placeholder="4 a 8 números" />
-            </label>
-            <button id="ownerChangePinButton" class="primary" type="button">Alterar PIN do dono</button>
-            <p id="ownerPinMessage" class="muted" role="status"></p>
+            <h2>Seguranca do CEO</h2>
+            <p class="muted">O acesso desta central agora usa Supabase Auth. A senha nao fica no front-end e o banco so libera dados para usuarios CEO autorizados.</p>
           </section>
 
           <section class="panel">
