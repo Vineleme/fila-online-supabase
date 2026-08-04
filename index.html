@@ -311,7 +311,7 @@
 
       <section id="ownerPanel" class="owner-dashboard" hidden>
         <div class="section-title">
-          <h2>Pedidos e restaurantes</h2>
+          <h2>Central do dono</h2>
           <div class="owner-session-actions">
             <button id="ownerRefreshButton" class="ghost" type="button">Atualizar</button>
             <button id="ownerLogoutButton" class="ghost" type="button">Sair</button>
@@ -319,15 +319,24 @@
           </div>
         </div>
 
-        <section class="panel owner-prospect-panel">
+        <nav class="owner-crm-tabs" aria-label="Abas da central do dono">
+          <button class="owner-crm-tab is-active" data-owner-tab="ownerOperationPanel" type="button">Operacao</button>
+          <button class="owner-crm-tab" data-owner-tab="ownerProspectPanel" type="button">Prospeccao</button>
+        </nav>
+
+        <section id="ownerProspectPanel" class="panel owner-tab-panel owner-prospect-panel">
           <div class="section-title prospect-title">
             <div>
               <p class="landing-eyebrow">Central do dono</p>
               <h2>Gestao comercial do FILA AI</h2>
               <p class="muted">Leads para voce, dono do aplicativo, controlar abordagem, retorno e fechamento.</p>
             </div>
-            <button id="exportProspectsButton" class="ghost" type="button">Exportar CSV</button>
+            <div class="owner-session-actions">
+              <button id="saveProspectsButton" class="primary" type="button">Salvar operacao</button>
+              <button id="exportProspectsButton" class="ghost" type="button">Exportar CSV</button>
+            </div>
           </div>
+          <p id="prospectSaveMessage" class="muted" role="status">Alteracoes de status, data e anotacoes ficam salvas neste aparelho.</p>
 
           <div class="prospect-summary" aria-label="Resumo da prospeccao">
             <div>
@@ -394,6 +403,7 @@
           </div>
         </section>
 
+        <div id="ownerOperationPanel" class="owner-tab-panel is-active">
         <div class="owner-grid">
           <section class="panel">
             <h2>Gerar token de teste</h2>
@@ -468,6 +478,7 @@
           <h2>Pedidos de plano</h2>
           <div id="ownerBillingList" class="owner-list"></div>
         </section>
+        </div>
       </section>
     </main>
 

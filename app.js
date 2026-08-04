@@ -142,6 +142,8 @@ const elements = {
   ownerCompaniesList: document.querySelector("#ownerCompaniesList"),
   ownerTokensList: document.querySelector("#ownerTokensList"),
   ownerBillingList: document.querySelector("#ownerBillingList"),
+  ownerCrmTabs: document.querySelectorAll(".owner-crm-tab"),
+  ownerTabPanels: document.querySelectorAll(".owner-tab-panel"),
   prospectStateFilter: document.querySelector("#prospectStateFilter"),
   prospectStatusFilter: document.querySelector("#prospectStatusFilter"),
   prospectSearchInput: document.querySelector("#prospectSearchInput"),
@@ -150,6 +152,8 @@ const elements = {
   prospectHotCount: document.querySelector("#prospectHotCount"),
   prospectContactedCount: document.querySelector("#prospectContactedCount"),
   prospectWonCount: document.querySelector("#prospectWonCount"),
+  saveProspectsButton: document.querySelector("#saveProspectsButton"),
+  prospectSaveMessage: document.querySelector("#prospectSaveMessage"),
   exportProspectsButton: document.querySelector("#exportProspectsButton"),
   tabs: document.querySelectorAll(".tab"),
   tabsNav: document.querySelector(".tabs"),
@@ -334,6 +338,7 @@ function changeOwnerPin() {
 }
 
 function bindOwnerEvents() {
+  bindOwnerTabs();
   bindProspectEvents();
   renderProspectTable();
 
@@ -375,6 +380,21 @@ function bindOwnerEvents() {
     await refreshOwnerDashboard();
   });
   elements.ownerAccountForm?.addEventListener("submit", createRestaurantAccount);
+}
+
+function bindOwnerTabs() {
+  elements.ownerCrmTabs.forEach((tab) => {
+    tab.addEventListener("click", () => showOwnerTab(tab.dataset.ownerTab));
+  });
+}
+
+function showOwnerTab(panelId) {
+  elements.ownerCrmTabs.forEach((tab) => {
+    tab.classList.toggle("is-active", tab.dataset.ownerTab === panelId);
+  });
+  elements.ownerTabPanels.forEach((panel) => {
+    panel.classList.toggle("is-active", panel.id === panelId);
+  });
 }
 
 async function handleAccessLogin(event) {
@@ -692,6 +712,7 @@ function bindProspectEvents() {
   elements.prospectStateFilter?.addEventListener("change", renderProspectTable);
   elements.prospectStatusFilter?.addEventListener("change", renderProspectTable);
   elements.prospectSearchInput?.addEventListener("input", renderProspectTable);
+  elements.saveProspectsButton?.addEventListener("click", saveProspectOperation);
   elements.exportProspectsButton?.addEventListener("click", exportProspectsCsv);
 
   elements.prospectTableBody?.addEventListener("change", (event) => {
@@ -808,6 +829,18 @@ function updateProspect(id, field, value) {
   const saved = loadProspectState();
   saved[id] = { ...(saved[id] || {}), [field]: value };
   localStorage.setItem(PROSPECT_STATUS_KEY, JSON.stringify(saved));
+  if (elements.prospectSaveMessage) {
+    elements.prospectSaveMessage.textContent = "Alteracao salva automaticamente neste aparelho.";
+  }
+}
+
+function saveProspectOperation() {
+  localStorage.setItem(PROSPECT_STATUS_KEY, JSON.stringify(loadProspectState()));
+  if (!elements.prospectSaveMessage) return;
+  elements.prospectSaveMessage.textContent = `Operacao salva em ${new Intl.DateTimeFormat("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(new Date())}.`;
 }
 
 function prospectStatusOptions(selected) {
