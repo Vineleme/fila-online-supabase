@@ -490,7 +490,35 @@ async function handleAccessLogin(event) {
     return;
   }
 
+  if (rawUser.includes("@")) {
+    await handleAccessCeoLogin(rawUser, password);
+    return;
+  }
+
   await handleRestaurantAccessSecure(user, password, passwordHash);
+}
+
+async function handleAccessCeoLogin(email, password) {
+  if (!db) {
+    elements.accessMessage.textContent = "Supabase Auth e necessario para acessar o CEO.";
+    return;
+  }
+
+  elements.accessMessage.textContent = "Validando acesso CEO...";
+  const { error } = await db.auth.signInWithPassword({ email, password });
+  if (error) {
+    elements.accessMessage.textContent = "E-mail ou senha do CEO incorretos.";
+    return;
+  }
+
+  const { data: isCeo, error: ceoError } = await db.rpc("fila_is_ceo");
+  if (ceoError || !isCeo) {
+    await db.auth.signOut();
+    elements.accessMessage.textContent = "Este e-mail nao esta liberado como CEO.";
+    return;
+  }
+
+  window.location.href = `${window.location.pathname}?modo=dono`;
 }
 
 async function handleRestaurantAccessSecure(slug, password, passwordHash) {

@@ -869,6 +869,14 @@ html:has(.access-shell:not([hidden])) body {
   color: rgba(255, 255, 255, 0.68);
 }
 
+.access-card #accessMessage {
+  min-height: 22px;
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #f8fafc;
+}
+
 .access-card input {
   border-color: rgba(15, 23, 42, 0.16);
   background: #fff;
@@ -905,14 +913,18 @@ html:has(.access-shell:not([hidden])) body {
   min-height: 34px;
   align-items: center;
   gap: 10px;
-  color: rgba(255, 255, 255, 0.74);
+  color: #f8fafc;
   font-size: 0.9rem;
   font-weight: 750;
 }
 
-.remember-row input {
+.access-card .remember-row input {
+  flex: 0 0 auto;
   width: 18px;
+  height: 18px;
   min-height: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  background: #111827;
   accent-color: #22c55e;
 }
 
