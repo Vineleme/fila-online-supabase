@@ -1108,6 +1108,185 @@ html:has(.access-shell:not([hidden])) body {
   color: #041007;
 }
 
+.access-actions,
+.owner-session-actions,
+.admin-session-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.owner-session-actions,
+.admin-session-actions {
+  justify-content: flex-end;
+}
+
+.owner-prospect-panel {
+  overflow: hidden;
+}
+
+.prospect-title {
+  margin-bottom: 14px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.prospect-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(120px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.prospect-summary div {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 12px;
+  background: #070a0d;
+}
+
+.prospect-summary strong,
+.prospect-summary span {
+  display: block;
+}
+
+.prospect-summary strong {
+  color: #fff;
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.prospect-summary span {
+  margin-top: 5px;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.prospect-toolbar {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.6fr) minmax(170px, 0.7fr) minmax(220px, 1.4fr);
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.prospect-table-wrap {
+  overflow-x: auto;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: #070a0d;
+}
+
+.prospect-table {
+  width: 100%;
+  min-width: 1060px;
+  border-collapse: collapse;
+}
+
+.prospect-table th,
+.prospect-table td {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 12px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.prospect-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #101820;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.72rem;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.prospect-table td {
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.88rem;
+}
+
+.prospect-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.prospect-table strong,
+.prospect-table span,
+.prospect-table small {
+  display: block;
+}
+
+.prospect-table td > strong {
+  color: #fff;
+}
+
+.prospect-table span {
+  margin-top: 4px;
+  color: rgba(255, 255, 255, 0.56);
+}
+
+.priority-chip {
+  width: fit-content;
+  margin-top: 8px;
+  border-radius: 999px;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.72);
+  font-weight: 900;
+}
+
+.priority-chip.is-hot {
+  background: rgba(245, 158, 11, 0.16);
+  color: #fbbf24;
+}
+
+.prospect-table textarea {
+  width: 100%;
+  min-width: 190px;
+  margin-top: 8px;
+  resize: vertical;
+}
+
+.prospect-actions {
+  display: grid;
+  gap: 8px;
+  min-width: 116px;
+}
+
+.prospect-actions a,
+.prospect-actions button {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  padding: 0 10px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.prospect-actions a:first-child {
+  background: #22c55e;
+  color: #041007;
+}
+
+.prospect-actions a:nth-child(2) {
+  background: #f59e0b;
+  color: #050505;
+}
+
+.prospect-empty {
+  padding: 18px;
+  color: rgba(255, 255, 255, 0.6);
+  text-align: center;
+}
+
 .app-shell {
   width: min(1120px, calc(100% - 28px));
   margin: 0 auto;
@@ -1951,6 +2130,8 @@ html[data-access-mode="admin"] #adminQueuePanel.is-active {
   .trial-section,
   .access-grid,
   .owner-grid,
+  .prospect-summary,
+  .prospect-toolbar,
   .demo-grid,
   .mini-table-grid {
     grid-template-columns: 1fr;

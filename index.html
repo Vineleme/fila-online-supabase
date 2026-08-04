@@ -255,6 +255,9 @@
             Salvar acesso neste aparelho
           </label>
           <button class="primary" type="submit">Entrar</button>
+          <div class="access-actions">
+            <a class="ghost-link" href="./">Voltar para pagina inicial</a>
+          </div>
           <p id="accessMessage" class="muted" role="status"></p>
         </form>
       </section>
@@ -282,6 +285,7 @@
           <button class="landing-button primary" type="submit">Ativar meu teste</button>
           <p id="activationMessage" class="trial-message" role="status"></p>
         </form>
+        <a class="ghost-link" href="./">Voltar para pagina inicial</a>
         <div id="activationResult" class="activation-result" hidden></div>
       </section>
     </main>
@@ -302,13 +306,93 @@
           <input id="ownerPinInput" inputmode="numeric" autocomplete="off" placeholder="PIN do dono" />
         </label>
         <button id="ownerLoginButton" class="primary" type="button">Entrar</button>
+        <a class="ghost-link" href="./">Voltar para pagina inicial</a>
       </section>
 
       <section id="ownerPanel" class="owner-dashboard" hidden>
         <div class="section-title">
           <h2>Pedidos e restaurantes</h2>
-          <button id="ownerRefreshButton" class="ghost" type="button">Atualizar</button>
+          <div class="owner-session-actions">
+            <button id="ownerRefreshButton" class="ghost" type="button">Atualizar</button>
+            <button id="ownerLogoutButton" class="ghost" type="button">Sair</button>
+            <a class="ghost-link" href="./">Pagina inicial</a>
+          </div>
         </div>
+
+        <section class="panel owner-prospect-panel">
+          <div class="section-title prospect-title">
+            <div>
+              <p class="landing-eyebrow">Central do dono</p>
+              <h2>Gestao comercial do FILA AI</h2>
+              <p class="muted">Leads para voce, dono do aplicativo, controlar abordagem, retorno e fechamento.</p>
+            </div>
+            <button id="exportProspectsButton" class="ghost" type="button">Exportar CSV</button>
+          </div>
+
+          <div class="prospect-summary" aria-label="Resumo da prospeccao">
+            <div>
+              <strong id="prospectTotalCount">0</strong>
+              <span>leads no funil</span>
+            </div>
+            <div>
+              <strong id="prospectHotCount">0</strong>
+              <span>prioridade alta</span>
+            </div>
+            <div>
+              <strong id="prospectContactedCount">0</strong>
+              <span>em contato</span>
+            </div>
+            <div>
+              <strong id="prospectWonCount">0</strong>
+              <span>viraram cliente</span>
+            </div>
+          </div>
+
+          <div class="prospect-toolbar">
+            <label>
+              Estado
+              <select id="prospectStateFilter">
+                <option value="todos">Todos</option>
+                <option value="SP">Sao Paulo</option>
+                <option value="RJ">Rio de Janeiro</option>
+                <option value="MG">Minas Gerais</option>
+              </select>
+            </label>
+            <label>
+              Status
+              <select id="prospectStatusFilter">
+                <option value="todos">Todos</option>
+                <option value="novo">Novo</option>
+                <option value="contatar">Contatar hoje</option>
+                <option value="contatado">Contatado</option>
+                <option value="retorno">Retorno marcado</option>
+                <option value="cliente">Cliente</option>
+                <option value="descartado">Descartado</option>
+              </select>
+            </label>
+            <label>
+              Buscar
+              <input id="prospectSearchInput" type="search" placeholder="Restaurante, cidade ou telefone" />
+            </label>
+          </div>
+
+          <div class="prospect-table-wrap">
+            <table class="prospect-table">
+              <thead>
+                <tr>
+                  <th>Lead</th>
+                  <th>Estado</th>
+                  <th>Telefone</th>
+                  <th>Dor percebida</th>
+                  <th>Status</th>
+                  <th>Proxima acao</th>
+                  <th>Acoes</th>
+                </tr>
+              </thead>
+              <tbody id="prospectTableBody"></tbody>
+            </table>
+          </div>
+        </section>
 
         <div class="owner-grid">
           <section class="panel">
@@ -503,7 +587,10 @@
           <section id="adminConfigPanel" class="panel admin-tab-panel config-panel">
             <div class="section-title">
               <h2>Controle</h2>
-              <button id="logoutButton" class="ghost" type="button">Sair</button>
+              <div class="admin-session-actions">
+                <button id="logoutButton" class="ghost" type="button">Sair</button>
+                <a class="ghost-link" href="./">Pagina inicial</a>
+              </div>
             </div>
             <label>
               Nome da empresa

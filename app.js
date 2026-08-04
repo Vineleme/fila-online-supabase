@@ -5,7 +5,36 @@ const OWNER_PIN_KEY = "fila-ai-owner-pin";
 const OWNER_AUTH_KEY = "fila-ai-owner-auth";
 const ADMIN_AUTH_PREFIX = "fila-ai-admin-auth";
 const SAVED_ACCESS_KEY = "fila-ai-saved-access";
+const PROSPECT_STATUS_KEY = "fila-ai-owner-prospect-status";
 const DEFAULT_OWNER_PIN = "7890";
+
+const OWNER_PROSPECTS = [
+  ["sp-pecatto", "Pecatto Bar e Restaurante", "SP", "Sao Paulo", "(11) 99772-7738", "Alta", "Reclamacao direta sobre sistema de espera e acomodacao de mesas."],
+  ["sp-hannover", "Hannover Fondue", "SP", "Sao Paulo", "(11) 5561-5411", "Alta", "Fila grande, espera longa e falta de previsao em horarios fortes."],
+  ["sp-mata-citta", "Mata Citta", "SP", "Sao Paulo", "(11) 99128-0000", "Alta", "Restaurante muito concorrido, com relatos de 1h a 2h de fila."],
+  ["sp-aska", "Aska Lamen", "SP", "Sao Paulo", "(11) 3277-9682 / (11) 91600-9682", "Alta", "Fila recorrente na Liberdade, com relatos de espera longa."],
+  ["sp-chi-fu", "Chi Fu", "SP", "Sao Paulo", "(11) 3101-8888 / (11) 3112-1698", "Media", "Casa tradicional com alto fluxo e fila recorrente."],
+  ["sp-piccini", "Piccini Cucina", "SP", "Sao Paulo", "(11) 92102-8764 / (11) 96481-7877", "Alta", "Reclamacao com fila de espera de aproximadamente 1h."],
+  ["sp-mocoto", "Mocoto", "SP", "Sao Paulo", "(11) 2951-3056", "Media", "Casa muito conhecida, com relatos de espera acima de 2h."],
+  ["sp-famiglia-mancini", "Famiglia Mancini", "SP", "Sao Paulo", "(11) 3255-6599 / (11) 3256-4320", "Media", "Fila em casa tradicional e turistica, principalmente em pico."],
+  ["sp-yono", "Yono Sushi Aclimacao", "SP", "Sao Paulo", "(11) 5539-0022 / (11) 91988-2900", "Media", "Reclamacoes mencionam muita fila de espera na unidade."],
+  ["rj-lagostinne", "Lagostinne", "RJ", "Rio de Janeiro", "(21) 2466-1617", "Alta", "Reclamacao sobre demora excessiva na fila para conseguir mesa."],
+  ["rj-pineapple", "Pineapple Drinkeria", "RJ", "Rio de Janeiro", "(21) 3148-2668 / (21) 97722-1261", "Alta", "Avaliacoes citam fila nominal, espera e revisao do sistema de fila."],
+  ["rj-gurume", "Gurume Ipanema", "RJ", "Rio de Janeiro", "(21) 2540-7065 / (21) 99708-9865", "Alta", "Reclamacao sobre quase 1h de espera na fila."],
+  ["rj-santa-brasa", "Santa Brasa Pepe", "RJ", "Rio de Janeiro", "(21) 3649-8007", "Media", "Reclamacao de longa fila de espera em operacao de alto volume."],
+  ["rj-tower", "Tower Gourmet", "RJ", "Rio de Janeiro", "(21) 3153-7085 / (21) 95935-7710", "Media", "Relatos de fila enorme do lado de fora."],
+  ["rj-romanella", "Romanella Grill", "RJ", "Rio de Janeiro", "(21) 2432-5277 / (21) 98548-5886", "Media", "Reclamacao sobre desrespeito a fila de espera."],
+  ["rj-agridoce", "Casa Agridoce", "RJ", "Teresopolis", "(21) 99317-0608", "Media", "Conteudos sociais indicam fila frequente e alto fluxo."],
+  ["mg-paladino", "Paladino", "MG", "Belo Horizonte", "(31) 99918-4169 / (31) 99854-7055", "Alta", "Reclamacao sobre fila de espera manipulada."],
+  ["mg-xapuri", "Xapuri", "MG", "Belo Horizonte", "(31) 3496-6198", "Alta", "Reclamacoes sobre fila preferencial e desorganizacao."],
+  ["mg-porto", "Restaurante do Porto", "MG", "Belo Horizonte", "(31) 3482-9870 / (31) 99773-0550", "Media", "Reclamacao cita fila de espera enorme em feriado."],
+  ["mg-popolare", "Popolare Pizza", "MG", "Belo Horizonte", "(31) 99681-9163 / (31) 2180-2727", "Alta", "Reclamacao sobre falta de organizacao na fila de espera."],
+  ["mg-porcao", "Porcao BH", "MG", "Belo Horizonte", "(31) 3293-8787", "Media", "Reclamacao de longa espera mesmo com reserva."],
+  ["mg-verdemar", "Verdemar Pampulha Cafe", "MG", "Belo Horizonte", "(31) 2391-0010 / (31) 4040-4455", "Media", "Reclamacao sobre demora excessiva no restaurante."],
+  ["mg-cae", "Cae Restaurante Bar", "MG", "Belo Horizonte", "(31) 2528-2244", "Media", "Avaliacoes mencionam fila de espera."],
+  ["mg-baby-beef", "Baby Beef BH", "MG", "Belo Horizonte", "(31) 3426-1100", "Media", "Reclamacao menciona grande demanda e fila de espera grande."],
+  ["mg-celsinho", "Celsinho Grill", "MG", "Belo Horizonte", "(31) 2515-6762", "Media", "Casa de alto volume com sinais de fila em horarios de pico."]
+].map(([id, name, state, city, phone, priority, pain]) => ({ id, name, state, city, phone, priority, pain }));
 
 const params = new URLSearchParams(window.location.search);
 const COMPANY_SLUG = slugify(params.get("empresa") || "restaurante-demo");
@@ -94,6 +123,7 @@ const elements = {
   ownerPanel: document.querySelector("#ownerPanel"),
   ownerPinInput: document.querySelector("#ownerPinInput"),
   ownerLoginButton: document.querySelector("#ownerLoginButton"),
+  ownerLogoutButton: document.querySelector("#ownerLogoutButton"),
   ownerRefreshButton: document.querySelector("#ownerRefreshButton"),
   ownerCreateForm: document.querySelector("#ownerCreateForm"),
   ownerCompanyNameInput: document.querySelector("#ownerCompanyNameInput"),
@@ -112,6 +142,15 @@ const elements = {
   ownerCompaniesList: document.querySelector("#ownerCompaniesList"),
   ownerTokensList: document.querySelector("#ownerTokensList"),
   ownerBillingList: document.querySelector("#ownerBillingList"),
+  prospectStateFilter: document.querySelector("#prospectStateFilter"),
+  prospectStatusFilter: document.querySelector("#prospectStatusFilter"),
+  prospectSearchInput: document.querySelector("#prospectSearchInput"),
+  prospectTableBody: document.querySelector("#prospectTableBody"),
+  prospectTotalCount: document.querySelector("#prospectTotalCount"),
+  prospectHotCount: document.querySelector("#prospectHotCount"),
+  prospectContactedCount: document.querySelector("#prospectContactedCount"),
+  prospectWonCount: document.querySelector("#prospectWonCount"),
+  exportProspectsButton: document.querySelector("#exportProspectsButton"),
   tabs: document.querySelectorAll(".tab"),
   tabsNav: document.querySelector(".tabs"),
   views: document.querySelectorAll(".view"),
@@ -295,6 +334,9 @@ function changeOwnerPin() {
 }
 
 function bindOwnerEvents() {
+  bindProspectEvents();
+  renderProspectTable();
+
   if (sessionStorage.getItem(OWNER_AUTH_KEY) === getOwnerPin()) {
     elements.ownerLoginPanel.hidden = true;
     elements.ownerPanel.hidden = false;
@@ -310,6 +352,14 @@ function bindOwnerEvents() {
     elements.ownerPanel.hidden = false;
     sessionStorage.setItem(OWNER_AUTH_KEY, getOwnerPin());
     refreshOwnerDashboard();
+  });
+
+  elements.ownerLogoutButton?.addEventListener("click", () => {
+    sessionStorage.removeItem(OWNER_AUTH_KEY);
+    localStorage.removeItem(SAVED_ACCESS_KEY);
+    elements.ownerPinInput.value = "";
+    elements.ownerLoginPanel.hidden = false;
+    elements.ownerPanel.hidden = true;
   });
 
   elements.ownerRefreshButton.addEventListener("click", refreshOwnerDashboard);
@@ -636,6 +686,187 @@ function renderOwnerBilling(requests) {
   elements.ownerBillingList.querySelectorAll("button").forEach((button) => {
     button.addEventListener("click", () => handleOwnerBillingAction(button));
   });
+}
+
+function bindProspectEvents() {
+  elements.prospectStateFilter?.addEventListener("change", renderProspectTable);
+  elements.prospectStatusFilter?.addEventListener("change", renderProspectTable);
+  elements.prospectSearchInput?.addEventListener("input", renderProspectTable);
+  elements.exportProspectsButton?.addEventListener("click", exportProspectsCsv);
+
+  elements.prospectTableBody?.addEventListener("change", (event) => {
+    const field = event.target.dataset.prospectField;
+    const id = event.target.dataset.prospectId;
+    if (!field || !id) return;
+    updateProspect(id, field, event.target.value);
+    renderProspectTable();
+  });
+
+  elements.prospectTableBody?.addEventListener("input", (event) => {
+    const field = event.target.dataset.prospectField;
+    const id = event.target.dataset.prospectId;
+    if (!field || !id || field !== "notes") return;
+    updateProspect(id, field, event.target.value);
+  });
+
+  elements.prospectTableBody?.addEventListener("click", async (event) => {
+    if (event.target.dataset.prospectAction !== "copy") return;
+    const prospect = getProspectRows().find((row) => row.id === event.target.dataset.prospectId);
+    if (!prospect) return;
+    await navigator.clipboard.writeText(prospectPitch(prospect));
+    event.target.textContent = "Copiado";
+    setTimeout(() => {
+      event.target.textContent = "Copiar texto";
+    }, 1400);
+  });
+}
+
+function renderProspectTable() {
+  if (!elements.prospectTableBody) return;
+  const rows = filteredProspectRows();
+  renderProspectSummary();
+
+  if (!rows.length) {
+    elements.prospectTableBody.innerHTML = `<tr><td colspan="7" class="prospect-empty">Nenhum lead encontrado com estes filtros.</td></tr>`;
+    return;
+  }
+
+  elements.prospectTableBody.innerHTML = rows.map((prospect) => {
+    const whatsApp = whatsappPhone(firstPhone(prospect.phone));
+    const phoneHref = telPhone(firstPhone(prospect.phone));
+    const whatsUrl = whatsApp ? `https://api.whatsapp.com/send?phone=${whatsApp}&text=${encodeURIComponent(prospectPitch(prospect))}` : "";
+    return `
+      <tr>
+        <td>
+          <strong>${escapeHtml(prospect.name)}</strong>
+          <span>${escapeHtml(prospect.city)}</span>
+          <small class="priority-chip ${prospect.priority === "Alta" ? "is-hot" : ""}">${escapeHtml(prospect.priority)}</small>
+        </td>
+        <td>${escapeHtml(prospect.state)}</td>
+        <td><strong>${escapeHtml(prospect.phone)}</strong></td>
+        <td>${escapeHtml(prospect.pain)}</td>
+        <td><select data-prospect-field="status" data-prospect-id="${escapeHtml(prospect.id)}">${prospectStatusOptions(prospect.status)}</select></td>
+        <td>
+          <input type="date" value="${escapeHtml(prospect.nextAction || "")}" data-prospect-field="nextAction" data-prospect-id="${escapeHtml(prospect.id)}" />
+          <textarea rows="2" placeholder="Anotacao comercial" data-prospect-field="notes" data-prospect-id="${escapeHtml(prospect.id)}">${escapeHtml(prospect.notes || "")}</textarea>
+        </td>
+        <td>
+          <div class="prospect-actions">
+            ${whatsUrl ? `<a href="${whatsUrl}" target="_blank" rel="noreferrer">WhatsApp</a>` : ""}
+            ${phoneHref ? `<a href="tel:${phoneHref}">Ligar</a>` : ""}
+            <button type="button" data-prospect-action="copy" data-prospect-id="${escapeHtml(prospect.id)}">Copiar texto</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function renderProspectSummary() {
+  const rows = getProspectRows();
+  if (elements.prospectTotalCount) elements.prospectTotalCount.textContent = rows.length;
+  if (elements.prospectHotCount) elements.prospectHotCount.textContent = rows.filter((row) => row.priority === "Alta").length;
+  if (elements.prospectContactedCount) {
+    elements.prospectContactedCount.textContent = rows.filter((row) => ["contatado", "retorno"].includes(row.status)).length;
+  }
+  if (elements.prospectWonCount) elements.prospectWonCount.textContent = rows.filter((row) => row.status === "cliente").length;
+}
+
+function filteredProspectRows() {
+  const state = elements.prospectStateFilter?.value || "todos";
+  const status = elements.prospectStatusFilter?.value || "todos";
+  const search = normalizeSearchTerm(elements.prospectSearchInput?.value || "");
+
+  return getProspectRows().filter((prospect) => {
+    const matchesState = state === "todos" || prospect.state === state;
+    const matchesStatus = status === "todos" || prospect.status === status;
+    const haystack = normalizeSearchTerm(`${prospect.name} ${prospect.city} ${prospect.state} ${prospect.phone} ${prospect.pain}`);
+    return matchesState && matchesStatus && (!search || haystack.includes(search));
+  });
+}
+
+function getProspectRows() {
+  const saved = loadProspectState();
+  return OWNER_PROSPECTS.map((prospect) => ({
+    ...prospect,
+    status: saved[prospect.id]?.status || "novo",
+    nextAction: saved[prospect.id]?.nextAction || "",
+    notes: saved[prospect.id]?.notes || ""
+  }));
+}
+
+function loadProspectState() {
+  try {
+    return JSON.parse(localStorage.getItem(PROSPECT_STATUS_KEY) || "{}");
+  } catch {
+    localStorage.removeItem(PROSPECT_STATUS_KEY);
+    return {};
+  }
+}
+
+function updateProspect(id, field, value) {
+  const saved = loadProspectState();
+  saved[id] = { ...(saved[id] || {}), [field]: value };
+  localStorage.setItem(PROSPECT_STATUS_KEY, JSON.stringify(saved));
+}
+
+function prospectStatusOptions(selected) {
+  return [
+    ["novo", "Novo"],
+    ["contatar", "Contatar hoje"],
+    ["contatado", "Contatado"],
+    ["retorno", "Retorno marcado"],
+    ["cliente", "Cliente"],
+    ["descartado", "Descartado"]
+  ].map(([value, label]) => `<option value="${value}"${value === selected ? " selected" : ""}>${label}</option>`).join("");
+}
+
+function prospectPitch(prospect) {
+  return `Oi, tudo bem? Vi que o ${prospect.name} tem bastante movimento e que a espera por mesa pode virar um ponto sensivel para os clientes.\n\nSou do FILA AI. A gente ajuda restaurantes a organizar fila de espera pelo WhatsApp, reduzir confusao na recepcao e avisar o cliente quando a mesa esta proxima.\n\nQuem cuida dessa parte de atendimento/fila ai na casa?`;
+}
+
+function exportProspectsCsv() {
+  const header = ["nome", "estado", "cidade", "telefone", "prioridade", "status", "proxima_acao", "dor", "anotacoes"];
+  const rows = getProspectRows().map((prospect) => [
+    prospect.name,
+    prospect.state,
+    prospect.city,
+    prospect.phone,
+    prospect.priority,
+    prospect.status,
+    prospect.nextAction,
+    prospect.pain,
+    prospect.notes
+  ]);
+  const csv = [header, ...rows].map((line) => line.map(csvCell).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "prospeccao-fila-ai-sp-rj-mg.csv";
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function csvCell(value) {
+  return `"${String(value || "").replace(/"/g, '""')}"`;
+}
+
+function firstPhone(value) {
+  return String(value || "").split("/")[0].trim();
+}
+
+function telPhone(value) {
+  return String(value || "").replace(/[^\d+]/g, "");
+}
+
+function normalizeSearchTerm(value) {
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
 }
 
 async function handleOwnerRequestAction(button) {
