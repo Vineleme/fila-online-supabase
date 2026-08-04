@@ -1607,6 +1607,7 @@ html[data-access-mode="admin"] .company-logo {
 .ghost {
   border: 1px solid var(--line);
   background: var(--panel);
+  color: var(--ink);
 }
 
 .muted {
@@ -1797,6 +1798,27 @@ html[data-access-mode="admin"] .company-logo {
 .admin-shell {
   display: grid;
   gap: 16px;
+}
+
+.admin-session-bar {
+  display: flex;
+  width: min(100%, 980px);
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  justify-self: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  background: #fff;
+  color: #17211f;
+  box-shadow: 0 10px 24px rgba(17, 24, 39, 0.08);
+}
+
+.admin-session-bar span {
+  color: #66736f;
+  font-size: 0.86rem;
+  font-weight: 850;
 }
 
 .admin-tabs {
@@ -2088,6 +2110,29 @@ html[data-access-mode="admin"] #adminQueuePanel.is-active {
 .ghost-link {
   border: 1px solid var(--line);
   background: var(--panel);
+  color: var(--ink);
+}
+
+html[data-access-mode="admin"] .ghost,
+html[data-access-mode="admin"] .ghost-link {
+  border-color: #cbd5e1;
+  background: #ffffff;
+  color: #17211f;
+}
+
+html[data-access-mode="admin"] .ghost:hover,
+html[data-access-mode="admin"] .ghost-link:hover {
+  border-color: var(--brand);
+  background: var(--brand-soft);
+  color: var(--brand-dark);
+}
+
+html[data-access-mode="admin"] .admin-tab {
+  color: #17211f;
+}
+
+html[data-access-mode="admin"] .admin-tab.is-active {
+  color: #fff;
 }
 
 .support-button {
@@ -2300,6 +2345,19 @@ html[data-access-mode="admin"] #adminQueuePanel.is-active {
 
   .admin-tabs {
     width: 100%;
+  }
+
+  .admin-session-bar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-session-bar span {
+    text-align: center;
+  }
+
+  .admin-session-actions {
+    justify-content: center;
   }
 
   .admin-tab {

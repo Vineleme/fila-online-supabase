@@ -565,6 +565,7 @@
             <input id="pinInput" inputmode="numeric" autocomplete="off" placeholder="1234" />
           </label>
           <button id="loginButton" class="primary" type="button">Entrar</button>
+          <a class="ghost-link" href="./">Pagina inicial</a>
         </div>
 
         <div id="adminPanel" class="admin-shell" hidden>
@@ -573,6 +574,14 @@
             <button class="admin-tab" data-admin-tab="adminTablesPanel" type="button">Mesas</button>
             <button class="admin-tab" data-admin-tab="adminMenuPanel" type="button">Menu</button>
             <button class="admin-tab" data-admin-tab="adminConfigPanel" type="button">Configurar</button>
+          </div>
+
+          <div class="admin-session-bar">
+            <span>Painel administrativo do restaurante</span>
+            <div class="admin-session-actions">
+              <button id="logoutButton" class="ghost" type="button">Sair</button>
+              <a class="ghost-link" href="./">Pagina inicial</a>
+            </div>
           </div>
 
           <div class="admin-workspace">
@@ -598,10 +607,6 @@
           <section id="adminConfigPanel" class="panel admin-tab-panel config-panel">
             <div class="section-title">
               <h2>Controle</h2>
-              <div class="admin-session-actions">
-                <button id="logoutButton" class="ghost" type="button">Sair</button>
-                <a class="ghost-link" href="./">Pagina inicial</a>
-              </div>
             </div>
             <label>
               Nome da empresa
