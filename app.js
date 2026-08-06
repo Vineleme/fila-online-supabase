@@ -63,7 +63,7 @@ const defaultCompany = {
   dwell4: 70,
   dwell6: 90,
   themeMode: "light",
-  accentColor: "#0d6efd",
+  accentColor: "#F97316",
   ownerStatus: "demo",
   paymentStatus: "sem cobranca",
   contactName: "",
@@ -1483,7 +1483,7 @@ async function saveCompanySettings() {
     dwell4: clamp(Number(elements.dwell4Input.value), 15, 240),
     dwell6: clamp(Number(elements.dwell6Input.value), 15, 240),
     themeMode: elements.themeModeInput.value === "dark" ? "dark" : "light",
-    accentColor: "#0d6efd",
+    accentColor: "#F97316",
     menuEnabled: elements.menuEnabledInput?.checked || false,
     menuTitle: elements.menuTitleInput?.value.trim() || state.company.menuTitle || "Cardápio do restaurante",
     menuPdfUrl: normalizeUrl(elements.menuPdfUrlInput?.value, state.company.menuPdfUrl)
@@ -2173,10 +2173,10 @@ function renderTableStatus() {
 function applyTheme() {
   const isCustomerLink = ACCESS_MODE === "fila";
   const themeMode = isCustomerLink || state.company.themeMode === "dark" ? "dark" : "light";
-  const brand = isCustomerLink ? "#22c55e" : "#0d6efd";
-  const brandDark = isCustomerLink ? "#15803d" : "#084298";
-  const brandSoft = isCustomerLink ? "#0f2f1d" : themeMode === "dark" ? "#0b2f6b" : "#e7f0ff";
-  const heroAccent = isCustomerLink ? "rgba(34, 197, 94, 0.62)" : "rgba(13, 110, 253, 0.62)";
+  const brand = "#F97316";
+  const brandDark = "#C2410C";
+  const brandSoft = themeMode === "dark" ? "#431407" : "#FFF7ED";
+  const heroAccent = "rgba(249, 115, 22, 0.62)";
 
   document.documentElement.dataset.theme = themeMode;
   document.documentElement.style.setProperty("--brand", brand);
@@ -2371,7 +2371,7 @@ function fromSupabaseCompany(company) {
     dwell4: company.dwell_4,
     dwell6: company.dwell_6,
     themeMode: company.theme_mode || "light",
-    accentColor: company.accent_color || "#0d6efd",
+    accentColor: company.accent_color || "#F97316",
     ownerStatus: company.owner_status || "teste",
     paymentStatus: company.payment_status || "pendente",
     contactName: company.contact_name || "",
