@@ -27,7 +27,7 @@
     <link rel="icon" type="image/png" sizes="48x48" href="/assets/icons/icon-48.png?v=icon-4" />
     <link rel="apple-touch-icon" sizes="180x180" href="/assets/icons/icon-180.png?v=icon-4" />
     <link rel="manifest" href="/site.webmanifest?v=icon-4" />
-    <link rel="stylesheet" href="styles.css?v=login-contrast-1" />
+    <link rel="stylesheet" href="styles.css?v=landing-conversion-1" />
   </head>
   <body>
     <main id="landingPage" class="landing-shell">
@@ -44,39 +44,112 @@
         </div>
       </nav>
 
-      <section class="landing-hero">
+      <section class="landing-hero conversion-hero">
         <div class="hero-copy">
           <img class="mobile-hero-symbol" src="assets/fila-ai-symbol-outline.png" alt="Cliente entrando no restaurante pelo FILA AÍ" />
-          <p class="landing-eyebrow">Sistema de fila de espera para restaurantes</p>
-          <h1>App de fila de espera para restaurantes</h1>
-          <p>O Fila Aí transforma o QR Code da recepção em uma experiência bonita: o cliente acompanha a senha e a previsão pelo celular, enquanto o dono controla mesas, horários, capa e identidade do restaurante em tempo real.</p>
+          <p class="landing-eyebrow">Fila virtual para restaurantes</p>
+          <h1>App de fila de espera para restaurantes, sem caos na recepção.</h1>
+          <p>O Fila Aí ajuda bares, hamburguerias, pizzarias, churrascarias e restaurantes a organizar a espera pelo celular. O cliente entra pelo QR Code, acompanha a posição na fila e a equipe chama a mesa certa pelo painel administrativo.</p>
+          <div class="hero-benefits" aria-label="Principais benefícios">
+            <span>Cliente entra sem baixar aplicativo</span>
+            <span>Equipe controla fila, mesas e chamadas</span>
+            <span>Visual com a marca do restaurante</span>
+            <span>Teste grátis por 7 dias</span>
+          </div>
           <div class="hero-actions">
             <a class="landing-button primary" href="#solicitar-teste">Quero testar 7 dias</a>
           <a class="landing-button whatsapp" href="https://api.whatsapp.com/send?phone=5511943678179&text=Quero%20testar%20o%20FILA%20A%C3%8D%20no%20meu%20restaurante" target="_blank" rel="noreferrer">Falar no WhatsApp</a>
             <a class="landing-button secondary" href="#planos">Ver pacote completo</a>
           </div>
           <div class="hero-proof">
-            <span>Sem aplicativo</span>
-            <span>Marca do restaurante</span>
+            <span>QR Code na recepção</span>
+            <span>Sem app para o cliente</span>
             <span>R$ 147/mês</span>
           </div>
         </div>
-        <div class="hero-media brand-showcase">
-          <div class="brand-wordmark-stage">
-            <img class="brand-wordmark" src="assets/fila-ai-wordmark-outline.png" alt="FILA AÍ" />
+        <aside id="solicitar-teste" class="hero-lead-card" aria-label="Solicitar teste grátis">
+          <div class="lead-card-heading">
+            <img src="assets/fila-ai-symbol-outline.png" alt="" />
+            <div>
+              <p class="landing-eyebrow">Teste grátis</p>
+              <h2>Veja o Fila Aí no seu restaurante.</h2>
+              <span>Preencha os dados e receba o próximo passo pelo WhatsApp.</span>
+            </div>
           </div>
-          <div class="brand-symbol-stage">
-            <img class="brand-symbol" src="assets/fila-ai-symbol-outline.png" alt="Cliente entrando no restaurante pelo FILA AÍ" />
-          </div>
-        </div>
+          <form id="trialRequestForm" class="trial-form compact-trial-form">
+            <label>
+              Nome do restaurante
+              <input id="trialRestaurantInput" required minlength="2" maxlength="90" placeholder="Ex: Restaurante Villa Jardim" />
+            </label>
+            <label>
+              Seu nome
+              <input id="trialOwnerInput" required minlength="5" maxlength="90" placeholder="Nome e sobrenome" />
+            </label>
+            <label>
+              WhatsApp
+              <input id="trialPhoneInput" required inputmode="tel" maxlength="30" placeholder="(11) 99999-9999" />
+            </label>
+            <label>
+              Cidade
+              <input id="trialCityInput" maxlength="80" placeholder="Cidade / bairro" />
+            </label>
+            <button class="landing-button primary" type="submit">Solicitar meus 7 dias</button>
+            <p id="trialRequestMessage" class="trial-message" role="status"></p>
+          </form>
+        </aside>
+      </section>
+
+      <section class="landing-section trust-strip" aria-label="Resumo da oferta">
+        <article>
+          <strong>7 dias</strong>
+          <span>para testar no atendimento real</span>
+        </article>
+        <article>
+          <strong>R$ 147/mês</strong>
+          <span>plano único com os recursos principais</span>
+        </article>
+        <article>
+          <strong>QR Code</strong>
+          <span>cliente entra na fila pela recepção</span>
+        </article>
+        <article>
+          <strong>Painel</strong>
+          <span>controle de mesas, horários e chamadas</span>
+        </article>
       </section>
 
       <section class="landing-section seo-intro" aria-label="Aplicativo de fila de espera para restaurantes">
         <div>
-          <p class="landing-eyebrow">Fila virtual para restaurantes</p>
+          <p class="landing-eyebrow">Sistema de fila de espera</p>
           <h2>O que é o Fila Aí?</h2>
         </div>
         <p>O Fila Aí é um aplicativo de fila de espera para restaurantes que permite organizar a fila virtual, controlar mesas, acompanhar o tempo de espera e avisar o cliente quando chegar sua vez. Ideal para bares, hamburguerias, pizzarias, churrascarias e restaurantes de todos os portes.</p>
+      </section>
+
+      <section class="landing-section problem-section" aria-label="Problemas de fila que o Fila Aí resolve">
+        <div class="section-heading">
+          <p class="landing-eyebrow">Problema claro</p>
+          <h2>Quando a espera fica confusa, o cliente sente antes de sentar.</h2>
+          <p>Lista em papel, chamada no grito e cliente perguntando a cada cinco minutos passam uma sensação de desorganização. O Fila Aí coloca a fila em uma tela simples para a equipe e em um link claro para o cliente.</p>
+        </div>
+        <div class="problem-grid">
+          <article>
+            <strong>Recepção sobrecarregada</strong>
+            <p>A equipe deixa de responder a mesma pergunta o tempo todo e passa a acompanhar a fila em ordem.</p>
+          </article>
+          <article>
+            <strong>Cliente sem previsibilidade</strong>
+            <p>Quem entrou na fila consegue ver a própria senha, posição e estimativa direto pelo celular.</p>
+          </article>
+          <article>
+            <strong>Mesa livre mal aproveitada</strong>
+            <p>O painel ajuda a chamar grupos compatíveis com as mesas disponíveis no salão.</p>
+          </article>
+          <article>
+            <strong>Marca pouco profissional</strong>
+            <p>A fila aparece com nome, logo e capa do restaurante, criando uma experiência mais cuidada.</p>
+          </article>
+        </div>
       </section>
 
       <section class="landing-section feature-band" aria-label="Beneficios principais">
@@ -201,32 +274,18 @@
         </div>
       </section>
 
-      <section id="solicitar-teste" class="landing-section trial-section">
+      <section class="landing-section trial-section conversion-cta">
         <div class="section-heading">
           <p class="landing-eyebrow">Comece pelo teste grátis</p>
           <h2>Veja o FILA AÍ funcionando no seu restaurante por 7 dias.</h2>
           <p>Envie os dados do restaurante e receba um link exclusivo para testar. Depois dos 7 dias, o restaurante pode continuar no pacote completo por R$ 147/mês.</p>
         </div>
-        <form id="trialRequestForm" class="trial-form">
-          <label>
-            Nome do restaurante
-            <input id="trialRestaurantInput" required minlength="2" maxlength="90" placeholder="Ex: Restaurante Villa Jardim" />
-          </label>
-          <label>
-            Seu nome
-            <input id="trialOwnerInput" required minlength="5" maxlength="90" placeholder="Nome e sobrenome" />
-          </label>
-          <label>
-            WhatsApp
-            <input id="trialPhoneInput" required inputmode="tel" maxlength="30" placeholder="(11) 99999-9999" />
-          </label>
-          <label>
-            Cidade
-            <input id="trialCityInput" maxlength="80" placeholder="Cidade / bairro" />
-          </label>
-          <button class="landing-button primary" type="submit">Solicitar meus 7 dias</button>
-          <p id="trialRequestMessage" class="trial-message" role="status"></p>
-        </form>
+        <div class="cta-panel">
+          <strong>Plano único: R$ 147/mês</strong>
+          <p>Teste sem compromisso e valide a fila virtual com sua equipe antes de continuar.</p>
+          <a class="landing-button primary" href="#solicitar-teste">Preencher teste grátis</a>
+          <a class="landing-button whatsapp" href="https://api.whatsapp.com/send?phone=5511943678179&text=Quero%20testar%20o%20FILA%20A%C3%8D%20no%20meu%20restaurante" target="_blank" rel="noreferrer">Tirar dúvida no WhatsApp</a>
+        </div>
       </section>
 
       <section class="landing-section demo-section">
