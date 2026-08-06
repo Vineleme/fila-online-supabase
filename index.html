@@ -276,9 +276,12 @@
 
     <main id="accessShell" class="access-shell" hidden>
       <section class="access-hero">
-        <a class="nav-brand-mark" href="./" aria-label="FILA AÍ">
-          <img src="assets/fila-ai-wordmark-outline.png" alt="FILA AÍ" />
-        </a>
+        <div class="shell-header-actions">
+          <a class="nav-brand-mark" href="./" aria-label="FILA AÍ">
+            <img src="assets/fila-ai-wordmark-outline.png" alt="FILA AÍ" />
+          </a>
+          <a class="shell-action" href="./">Início</a>
+        </div>
         <p class="landing-eyebrow">Área administrativa</p>
         <h1>Área administrativa.</h1>
       </section>
@@ -309,6 +312,7 @@
 
     <main id="activationShell" class="activation-shell" hidden>
       <section class="activation-card">
+        <a class="shell-action" href="./">Início</a>
         <img src="assets/fila-ai-logo-white.png" alt="FILA AÍ" />
         <p class="landing-eyebrow">Ativar teste grátis</p>
         <h1>Configure seu restaurante em poucos segundos.</h1>
@@ -336,6 +340,7 @@
     <main id="ownerShell" class="owner-shell" hidden>
       <section class="owner-hero">
         <div>
+          <a class="shell-action" href="./">Início</a>
           <p class="landing-eyebrow">FILA AÍ</p>
           <h1>Central do dono</h1>
           <p>Controle pedidos de teste, restaurantes ativos, vencimento dos 7 dias e links que você entrega para cada cliente.</p>
@@ -345,16 +350,25 @@
       <section id="ownerLoginPanel" class="panel compact">
         <h2>Acesso do dono</h2>
         <label>
-          PIN
-          <input id="ownerPinInput" inputmode="numeric" autocomplete="off" placeholder="PIN do dono" />
+          E-mail
+          <input id="ownerEmailInput" type="email" autocomplete="username" placeholder="seu@email.com" />
+        </label>
+        <label>
+          Senha
+          <input id="ownerPasswordInput" type="password" autocomplete="current-password" placeholder="Senha da central" />
         </label>
         <button id="ownerLoginButton" class="primary" type="button">Entrar</button>
+        <button id="ownerSignupButton" class="ghost" type="button">Criar acesso CEO</button>
+        <p id="ownerAuthMessage" class="muted" role="status"></p>
       </section>
 
       <section id="ownerPanel" class="owner-dashboard" hidden>
         <div class="section-title">
           <h2>Pedidos e restaurantes</h2>
-          <button id="ownerRefreshButton" class="ghost" type="button">Atualizar</button>
+          <div class="owner-actions">
+            <button id="ownerRefreshButton" class="ghost" type="button">Atualizar</button>
+            <button id="ownerLogoutButton" class="ghost" type="button">Sair</button>
+          </div>
         </div>
 
         <div class="owner-grid">
@@ -378,21 +392,14 @@
           </section>
 
           <section class="panel">
-            <h2>Senha da central</h2>
-            <label>
-              PIN atual
-              <input id="ownerCurrentPinInput" inputmode="numeric" autocomplete="off" placeholder="PIN atual" />
-            </label>
-            <label>
-              Novo PIN
-              <input id="ownerNewPinInput" inputmode="numeric" autocomplete="off" minlength="4" maxlength="8" placeholder="4 a 8 números" />
-            </label>
-            <button id="ownerChangePinButton" class="primary" type="button">Alterar PIN do dono</button>
-            <p id="ownerPinMessage" class="muted" role="status"></p>
+            <h2>Recuperação de acesso</h2>
+            <p class="muted">O dono acessa esta central com e-mail e senha. Quando um restaurante esquecer o PIN, gere um novo em "Restaurantes controlados" e envie a mensagem pronta ao cliente.</p>
+            <p class="muted">A fila dos clientes não é apagada quando alguém sai da conta ou fecha o app.</p>
           </section>
 
           <section class="panel">
             <h2>Criar acesso do restaurante</h2>
+            <p class="muted">Esse usuário e senha são os dados que você entrega ao restaurante. Se o cliente esquecer, use "Novo PIN" em Restaurantes controlados para redefinir e copiar a mensagem de envio.</p>
             <form id="ownerAccountForm" class="owner-form">
               <label>
                 Usuário do restaurante
@@ -528,6 +535,9 @@
             <small>tempo médio</small>
           </div>
         </div>
+        <div class="topbar-actions">
+          <a class="ghost app-home-link" href="./">Início</a>
+        </div>
       </section>
 
       <nav class="tabs" aria-label="Áreas do sistema">
@@ -595,6 +605,10 @@
         </div>
 
         <div id="adminPanel" class="admin-shell" hidden>
+          <div class="admin-session-actions">
+            <a class="ghost" href="./">Início</a>
+            <button id="logoutTopButton" class="ghost" type="button">Sair</button>
+          </div>
           <div class="admin-tabs" role="tablist" aria-label="Administração">
             <button class="admin-tab is-active" data-admin-tab="adminQueuePanel" type="button">Fila</button>
             <button class="admin-tab" data-admin-tab="adminTablesPanel" type="button">Mesas</button>
@@ -646,6 +660,7 @@
             <p id="brandUploadStatus" class="muted" role="status">Você pode colar um link ou enviar uma imagem do computador/celular.</p>
             <div class="pin-box">
               <h3>Senha administrativa</h3>
+              <p class="muted">Altere aqui quando você ainda souber o PIN atual. Se esqueceu, peça para o dono do Fila Aí redefinir pela Central do Dono.</p>
               <div class="config-grid">
                 <label>
                   PIN atual
@@ -657,6 +672,7 @@
                 </label>
               </div>
               <button id="changeAdminPinButton" class="ghost" type="button">Alterar PIN</button>
+              <button id="suggestAdminPinButton" class="ghost" type="button">Sugerir PIN seguro</button>
               <p id="adminPinMessage" class="muted" role="status"></p>
             </div>
             <label>

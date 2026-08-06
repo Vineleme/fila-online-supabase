@@ -1116,6 +1116,40 @@ html:has(.access-shell:not([hidden])) body {
     url("assets/fila-ai-symbol-outline.png") right center/contain no-repeat;
 }
 
+.shell-header-actions,
+.topbar-actions,
+.admin-session-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.shell-action,
+.app-home-link,
+.admin-session-actions .ghost {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  padding: 0 14px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-size: 0.86rem;
+  font-weight: 850;
+  backdrop-filter: blur(12px);
+}
+
+.shell-action:hover,
+.app-home-link:hover,
+.admin-session-actions .ghost:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 122, 0, 0.22);
+}
+
 .access-hero .nav-brand-mark {
   width: min(168px, 52vw);
 }
@@ -1605,6 +1639,19 @@ html[data-access-mode="admin"] .app-shell {
     linear-gradient(90deg, rgba(3, 7, 18, 0.92), rgba(3, 7, 18, 0.42), var(--hero-accent)),
     var(--company-cover) center/cover;
   box-shadow: var(--shadow);
+}
+
+.topbar-actions {
+  justify-content: flex-end;
+}
+
+.app-home-link {
+  color: #fff;
+}
+
+.admin-session-actions {
+  justify-content: flex-end;
+  margin-bottom: 12px;
 }
 
 html[data-access-mode="fila"] .app-shell {
@@ -2526,6 +2573,17 @@ html[data-access-mode="admin"] #adminQueuePanel.is-active {
   .section-title {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .topbar-actions,
+  .admin-session-actions {
+    justify-content: stretch;
+  }
+
+  .topbar-actions .ghost,
+  .admin-session-actions .ghost,
+  .shell-action {
+    width: 100%;
   }
 
   .brand-heading {

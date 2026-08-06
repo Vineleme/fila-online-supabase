@@ -178,6 +178,7 @@ const elements = {
   loginButton: document.querySelector("#loginButton"),
   loginPanel: document.querySelector("#loginPanel"),
   adminPanel: document.querySelector("#adminPanel"),
+  logoutTopButton: document.querySelector("#logoutTopButton"),
   adminTabs: document.querySelectorAll(".admin-tab"),
   adminTabPanels: document.querySelectorAll(".admin-tab-panel"),
   billingTitle: document.querySelector("#billingTitle"),
@@ -195,6 +196,7 @@ const elements = {
   adminCurrentPinInput: document.querySelector("#adminCurrentPinInput"),
   adminNewPinInput: document.querySelector("#adminNewPinInput"),
   changeAdminPinButton: document.querySelector("#changeAdminPinButton"),
+  suggestAdminPinButton: document.querySelector("#suggestAdminPinButton"),
   adminPinMessage: document.querySelector("#adminPinMessage"),
   themeModeInput: document.querySelector("#themeModeInput"),
   queueOpenInput: document.querySelector("#queueOpenInput"),
@@ -721,14 +723,14 @@ function renderOwnerCompanies(companies) {
     const adminUrl = `${origin}?empresa=${encodeURIComponent(company.slug)}&modo=admin`;
     const filaUrl = `${origin}?empresa=${encodeURIComponent(company.slug)}&modo=fila`;
     const contactDigits = whatsappPhone(company.contact_phone);
-    const notifyMessage = encodeURIComponent(`Sua página do FILA AÍ está funcionando.\n\nAdministrador: ${adminUrl}\nFila do cliente: ${filaUrl}\nUsuário: ${company.slug}`);
+    const notifyMessage = encodeURIComponent(`Sua pagina do Fila Ai esta funcionando.\n\nAdministrador: ${adminUrl}\nFila do cliente: ${filaUrl}\nUsuario: ${company.slug}`);
     const notifyUrl = contactDigits ? `https://api.whatsapp.com/send?phone=${contactDigits}&text=${notifyMessage}` : "";
     return `
       <article class="owner-company owner-item">
         <div>
           <strong>${escapeHtml(company.name)}</strong>
           <span>${escapeHtml(company.owner_status || "teste")} - ${escapeHtml(company.payment_status || "pagamento pendente")} - ${trial}</span>
-          <small>Usuário do restaurante: ${escapeHtml(company.slug)}</small>
+          <small>Usuario do restaurante: ${escapeHtml(company.slug)}. A senha nao e exibida por seguranca; gere um novo PIN se o cliente esquecer.</small>
         </div>
         <div class="link-stack">
           <a href="${adminUrl}" target="_blank" rel="noreferrer">Administrador</a>
@@ -736,8 +738,8 @@ function renderOwnerCompanies(companies) {
           ${notifyUrl ? `<a href="${notifyUrl}" target="_blank" rel="noreferrer">Avisar cliente</a>` : ""}
           <button type="button" data-company-action="paid" data-slug="${escapeHtml(company.slug)}">Pago</button>
           <button type="button" data-company-action="pending" data-slug="${escapeHtml(company.slug)}">Pendente</button>
-          <button type="button" data-company-action="reset-pin" data-slug="${escapeHtml(company.slug)}" data-company-name="${escapeHtml(company.name)}" data-contact-phone="${escapeHtml(company.contact_phone || "")}">Novo PIN</button>
-          <button type="button" data-company-action="send-pin" data-slug="${escapeHtml(company.slug)}" data-company-name="${escapeHtml(company.name)}" data-contact-phone="${escapeHtml(company.contact_phone || "")}">Enviar novo PIN</button>
+          <button type="button" data-company-action="reset-pin" data-slug="${escapeHtml(company.slug)}" data-company-name="${escapeHtml(company.name)}" data-contact-phone="${escapeHtml(company.contact_phone || "")}">Gerar novo PIN</button>
+          <button type="button" data-company-action="send-pin" data-slug="${escapeHtml(company.slug)}" data-company-name="${escapeHtml(company.name)}" data-contact-phone="${escapeHtml(company.contact_phone || "")}">Gerar e enviar PIN</button>
           <button type="button" data-company-action="blocked" data-slug="${escapeHtml(company.slug)}">Bloquear</button>
         </div>
       </article>
@@ -1133,7 +1135,7 @@ async function resetRestaurantPin(button, shouldOpenWhatsapp) {
   const nextPin = randomPin();
   const nextPinHash = await sha256(nextPin);
   const adminUrl = `${window.location.origin + window.location.pathname}?empresa=${encodeURIComponent(slug)}&modo=admin`;
-  const message = `Olá! Conforme solicitado, gerei uma nova senha de acesso do FILA AÍ.\n\nRestaurante: ${restaurantName}\nUsuário: ${slug}\nNovo PIN: ${nextPin}\nPainel administrador: ${adminUrl}\n\nPor segurança, recomendo alterar esse PIN depois de entrar no painel.`;
+  const message = `Ola! Conforme solicitado, gerei uma nova senha de acesso do Fila Ai.\n\nRestaurante: ${restaurantName}\nUsuario: ${slug}\nNovo PIN: ${nextPin}\nPainel administrador: ${adminUrl}\n\nGuarde esse PIN em local seguro. Se quiser, depois de entrar no painel, voce pode alterar em Configurar > Senha administrativa.`;
 
   button.disabled = true;
   const originalText = button.textContent;
@@ -1147,7 +1149,7 @@ async function resetRestaurantPin(button, shouldOpenWhatsapp) {
   if (error) {
     button.disabled = false;
     button.textContent = originalText;
-    alert(`Não consegui gerar novo PIN: ${error.message}`);
+    alert(`Nao consegui gerar novo PIN: ${error.message}`);
     return;
   }
 
@@ -1157,7 +1159,7 @@ async function resetRestaurantPin(button, shouldOpenWhatsapp) {
   if (shouldOpenWhatsapp && digits) {
     window.open(`https://api.whatsapp.com/send?phone=${digits}&text=${encodeURIComponent(message)}`, "_blank", "noopener");
   } else if (shouldOpenWhatsapp && !digits) {
-    alert(`Novo PIN gerado e mensagem copiada.\n\nTelefone do cliente não está cadastrado.\n\n${message}`);
+    alert(`Novo PIN gerado e mensagem copiada.\n\nTelefone do cliente nao esta cadastrado.\n\n${message}`);
   } else {
     alert(`Novo PIN gerado e mensagem copiada:\n\n${message}`);
   }
@@ -1354,19 +1356,15 @@ function bindEvents() {
     const pin = elements.pinInput.value.trim();
     const pinHash = await sha256(pin);
     if (pin !== state.company.adminPin && pinHash !== state.company.adminPin) {
-      alert("PIN incorreto. PIN inicial: 1234");
+      alert("PIN incorreto. Se voce esqueceu a senha, solicite ao dono do Fila Ai a redefinicao pela Central do Dono.");
       return;
     }
     openAdminPanel();
     sessionStorage.setItem(adminAuthKey(COMPANY_SLUG), state.company.adminPin);
   });
 
-  elements.logoutButton.addEventListener("click", () => {
-    elements.pinInput.value = "";
-    elements.loginPanel.hidden = false;
-    elements.adminPanel.hidden = true;
-    sessionStorage.removeItem(adminAuthKey(COMPANY_SLUG));
-  });
+  elements.logoutButton.addEventListener("click", logoutAdminSession);
+  elements.logoutTopButton?.addEventListener("click", logoutAdminSession);
 
   elements.saveCompanyButton.addEventListener("click", saveCompanySettings);
   elements.adminAddForm.addEventListener("submit", addTicketFromAdmin);
@@ -1377,6 +1375,7 @@ function bindEvents() {
   elements.saveMenuSettingsButton?.addEventListener("click", saveMenuSettings);
   elements.copyQueueLinkButton?.addEventListener("click", copyQueueLink);
   elements.changeAdminPinButton?.addEventListener("click", changeAdminPin);
+  elements.suggestAdminPinButton?.addEventListener("click", suggestAdminPin);
 
   elements.callNextButton.addEventListener("click", callNextTicket);
   elements.finishCalledButton.addEventListener("click", finishCalledTicket);
@@ -1387,6 +1386,13 @@ function bindEvents() {
     state = loadLocalState();
     render();
   });
+}
+
+function logoutAdminSession() {
+  elements.pinInput.value = "";
+  elements.loginPanel.hidden = false;
+  elements.adminPanel.hidden = true;
+  sessionStorage.removeItem(adminAuthKey(COMPANY_SLUG));
 }
 
 function applyAccessMode() {
@@ -1636,7 +1642,7 @@ async function changeAdminPin() {
       p_next_admin_pin: nextHash
     });
     if (error) {
-      elements.adminPinMessage.textContent = `Não consegui alterar: ${error.message}`;
+      elements.adminPinMessage.textContent = `Nao consegui alterar: ${error.message}`;
       return;
     }
     state.company.adminPin = nextHash;
@@ -1651,6 +1657,13 @@ async function changeAdminPin() {
   elements.adminNewPinInput.value = "";
   elements.pinInput.value = "";
   elements.adminPinMessage.textContent = "PIN administrativo alterado.";
+}
+
+function suggestAdminPin() {
+  const nextPin = randomPin();
+  elements.adminNewPinInput.value = nextPin;
+  elements.adminPinMessage.textContent = `PIN sugerido: ${nextPin}. Clique em Alterar PIN para salvar.`;
+  elements.adminNewPinInput.focus();
 }
 
 async function handleBrandFileUpload(type) {
