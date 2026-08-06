@@ -83,6 +83,7 @@ const params = new URLSearchParams(window.location.search);
 const COMPANY_SLUG = slugify(params.get("empresa") || "restaurante-demo");
 const TRIAL_TOKEN = (params.get("token") || "").trim();
 const ACCESS_MODE = normalizeAccessMode(params.get("modo") || params.get("tela") || params.get("view") || (TRIAL_TOKEN ? "ativar" : ""));
+const ADMIN_TAB = normalizeAdminTab(params.get("aba") || params.get("tab") || params.get("painel") || "");
 
 const defaultCompany = {
   slug: COMPANY_SLUG,
@@ -357,6 +358,7 @@ function boot() {
   applyAccessMode();
   render();
   restoreAdminAccess();
+  if (ACCESS_MODE === "admin" && ADMIN_TAB) showAdminPanel(ADMIN_TAB, { replaceUrl: true });
 
   if (db) {
     refreshFromSupabase();
@@ -2138,9 +2140,13 @@ function showView(viewId) {
   updateTopLabel();
 }
 
-function showAdminPanel(panelId) {
-  elements.adminTabs.forEach((tab) => tab.classList.toggle("is-active", tab.dataset.adminTab === panelId));
-  elements.adminTabPanels.forEach((panel) => panel.classList.toggle("is-active", panel.id === panelId));
+function showAdminPanel(panelId, options = {}) {
+  const targetPanel = normalizeAdminTab(panelId);
+  if (!targetPanel) return;
+
+  elements.adminTabs.forEach((tab) => tab.classList.toggle("is-active", tab.dataset.adminTab === targetPanel));
+  elements.adminTabPanels.forEach((panel) => panel.classList.toggle("is-active", panel.id === targetPanel));
+  updateAdminTabUrl(targetPanel, options);
 }
 
 function render() {
@@ -3418,6 +3424,70 @@ function normalizeAccessMode(value) {
   if (["admin", "administrativo", "gestao", "gestor"].includes(mode)) return "admin";
   if (["fila", "cliente", "qr", "publico"].includes(mode)) return "fila";
   return "";
+}
+
+function normalizeAdminTab(value) {
+  const tab = slugify(value);
+  const panels = {
+    fila: "adminQueuePanel",
+    queue: "adminQueuePanel",
+    adminqueuepanel: "adminQueuePanel",
+    mesas: "adminTablesPanel",
+    mesa: "adminTablesPanel",
+    tables: "adminTablesPanel",
+    admintablespanel: "adminTablesPanel",
+    cardapio: "adminMenuPanel",
+    menu: "adminMenuPanel",
+    produtos: "adminMenuPanel",
+    adminmenupanel: "adminMenuPanel",
+    pedidos: "adminOrdersPanel",
+    pedido: "adminOrdersPanel",
+    orders: "adminOrdersPanel",
+    adminorderspanel: "adminOrdersPanel",
+    cozinha: "adminKitchenPanel",
+    kitchen: "adminKitchenPanel",
+    preparo: "adminKitchenPanel",
+    adminkitchenpanel: "adminKitchenPanel",
+    comandas: "adminChecksPanel",
+    comanda: "adminChecksPanel",
+    checks: "adminChecksPanel",
+    admincheckspanel: "adminChecksPanel",
+    configurar: "adminConfigPanel",
+    configuracoes: "adminConfigPanel",
+    settings: "adminConfigPanel",
+    adminconfigpanel: "adminConfigPanel"
+  };
+
+  return panels[tab] || "";
+}
+
+function adminTabSlug(panelId) {
+  const slugs = {
+    adminQueuePanel: "fila",
+    adminTablesPanel: "mesas",
+    adminMenuPanel: "cardapio",
+    adminOrdersPanel: "pedidos",
+    adminKitchenPanel: "cozinha",
+    adminChecksPanel: "comandas",
+    adminConfigPanel: "configurar"
+  };
+
+  return slugs[panelId] || "";
+}
+
+function updateAdminTabUrl(panelId, options = {}) {
+  if (ACCESS_MODE !== "admin" || !window.history?.replaceState) return;
+
+  const tab = adminTabSlug(panelId);
+  if (!tab) return;
+
+  const nextParams = new URLSearchParams(window.location.search);
+  nextParams.set("empresa", COMPANY_SLUG);
+  nextParams.set("modo", "admin");
+  nextParams.set("aba", tab);
+
+  const nextUrl = `${window.location.pathname}?${nextParams.toString()}${window.location.hash}`;
+  window.history.replaceState(null, "", nextUrl);
 }
 
 function escapeHtml(value) {
