@@ -3036,9 +3036,10 @@ textarea {
 }
 
 .landing-hero {
-  grid-template-columns: minmax(420px, 500px) minmax(420px, 1fr);
-  gap: clamp(42px, 5vw, 86px);
+  grid-template-columns: minmax(320px, 360px) minmax(420px, 500px);
+  gap: clamp(56px, 5vw, 72px);
   align-items: center;
+  justify-content: center;
   min-height: min(820px, calc(100svh - 76px));
   padding: clamp(44px, 7vw, 96px) 0 72px;
 }
@@ -3046,7 +3047,7 @@ textarea {
 .hero-copy {
   gap: 24px;
   min-width: 0;
-  max-width: 500px;
+  max-width: 360px;
 }
 
 .landing-eyebrow {
@@ -3064,6 +3065,16 @@ textarea {
   font-weight: 800;
   line-height: 1.05;
   overflow-wrap: normal;
+}
+
+.hero-copy h1 {
+  max-width: 360px;
+  font-size: clamp(2.55rem, 3.15vw, 3.55rem);
+  line-height: 1.07;
+}
+
+.hero-copy > p:not(.landing-eyebrow) {
+  max-width: 360px;
 }
 
 .hero-copy p,
@@ -3118,8 +3129,8 @@ textarea {
 
 .hero-product-mockup {
   position: relative;
-  width: min(100%, 560px);
-  min-height: 520px;
+  width: min(100%, 500px);
+  min-height: 470px;
   justify-self: end;
 }
 
@@ -3148,8 +3159,8 @@ textarea {
 
 .mockup-dashboard {
   display: grid;
-  grid-template-columns: 82px 1fr;
-  min-height: 430px;
+  grid-template-columns: 68px 1fr;
+  min-height: 398px;
 }
 
 .mockup-sidebar {
@@ -3180,9 +3191,9 @@ textarea {
 
 .mockup-content {
   display: grid;
-  gap: 18px;
+  gap: 14px;
   align-content: start;
-  padding: clamp(20px, 3vw, 30px);
+  padding: clamp(18px, 2.4vw, 26px);
   background: linear-gradient(180deg, #ffffff, #fafafa);
 }
 
@@ -3295,7 +3306,7 @@ textarea {
   bottom: -28px;
   display: grid;
   justify-items: center;
-  width: min(220px, 38vw);
+  width: min(190px, 34vw);
   gap: 8px;
   border: 10px solid var(--fa-graphite);
   border-radius: 30px;
