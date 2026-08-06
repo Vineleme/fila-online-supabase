@@ -318,8 +318,12 @@
           </label>
           <label class="remember-row">
             <input id="accessRememberInput" type="checkbox" />
-            Salvar acesso neste aparelho
+            Salvar senha neste aparelho
           </label>
+          <div class="auth-links">
+            <button id="accessForgotButton" class="text-button" type="button">Esqueci a senha</button>
+            <a href="./">Página Inicial</a>
+          </div>
           <button class="primary" type="submit">Entrar</button>
           <p id="accessMessage" class="muted" role="status"></p>
         </form>
@@ -373,6 +377,14 @@
           Senha
           <input id="ownerPasswordInput" type="password" autocomplete="current-password" placeholder="Senha da central" />
         </label>
+        <label class="remember-row">
+          <input id="ownerRememberInput" type="checkbox" />
+          Salvar senha neste aparelho
+        </label>
+        <div class="auth-links">
+          <button id="ownerForgotButton" class="text-button" type="button">Esqueci a senha</button>
+          <a href="./">Página Inicial</a>
+        </div>
         <button id="ownerLoginButton" class="primary" type="button">Entrar</button>
         <button id="ownerSignupButton" class="ghost" type="button">Criar acesso CEO</button>
         <p id="ownerAuthMessage" class="muted" role="status"></p>
@@ -552,7 +564,7 @@
           </div>
         </div>
         <div class="topbar-actions">
-          <a class="ghost app-home-link" href="./">Início</a>
+          <a class="ghost app-home-link" href="./">Página Inicial</a>
         </div>
       </section>
 
@@ -649,12 +661,20 @@
             PIN
             <input id="pinInput" inputmode="numeric" autocomplete="off" placeholder="1234" />
           </label>
+          <label class="remember-row">
+            <input id="adminRememberInput" type="checkbox" />
+            Salvar senha neste aparelho
+          </label>
+          <div class="auth-links">
+            <button id="adminForgotButton" class="text-button" type="button">Esqueci a senha</button>
+            <a href="./">Página Inicial</a>
+          </div>
           <button id="loginButton" class="primary" type="button">Entrar</button>
         </div>
 
         <div id="adminPanel" class="admin-shell" hidden>
           <div class="admin-session-actions">
-            <a class="ghost" href="./">Início</a>
+            <a class="ghost" href="./">Página Inicial</a>
             <button id="logoutTopButton" class="ghost" type="button">Sair</button>
           </div>
           <div class="admin-tabs" role="tablist" aria-label="Administração">

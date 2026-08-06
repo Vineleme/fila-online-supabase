@@ -2,7 +2,9 @@ const STORAGE_KEY = "fila-online-state-v2";
 const MY_TICKET_KEY = "fila-online-my-ticket-v2";
 const ASSETS_BUCKET = "fila-ai-assets";
 const ADMIN_AUTH_PREFIX = "fila-ai-admin-auth";
+const ADMIN_SAVED_PREFIX = "fila-ai-admin-saved";
 const SAVED_ACCESS_KEY = "fila-ai-saved-access";
+const OWNER_EMAIL_KEY = "fila-ai-owner-email";
 const PROSPECT_STATUS_KEY = "fila-ai-owner-prospect-status";
 
 const ORDER_STATUS_FLOW = ["new", "preparing", "ready", "delivered"];
@@ -150,6 +152,7 @@ const elements = {
   accessPasswordInput: document.querySelector("#accessPasswordInput"),
   toggleAccessPasswordButton: document.querySelector("#toggleAccessPasswordButton"),
   accessRememberInput: document.querySelector("#accessRememberInput"),
+  accessForgotButton: document.querySelector("#accessForgotButton"),
   accessMessage: document.querySelector("#accessMessage"),
   activationForm: document.querySelector("#activationForm"),
   activationRestaurantInput: document.querySelector("#activationRestaurantInput"),
@@ -167,8 +170,10 @@ const elements = {
   ownerPanel: document.querySelector("#ownerPanel"),
   ownerEmailInput: document.querySelector("#ownerEmailInput"),
   ownerPasswordInput: document.querySelector("#ownerPasswordInput"),
+  ownerRememberInput: document.querySelector("#ownerRememberInput"),
   ownerLoginButton: document.querySelector("#ownerLoginButton"),
   ownerSignupButton: document.querySelector("#ownerSignupButton"),
+  ownerForgotButton: document.querySelector("#ownerForgotButton"),
   ownerLogoutButton: document.querySelector("#ownerLogoutButton"),
   ownerRefreshButton: document.querySelector("#ownerRefreshButton"),
   ownerCreateForm: document.querySelector("#ownerCreateForm"),
@@ -216,6 +221,8 @@ const elements = {
   statWaiting: document.querySelector("#statWaiting"),
   statAvg: document.querySelector("#statAvg"),
   pinInput: document.querySelector("#pinInput"),
+  adminRememberInput: document.querySelector("#adminRememberInput"),
+  adminForgotButton: document.querySelector("#adminForgotButton"),
   loginButton: document.querySelector("#loginButton"),
   loginPanel: document.querySelector("#loginPanel"),
   adminPanel: document.querySelector("#adminPanel"),
@@ -370,6 +377,7 @@ function bindLandingEvents() {
 function bindAccessEvents() {
   elements.accessForm?.addEventListener("submit", handleAccessLogin);
   elements.toggleAccessPasswordButton?.addEventListener("click", toggleAccessPassword);
+  elements.accessForgotButton?.addEventListener("click", handleAccessForgotPassword);
   fillSavedAccess();
   trySavedAccessLogin();
 }
@@ -389,6 +397,8 @@ function bindOwnerEvents() {
 
   elements.ownerLoginButton.addEventListener("click", handleOwnerLogin);
   elements.ownerSignupButton?.addEventListener("click", handleOwnerSignup);
+  elements.ownerForgotButton?.addEventListener("click", handleOwnerForgotPassword);
+  fillOwnerRememberedEmail();
 
   elements.ownerLogoutButton?.addEventListener("click", async () => {
     if (db) await db.auth.signOut();
@@ -458,8 +468,20 @@ async function handleOwnerLogin() {
     return;
   }
 
+  rememberOwnerEmail(email);
   elements.ownerPasswordInput.value = "";
   showOwnerDashboard();
+}
+
+async function handleOwnerForgotPassword() {
+  const email = elements.ownerEmailInput.value.trim();
+  if (!email) {
+    setOwnerAuthMessage("Informe o e-mail do CEO antes de recuperar a senha.");
+    elements.ownerEmailInput.focus();
+    return;
+  }
+
+  await sendOwnerPasswordReset(email, elements.ownerAuthMessage);
 }
 
 async function handleOwnerSignup() {
@@ -517,6 +539,35 @@ function showOwnerDashboard() {
 
 function setOwnerAuthMessage(message) {
   if (elements.ownerAuthMessage) elements.ownerAuthMessage.textContent = message;
+}
+
+function rememberOwnerEmail(email) {
+  if (!elements.ownerRememberInput?.checked) {
+    localStorage.removeItem(OWNER_EMAIL_KEY);
+    return;
+  }
+
+  localStorage.setItem(OWNER_EMAIL_KEY, email);
+}
+
+function fillOwnerRememberedEmail() {
+  const email = localStorage.getItem(OWNER_EMAIL_KEY);
+  if (!email) return;
+  elements.ownerEmailInput.value = email;
+  elements.ownerRememberInput.checked = true;
+}
+
+async function sendOwnerPasswordReset(email, targetElement) {
+  if (!db) {
+    targetElement.textContent = "Supabase Auth e necessario para recuperar senha por e-mail.";
+    return;
+  }
+
+  const redirectTo = `${window.location.origin + window.location.pathname}?modo=acesso`;
+  const { error } = await db.auth.resetPasswordForEmail(email, { redirectTo });
+  targetElement.textContent = error
+    ? `Nao consegui enviar recuperacao: ${error.message}`
+    : "Enviamos um link de recuperacao para o e-mail informado.";
 }
 
 function bindOwnerTabs() {
@@ -581,6 +632,22 @@ async function handleAccessCeoLogin(email, password) {
   }
 
   window.location.href = `${window.location.pathname}?modo=dono`;
+}
+
+async function handleAccessForgotPassword() {
+  const rawUser = elements.accessUserInput.value.trim();
+  if (!rawUser) {
+    elements.accessMessage.textContent = "Informe o usuário ou e-mail antes de recuperar a senha.";
+    elements.accessUserInput.focus();
+    return;
+  }
+
+  if (!rawUser.includes("@")) {
+    elements.accessMessage.textContent = "Para restaurante, peça ao dono do Fila Aí para gerar um novo PIN na Central do Dono.";
+    return;
+  }
+
+  await sendOwnerPasswordReset(rawUser, elements.accessMessage);
 }
 
 async function handleRestaurantAccessSecure(slug, password, passwordHash) {
@@ -1425,10 +1492,12 @@ function bindEvents() {
     }
     openAdminPanel();
     sessionStorage.setItem(adminAuthKey(COMPANY_SLUG), state.company.adminPin);
+    saveAdminPasswordChoice();
   });
 
   elements.logoutButton.addEventListener("click", logoutAdminSession);
   elements.logoutTopButton?.addEventListener("click", logoutAdminSession);
+  elements.adminForgotButton?.addEventListener("click", handleAdminForgotPassword);
 
   elements.saveCompanyButton.addEventListener("click", saveCompanySettings);
   elements.adminAddForm.addEventListener("submit", addTicketFromAdmin);
@@ -1460,6 +1529,35 @@ function logoutAdminSession() {
   elements.loginPanel.hidden = false;
   elements.adminPanel.hidden = true;
   sessionStorage.removeItem(adminAuthKey(COMPANY_SLUG));
+}
+
+function saveAdminPasswordChoice() {
+  const key = savedAdminKey(COMPANY_SLUG);
+  if (!elements.adminRememberInput?.checked) {
+    localStorage.removeItem(key);
+    return;
+  }
+
+  localStorage.setItem(key, JSON.stringify({
+    companySlug: COMPANY_SLUG,
+    adminPin: state.company.adminPin,
+    savedAt: new Date().toISOString()
+  }));
+}
+
+function restoreSavedAdminPassword() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(savedAdminKey(COMPANY_SLUG)) || "null");
+    if (!saved?.adminPin || saved.adminPin !== state.company.adminPin) return;
+    elements.adminRememberInput.checked = true;
+    sessionStorage.setItem(adminAuthKey(COMPANY_SLUG), saved.adminPin);
+  } catch {
+    localStorage.removeItem(savedAdminKey(COMPANY_SLUG));
+  }
+}
+
+function handleAdminForgotPassword() {
+  alert("Se esqueceu o PIN, peça ao dono do Fila Aí para gerar um novo PIN na Central do Dono. Isso não apaga a fila nem os pedidos.");
 }
 
 function applyAccessMode() {
@@ -1550,6 +1648,7 @@ function openAdminPanel() {
 
 function restoreAdminAccess() {
   if (ACCESS_MODE !== "admin") return;
+  restoreSavedAdminPassword();
   if (sessionStorage.getItem(adminAuthKey(COMPANY_SLUG)) !== state.company.adminPin) return;
   openAdminPanel();
 }
@@ -3186,6 +3285,10 @@ async function trySavedAccessLogin() {
 
 function adminAuthKey(slug) {
   return `${ADMIN_AUTH_PREFIX}-${slug}`;
+}
+
+function savedAdminKey(slug) {
+  return `${ADMIN_SAVED_PREFIX}-${slug}`;
 }
 
 function queueLink() {

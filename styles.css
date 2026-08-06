@@ -2333,6 +2333,31 @@ html[data-access-mode="admin"] #adminQueuePanel.is-active {
   accent-color: var(--brand);
 }
 
+.auth-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.auth-links a,
+.text-button {
+  min-height: 34px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--brand);
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.text-button:hover,
+.auth-links a:hover {
+  color: var(--brand-dark);
+  text-decoration: underline;
+}
+
 .client-menu-panel {
   margin-top: 16px;
 }
