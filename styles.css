@@ -3036,14 +3036,16 @@ textarea {
 }
 
 .landing-hero {
-  grid-template-columns: minmax(0, 0.92fr) minmax(430px, 1.08fr);
-  gap: clamp(34px, 5vw, 80px);
+  grid-template-columns: minmax(0, 0.9fr) minmax(360px, 0.86fr);
+  gap: clamp(28px, 4vw, 58px);
   min-height: min(820px, calc(100svh - 76px));
   padding: clamp(44px, 7vw, 96px) 0 72px;
 }
 
 .hero-copy {
   gap: 24px;
+  min-width: 0;
+  max-width: 620px;
 }
 
 .landing-eyebrow {
@@ -3055,11 +3057,12 @@ textarea {
 
 .hero-copy h1,
 .final-cta h2 {
-  max-width: 720px;
+  max-width: 620px;
   color: var(--fa-graphite);
-  font-size: clamp(2.75rem, 6vw, 5.85rem);
+  font-size: clamp(2.65rem, 5.05vw, 4.85rem);
   font-weight: 800;
-  line-height: 1.02;
+  line-height: 1.04;
+  overflow-wrap: normal;
 }
 
 .hero-copy p,
