@@ -181,22 +181,38 @@
           <p class="landing-eyebrow">Oferta</p>
           <h2>Uma plataforma completa para operar a espera com padrão profissional.</h2>
         </div>
-        <div class="single-offer">
+        <div class="pricing-grid">
           <article class="offer-card">
             <div>
-              <p class="landing-eyebrow">Plano profissional</p>
-              <h3>Fila Aí completo</h3>
+              <p class="landing-eyebrow">Essencial</p>
+              <h3>Fila Aí Essencial</h3>
               <strong>R$ 147/mês</strong>
               <span>Com 7 dias grátis para validar no atendimento real.</span>
             </div>
             <ul>
               <li>Fila digital com QR Code exclusivo</li>
               <li>Painel administrativo para celular, tablet e desktop</li>
-              <li>Configuração de logo, capa, horários, mesas e cardápio</li>
+              <li>Configuração de logo, capa, horários e mesas</li>
               <li>Tempo estimado e chamada do cliente</li>
               <li>Suporte prioritário pelo WhatsApp</li>
             </ul>
             <a class="landing-button primary" href="#solicitar-teste">Começar gratuitamente</a>
+          </article>
+          <article class="offer-card featured-plan">
+            <div>
+              <p class="landing-eyebrow">Pro beta</p>
+              <h3>Fila Aí Pro</h3>
+              <strong>R$ 247/mês</strong>
+              <span>Fila, mesas, cardápio, pedidos, cozinha e comanda simples.</span>
+            </div>
+            <ul>
+              <li>Tudo do Essencial</li>
+              <li>Cardápio público com produtos e carrinho</li>
+              <li>Pedido por mesa com status em tempo real no painel</li>
+              <li>Painel de cozinha por etapas</li>
+              <li>Comanda simples agrupada por mesa</li>
+            </ul>
+            <a class="landing-button primary" href="#solicitar-teste">Entrar no beta Pro</a>
           </article>
         </div>
       </section>
@@ -586,6 +602,38 @@
           </a>
         </section>
 
+        <section id="clientOrderPanel" class="panel order-client-panel" hidden>
+          <div class="section-title">
+            <div>
+              <h2>Cardápio da mesa</h2>
+              <p class="muted">Escolha os itens, informe a mesa e acompanhe o preparo.</p>
+            </div>
+          </div>
+          <div class="order-client-grid">
+            <div>
+              <div class="config-grid">
+                <label>
+                  Mesa
+                  <input id="orderTableInput" inputmode="numeric" maxlength="4" placeholder="Ex: 12" />
+                </label>
+                <label>
+                  Nome
+                  <input id="orderCustomerInput" maxlength="60" placeholder="Seu nome" />
+                </label>
+              </div>
+              <div id="clientProductList" class="product-grid"></div>
+            </div>
+            <aside class="cart-panel">
+              <h3>Carrinho</h3>
+              <div id="cartItems" class="cart-list"></div>
+              <strong id="cartTotal">R$ 0,00</strong>
+              <button id="sendOrderButton" class="primary" type="button">Enviar pedido</button>
+              <p id="orderMessage" class="muted" role="status"></p>
+            </aside>
+          </div>
+          <div id="clientOrderStatus" class="order-status-list"></div>
+        </section>
+
         <section class="queue-section">
           <div class="section-title">
             <h2>Acompanhamento</h2>
@@ -612,7 +660,10 @@
           <div class="admin-tabs" role="tablist" aria-label="Administração">
             <button class="admin-tab is-active" data-admin-tab="adminQueuePanel" type="button">Fila</button>
             <button class="admin-tab" data-admin-tab="adminTablesPanel" type="button">Mesas</button>
-            <button class="admin-tab" data-admin-tab="adminMenuPanel" type="button">Menu</button>
+            <button class="admin-tab" data-admin-tab="adminMenuPanel" type="button">Cardápio</button>
+            <button class="admin-tab" data-admin-tab="adminOrdersPanel" type="button">Pedidos</button>
+            <button class="admin-tab" data-admin-tab="adminKitchenPanel" type="button">Cozinha</button>
+            <button class="admin-tab" data-admin-tab="adminChecksPanel" type="button">Comandas</button>
             <button class="admin-tab" data-admin-tab="adminConfigPanel" type="button">Configurar</button>
           </div>
 
@@ -740,14 +791,38 @@
           <section id="adminMenuPanel" class="panel admin-tab-panel menu-admin-panel">
             <div class="section-title">
               <div>
-                <h2>Menu em PDF</h2>
-                <p class="muted">Ative para mostrar o botão "Ver menu" no link da fila.</p>
+                <h2>Cardápio Pro</h2>
+                <p class="muted">Cadastre produtos para o cliente pedir pela mesa. O PDF continua disponível como apoio.</p>
               </div>
               <label class="switch-row">
                 <input id="menuEnabledInput" type="checkbox" />
-                Ativo
+                Pro ativo
               </label>
             </div>
+            <form id="productForm" class="product-form">
+              <label>
+                Produto
+                <input id="productNameInput" maxlength="80" placeholder="Ex: Burger da casa" />
+              </label>
+              <label>
+                Categoria
+                <input id="productCategoryInput" maxlength="40" placeholder="Ex: Lanches" />
+              </label>
+              <label>
+                Preço
+                <input id="productPriceInput" inputmode="decimal" maxlength="12" placeholder="Ex: 39,90" />
+              </label>
+              <label>
+                Tempo
+                <input id="productPrepInput" inputmode="numeric" maxlength="3" placeholder="15 min" />
+              </label>
+              <label class="wide-field">
+                Descrição
+                <input id="productDescriptionInput" maxlength="140" placeholder="Descrição curta para o cliente" />
+              </label>
+              <button class="primary" type="submit">Adicionar produto</button>
+            </form>
+            <div id="adminProductList" class="product-admin-list"></div>
             <div class="config-grid">
               <label>
                 Título do botão
@@ -776,6 +851,36 @@
             </div>
             <a id="adminSupportLink" class="support-button" href="https://api.whatsapp.com/send?phone=5511943678179&text=Preciso%20de%20suporte%20no%20FILA%20A%C3%8D" target="_blank" rel="noreferrer">Acionar suporte prioritário</a>
             <button id="saveMenuSettingsButton" class="primary" type="button">Salvar menu</button>
+          </section>
+
+          <section id="adminOrdersPanel" class="panel admin-tab-panel">
+            <div class="section-title">
+              <div>
+                <h2>Pedidos</h2>
+                <p class="muted">Visão geral dos pedidos enviados por mesa.</p>
+              </div>
+            </div>
+            <div id="adminOrdersList" class="order-admin-list"></div>
+          </section>
+
+          <section id="adminKitchenPanel" class="panel admin-tab-panel">
+            <div class="section-title">
+              <div>
+                <h2>Cozinha</h2>
+                <p class="muted">Mova cada pedido conforme o preparo avança.</p>
+              </div>
+            </div>
+            <div id="kitchenBoard" class="kitchen-board"></div>
+          </section>
+
+          <section id="adminChecksPanel" class="panel admin-tab-panel">
+            <div class="section-title">
+              <div>
+                <h2>Comandas</h2>
+                <p class="muted">Total simples por mesa para conferência do salão.</p>
+              </div>
+            </div>
+            <div id="checksList" class="checks-list"></div>
           </section>
 
           <section id="adminQueuePanel" class="panel admin-tab-panel is-active">

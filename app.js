@@ -5,6 +5,44 @@ const ADMIN_AUTH_PREFIX = "fila-ai-admin-auth";
 const SAVED_ACCESS_KEY = "fila-ai-saved-access";
 const PROSPECT_STATUS_KEY = "fila-ai-owner-prospect-status";
 
+const ORDER_STATUS_FLOW = ["new", "preparing", "ready", "delivered"];
+const ORDER_STATUS_LABELS = {
+  new: "Novo",
+  preparing: "Em preparo",
+  ready: "Pronto",
+  delivered: "Entregue"
+};
+
+const DEFAULT_PRODUCTS = [
+  {
+    id: "burger-casa",
+    name: "Burger da casa",
+    category: "Lanches",
+    price: 39.9,
+    prepMinutes: 18,
+    description: "Pao brioche, blend artesanal, queijo e molho da casa.",
+    active: true
+  },
+  {
+    id: "parmegiana",
+    name: "Parmegiana individual",
+    category: "Pratos",
+    price: 54.9,
+    prepMinutes: 24,
+    description: "File crocante, molho de tomate, queijo e acompanhamento.",
+    active: true
+  },
+  {
+    id: "limonada",
+    name: "Limonada da casa",
+    category: "Bebidas",
+    price: 14.9,
+    prepMinutes: 5,
+    description: "Limao, hortela e gelo batido.",
+    active: true
+  }
+];
+
 const OWNER_PROSPECTS = [
   ["sp-pecatto", "Pecatto Bar e Restaurante", "SP", "Sao Paulo", "(11) 99772-7738", "Alta", "Reclamacao direta sobre sistema de espera e acomodacao de mesas."],
   ["sp-hannover", "Hannover Fondue", "SP", "Sao Paulo", "(11) 5561-5411", "Alta", "Fila grande, espera longa e falta de previsao em horarios fortes."],
@@ -81,7 +119,9 @@ const defaultState = {
   avgMinutes: 70,
   currentTicketId: null,
   myTicketId: localStorage.getItem(`${MY_TICKET_KEY}-${COMPANY_SLUG}`),
-  queue: []
+  queue: [],
+  products: DEFAULT_PRODUCTS.map((product) => ({ ...product })),
+  orders: []
 };
 
 const supabaseConfig = window.FILA_SUPABASE || {};
@@ -97,6 +137,7 @@ const db = hasSupabaseConfig
 
 let state = loadLocalState();
 let audioContext;
+let cart = [];
 
 const elements = {
   landingPage: document.querySelector("#landingPage"),
@@ -217,6 +258,25 @@ const elements = {
   clientMenuPanel: document.querySelector("#clientMenuPanel"),
   clientMenuLink: document.querySelector("#clientMenuLink"),
   clientMenuTitle: document.querySelector("#clientMenuTitle"),
+  clientOrderPanel: document.querySelector("#clientOrderPanel"),
+  clientProductList: document.querySelector("#clientProductList"),
+  orderTableInput: document.querySelector("#orderTableInput"),
+  orderCustomerInput: document.querySelector("#orderCustomerInput"),
+  cartItems: document.querySelector("#cartItems"),
+  cartTotal: document.querySelector("#cartTotal"),
+  sendOrderButton: document.querySelector("#sendOrderButton"),
+  orderMessage: document.querySelector("#orderMessage"),
+  clientOrderStatus: document.querySelector("#clientOrderStatus"),
+  productForm: document.querySelector("#productForm"),
+  productNameInput: document.querySelector("#productNameInput"),
+  productCategoryInput: document.querySelector("#productCategoryInput"),
+  productPriceInput: document.querySelector("#productPriceInput"),
+  productPrepInput: document.querySelector("#productPrepInput"),
+  productDescriptionInput: document.querySelector("#productDescriptionInput"),
+  adminProductList: document.querySelector("#adminProductList"),
+  adminOrdersList: document.querySelector("#adminOrdersList"),
+  kitchenBoard: document.querySelector("#kitchenBoard"),
+  checksList: document.querySelector("#checksList"),
   queueQrImage: document.querySelector("#queueQrImage"),
   copyQueueLinkButton: document.querySelector("#copyQueueLinkButton"),
   openQueueLinkButton: document.querySelector("#openQueueLinkButton"),
@@ -729,7 +789,7 @@ function renderOwnerCompanies(companies) {
       <article class="owner-company owner-item">
         <div>
           <strong>${escapeHtml(company.name)}</strong>
-          <span>${escapeHtml(company.owner_status || "teste")} - ${escapeHtml(company.payment_status || "pagamento pendente")} - ${trial}</span>
+          <span>${escapeHtml(company.owner_status || "teste")} - ${escapeHtml(company.payment_status || "pagamento pendente")} - Plano ${escapeHtml(company.monthly_price === "pro" ? "Pro beta" : "Essencial")} - ${trial}</span>
           <small>Usuario do restaurante: ${escapeHtml(company.slug)}. A senha nao e exibida por seguranca; gere um novo PIN se o cliente esquecer.</small>
         </div>
         <div class="link-stack">
@@ -738,6 +798,8 @@ function renderOwnerCompanies(companies) {
           ${notifyUrl ? `<a href="${notifyUrl}" target="_blank" rel="noreferrer">Avisar cliente</a>` : ""}
           <button type="button" data-company-action="paid" data-slug="${escapeHtml(company.slug)}">Pago</button>
           <button type="button" data-company-action="pending" data-slug="${escapeHtml(company.slug)}">Pendente</button>
+          <button type="button" data-company-action="essential" data-slug="${escapeHtml(company.slug)}">Essencial</button>
+          <button type="button" data-company-action="pro" data-slug="${escapeHtml(company.slug)}">Pro beta</button>
           <button type="button" data-company-action="reset-pin" data-slug="${escapeHtml(company.slug)}" data-company-name="${escapeHtml(company.name)}" data-contact-phone="${escapeHtml(company.contact_phone || "")}">Gerar novo PIN</button>
           <button type="button" data-company-action="send-pin" data-slug="${escapeHtml(company.slug)}" data-company-name="${escapeHtml(company.name)}" data-contact-phone="${escapeHtml(company.contact_phone || "")}">Gerar e enviar PIN</button>
           <button type="button" data-company-action="blocked" data-slug="${escapeHtml(company.slug)}">Bloquear</button>
@@ -1110,7 +1172,9 @@ async function handleOwnerCompanyAction(button) {
   const updates = {
     paid: { owner_status: "ativo", payment_status: "pago" },
     pending: { owner_status: "teste", payment_status: "pendente" },
-    blocked: { owner_status: "bloqueado", payment_status: "bloqueado", queue_open: false }
+    blocked: { owner_status: "bloqueado", payment_status: "bloqueado", queue_open: false },
+    essential: { monthly_price: "essencial" },
+    pro: { monthly_price: "pro", menu_enabled: true }
   }[action];
 
   if (!updates) return;
@@ -1373,6 +1437,9 @@ function bindEvents() {
   elements.companyCoverFileInput.addEventListener("change", () => handleBrandFileUpload("cover"));
   elements.menuPdfFileInput?.addEventListener("change", handleMenuPdfUpload);
   elements.saveMenuSettingsButton?.addEventListener("click", saveMenuSettings);
+  elements.productForm?.addEventListener("submit", addProduct);
+  elements.sendOrderButton?.addEventListener("click", submitTableOrder);
+  elements.orderTableInput?.addEventListener("input", renderClientOrderStatus);
   elements.copyQueueLinkButton?.addEventListener("click", copyQueueLink);
   elements.changeAdminPinButton?.addEventListener("click", changeAdminPin);
   elements.suggestAdminPinButton?.addEventListener("click", suggestAdminPin);
@@ -1446,9 +1513,33 @@ async function refreshFromSupabase() {
     localStorage.removeItem(`${MY_TICKET_KEY}-${COMPANY_SLUG}`);
   }
   state.currentTicketId = state.queue.find((ticket) => ticket.status === "called")?.id || null;
+  await refreshProFromSupabase();
   fillCompanyForm();
   restoreAdminAccess();
   render();
+}
+
+async function refreshProFromSupabase() {
+  const { data: products, error: productsError } = await db
+    .from("fila_products")
+    .select("*")
+    .eq("company_slug", COMPANY_SLUG)
+    .order("category", { ascending: true })
+    .order("name", { ascending: true });
+
+  if (!productsError && products?.length) {
+    state.products = products.map(fromSupabaseProduct);
+  }
+
+  const { data: orders, error: ordersError } = await db
+    .from("fila_orders")
+    .select("*, fila_order_items(*)")
+    .eq("company_slug", COMPANY_SLUG)
+    .order("created_at", { ascending: true });
+
+  if (!ordersError) {
+    state.orders = (orders || []).map(fromSupabaseOrder);
+  }
 }
 
 function openAdminPanel() {
@@ -1467,6 +1558,9 @@ function subscribeToRealtime() {
   db.channel(`queue-${COMPANY_SLUG}`)
     .on("postgres_changes", { event: "*", schema: "public", table: "queue_tickets" }, refreshFromSupabase)
     .on("postgres_changes", { event: "*", schema: "public", table: "queue_companies" }, refreshFromSupabase)
+    .on("postgres_changes", { event: "*", schema: "public", table: "fila_products" }, refreshFromSupabase)
+    .on("postgres_changes", { event: "*", schema: "public", table: "fila_orders" }, refreshFromSupabase)
+    .on("postgres_changes", { event: "*", schema: "public", table: "fila_order_items" }, refreshFromSupabase)
     .subscribe();
 }
 
@@ -1564,7 +1658,9 @@ async function saveMenuSettings() {
     render();
   }
 
-  elements.menuUploadStatus.textContent = "Menu salvo. O botão aparece na fila quando estiver ativo e com PDF cadastrado.";
+  persistLocalState();
+  elements.menuUploadStatus.textContent = "Cardapio salvo. Produtos e pedidos ficam ativos quando o Pro estiver ligado.";
+  render();
 }
 
 async function handleMenuPdfUpload() {
@@ -1966,11 +2062,18 @@ function render() {
   renderCalledBanner();
   renderBillingStatus();
   renderClientMenu();
+  renderClientProducts();
+  renderCart();
+  renderClientOrderStatus();
   renderQueueQr();
   renderMyTicket();
   renderPublicQueue();
   renderAdminQueue();
   renderTableStatus();
+  renderAdminProducts();
+  renderAdminOrders();
+  renderKitchenBoard();
+  renderChecks();
 }
 
 function renderBillingStatus() {
@@ -2042,6 +2145,190 @@ function renderClientMenu() {
   if (!showMenu) return;
   elements.clientMenuLink.href = menuUrl;
   elements.clientMenuTitle.textContent = state.company.menuTitle || "Cardápio do restaurante";
+}
+
+function renderClientProducts() {
+  if (!elements.clientOrderPanel || !elements.clientProductList) return;
+  const activeProducts = getActiveProducts();
+  const showOrdering = Boolean(state.company.menuEnabled && activeProducts.length);
+  elements.clientOrderPanel.hidden = !showOrdering;
+  if (!showOrdering) return;
+
+  elements.clientProductList.innerHTML = activeProducts.map((product) => `
+    <article class="product-card">
+      <span>${escapeHtml(product.category || "Cardapio")}</span>
+      <strong>${escapeHtml(product.name)}</strong>
+      <p>${escapeHtml(product.description || "Produto disponivel para pedido na mesa.")}</p>
+      <div>
+        <b>${formatCurrency(product.price)}</b>
+        <small>${Number(product.prepMinutes) || 10} min</small>
+      </div>
+      <button type="button" data-add-product="${escapeHtml(product.id)}">Adicionar</button>
+    </article>
+  `).join("");
+
+  elements.clientProductList.querySelectorAll("[data-add-product]").forEach((button) => {
+    button.addEventListener("click", () => addToCart(button.dataset.addProduct));
+  });
+}
+
+function renderCart() {
+  if (!elements.cartItems || !elements.cartTotal) return;
+  if (!cart.length) {
+    elements.cartItems.innerHTML = `<p class="muted">Nenhum item selecionado.</p>`;
+    elements.cartTotal.textContent = formatCurrency(0);
+    return;
+  }
+
+  elements.cartItems.innerHTML = cart.map((item) => `
+    <div class="cart-item">
+      <span>${item.quantity}x ${escapeHtml(item.name)}</span>
+      <strong>${formatCurrency(item.price * item.quantity)}</strong>
+      <button type="button" data-cart-remove="${escapeHtml(item.id)}">Remover</button>
+    </div>
+  `).join("");
+  elements.cartTotal.textContent = formatCurrency(cartTotal());
+  elements.cartItems.querySelectorAll("[data-cart-remove]").forEach((button) => {
+    button.addEventListener("click", () => removeFromCart(button.dataset.cartRemove));
+  });
+}
+
+function renderClientOrderStatus() {
+  if (!elements.clientOrderStatus) return;
+  const table = elements.orderTableInput?.value.trim();
+  const relevantOrders = state.orders
+    .filter((order) => !table || order.table === table)
+    .slice(-4)
+    .reverse();
+
+  if (!relevantOrders.length) {
+    elements.clientOrderStatus.innerHTML = "";
+    return;
+  }
+
+  elements.clientOrderStatus.innerHTML = `
+    <h3>Ultimos pedidos</h3>
+    ${relevantOrders.map((order) => `
+      <article class="order-status-card">
+        <strong>Mesa ${escapeHtml(order.table)} - ${orderStatusLabel(order.status)}</strong>
+        <span>${order.items.map((item) => `${item.quantity}x ${escapeHtml(item.name)}`).join(", ")}</span>
+        <small>${formatCurrency(order.total)} - ${formatTime(order.createdAt)}</small>
+      </article>
+    `).join("")}
+  `;
+}
+
+function renderAdminProducts() {
+  if (!elements.adminProductList) return;
+  if (!state.products.length) {
+    elements.adminProductList.innerHTML = `<p class="muted">Nenhum produto cadastrado.</p>`;
+    return;
+  }
+
+  elements.adminProductList.innerHTML = state.products.map((product) => `
+    <article class="product-admin-item${product.active ? "" : " is-off"}">
+      <div>
+        <strong>${escapeHtml(product.name)}</strong>
+        <span>${escapeHtml(product.category || "Sem categoria")} - ${formatCurrency(product.price)} - ${Number(product.prepMinutes) || 10} min</span>
+        <small>${escapeHtml(product.description || "")}</small>
+      </div>
+      <div class="mini-actions">
+        <button type="button" data-product-toggle="${escapeHtml(product.id)}">${product.active ? "Pausar" : "Ativar"}</button>
+        <button type="button" data-product-remove="${escapeHtml(product.id)}">Remover</button>
+      </div>
+    </article>
+  `).join("");
+
+  elements.adminProductList.querySelectorAll("[data-product-toggle]").forEach((button) => {
+    button.addEventListener("click", () => toggleProduct(button.dataset.productToggle));
+  });
+  elements.adminProductList.querySelectorAll("[data-product-remove]").forEach((button) => {
+    button.addEventListener("click", () => removeProduct(button.dataset.productRemove));
+  });
+}
+
+function renderAdminOrders() {
+  if (!elements.adminOrdersList) return;
+  const orders = [...state.orders].reverse();
+  if (!orders.length) {
+    elements.adminOrdersList.innerHTML = `<p class="muted">Nenhum pedido enviado ainda.</p>`;
+    return;
+  }
+
+  elements.adminOrdersList.innerHTML = orders.map(orderCard).join("");
+  bindOrderButtons(elements.adminOrdersList);
+}
+
+function renderKitchenBoard() {
+  if (!elements.kitchenBoard) return;
+  elements.kitchenBoard.innerHTML = ORDER_STATUS_FLOW.map((status) => {
+    const orders = state.orders.filter((order) => order.status === status);
+    return `
+      <section class="kitchen-column">
+        <h3>${ORDER_STATUS_LABELS[status]}</h3>
+        ${orders.length ? orders.map(orderCard).join("") : `<p class="muted">Sem pedidos.</p>`}
+      </section>
+    `;
+  }).join("");
+  bindOrderButtons(elements.kitchenBoard);
+}
+
+function renderChecks() {
+  if (!elements.checksList) return;
+  const openOrders = state.orders.filter((order) => order.status !== "closed");
+  if (!openOrders.length) {
+    elements.checksList.innerHTML = `<p class="muted">Nenhuma comanda aberta.</p>`;
+    return;
+  }
+
+  const byTable = openOrders.reduce((acc, order) => {
+    acc[order.table] = acc[order.table] || [];
+    acc[order.table].push(order);
+    return acc;
+  }, {});
+
+  elements.checksList.innerHTML = Object.entries(byTable).map(([table, orders]) => {
+    const total = orders.reduce((sum, order) => sum + order.total, 0);
+    const items = orders.flatMap((order) => order.items.map((item) => `${item.quantity}x ${escapeHtml(item.name)}`));
+    return `
+      <article class="check-card">
+        <div>
+          <strong>Mesa ${escapeHtml(table)}</strong>
+          <span>${orders.length} pedido(s) - ${items.join(", ")}</span>
+        </div>
+        <div>
+          <b>${formatCurrency(total)}</b>
+          <button type="button" data-close-check="${escapeHtml(table)}">Fechar comanda</button>
+        </div>
+      </article>
+    `;
+  }).join("");
+
+  elements.checksList.querySelectorAll("[data-close-check]").forEach((button) => {
+    button.addEventListener("click", () => closeCheck(button.dataset.closeCheck));
+  });
+}
+
+function orderCard(order) {
+  const nextStatus = nextOrderStatus(order.status);
+  return `
+    <article class="order-card">
+      <div>
+        <strong>Mesa ${escapeHtml(order.table)} - ${escapeHtml(order.customer || "Cliente")}</strong>
+        <span>${order.items.map((item) => `${item.quantity}x ${escapeHtml(item.name)}`).join(", ")}</span>
+        <small>${orderStatusLabel(order.status)} - ${formatCurrency(order.total)} - ${formatTime(order.createdAt)}</small>
+      </div>
+      <div class="mini-actions">
+        ${nextStatus ? `<button type="button" data-order-next="${escapeHtml(order.id)}">${ORDER_STATUS_LABELS[nextStatus]}</button>` : ""}
+      </div>
+    </article>
+  `;
+}
+
+function bindOrderButtons(root) {
+  root.querySelectorAll("[data-order-next]").forEach((button) => {
+    button.addEventListener("click", () => advanceOrder(button.dataset.orderNext));
+  });
 }
 
 function renderQueueQr() {
@@ -2364,6 +2651,50 @@ function fromSupabaseTicket(ticket) {
   };
 }
 
+function fromSupabaseProduct(product) {
+  return {
+    id: product.id,
+    name: product.name,
+    category: product.category || "Cardapio",
+    description: product.description || "",
+    price: Number(product.price) || 0,
+    prepMinutes: product.prep_minutes || 10,
+    active: product.active ?? true
+  };
+}
+
+function toSupabaseProduct(product) {
+  return {
+    company_slug: COMPANY_SLUG,
+    name: product.name,
+    category: product.category || "Cardapio",
+    description: product.description || "",
+    price: product.price,
+    prep_minutes: product.prepMinutes || 10,
+    active: product.active ?? true
+  };
+}
+
+function fromSupabaseOrder(order) {
+  const items = (order.fila_order_items || []).map((item) => ({
+    id: item.product_id || item.id,
+    name: item.name,
+    quantity: item.quantity,
+    price: Number(item.unit_price) || 0
+  }));
+
+  return {
+    id: order.id,
+    companySlug: order.company_slug || COMPANY_SLUG,
+    table: order.table_label,
+    customer: order.customer_name,
+    items,
+    total: Number(order.total) || items.reduce((sum, item) => sum + item.price * item.quantity, 0),
+    status: order.status,
+    createdAt: order.created_at
+  };
+}
+
 function fromSupabaseCompany(company) {
   return {
     slug: company.slug,
@@ -2439,7 +2770,9 @@ function loadLocalState() {
       ...defaultState,
       ...stored,
       company: { ...defaultCompany, ...(stored?.company || {}) },
-      queue: stored?.queue || []
+      queue: stored?.queue || [],
+      products: stored?.products?.length ? stored.products : DEFAULT_PRODUCTS.map((product) => ({ ...product })),
+      orders: stored?.orders || []
     };
   } catch {
     return { ...defaultState };
@@ -2453,6 +2786,264 @@ function persistLocalState() {
   } else {
     localStorage.removeItem(`${MY_TICKET_KEY}-${COMPANY_SLUG}`);
   }
+}
+
+async function addProduct(event) {
+  event.preventDefault();
+  const name = elements.productNameInput.value.trim();
+  const category = elements.productCategoryInput.value.trim() || "Cardapio";
+  const price = parseMoney(elements.productPriceInput.value);
+  const prepMinutes = clamp(Number(elements.productPrepInput.value) || 10, 1, 180);
+  const description = elements.productDescriptionInput.value.trim();
+
+  if (!name || price <= 0) {
+    elements.menuUploadStatus.textContent = "Informe nome e preco do produto.";
+    return;
+  }
+
+  const product = {
+    id: `${slugify(name)}-${Date.now()}`,
+    name,
+    category,
+    price,
+    prepMinutes,
+    description,
+    active: true
+  };
+
+  if (db) {
+    const { data, error } = await db
+      .from("fila_products")
+      .insert(toSupabaseProduct(product))
+      .select()
+      .single();
+    if (error) {
+      elements.menuUploadStatus.textContent = `Nao consegui adicionar: ${error.message}`;
+      return;
+    }
+    state.products.push(fromSupabaseProduct(data));
+    await db
+      .from("queue_companies")
+      .update({ menu_enabled: true, monthly_price: "pro", updated_at: new Date().toISOString() })
+      .eq("slug", COMPANY_SLUG);
+  } else {
+    state.products.push(product);
+  }
+
+  state.company.menuEnabled = true;
+  elements.menuEnabledInput.checked = true;
+  elements.productForm.reset();
+  elements.menuUploadStatus.textContent = "Produto adicionado ao cardapio Pro.";
+  persistLocalState();
+  render();
+}
+
+async function toggleProduct(id) {
+  const current = state.products.find((product) => product.id === id);
+  if (!current) return;
+  if (db) {
+    const { error } = await db
+      .from("fila_products")
+      .update({ active: !current.active, updated_at: new Date().toISOString() })
+      .eq("id", id)
+      .eq("company_slug", COMPANY_SLUG);
+    if (error) return alert(`Nao consegui atualizar produto: ${error.message}`);
+  }
+  state.products = state.products.map((product) => (
+    product.id === id ? { ...product, active: !product.active } : product
+  ));
+  persistLocalState();
+  render();
+}
+
+async function removeProduct(id) {
+  if (db) {
+    const { error } = await db
+      .from("fila_products")
+      .delete()
+      .eq("id", id)
+      .eq("company_slug", COMPANY_SLUG);
+    if (error) return alert(`Nao consegui remover produto: ${error.message}`);
+  }
+  state.products = state.products.filter((product) => product.id !== id);
+  cart = cart.filter((item) => item.id !== id);
+  persistLocalState();
+  render();
+}
+
+function addToCart(id) {
+  const product = state.products.find((item) => item.id === id && item.active);
+  if (!product) return;
+  const existing = cart.find((item) => item.id === id);
+  if (existing) {
+    existing.quantity += 1;
+  } else {
+    cart.push({
+      id: product.id,
+      name: product.name,
+      price: Number(product.price) || 0,
+      quantity: 1
+    });
+  }
+  renderCart();
+}
+
+function removeFromCart(id) {
+  cart = cart
+    .map((item) => item.id === id ? { ...item, quantity: item.quantity - 1 } : item)
+    .filter((item) => item.quantity > 0);
+  renderCart();
+}
+
+async function submitTableOrder() {
+  const table = elements.orderTableInput.value.trim();
+  const customer = elements.orderCustomerInput.value.trim();
+
+  if (!table || !customer) {
+    elements.orderMessage.textContent = "Informe mesa e nome para enviar o pedido.";
+    return;
+  }
+
+  if (!cart.length) {
+    elements.orderMessage.textContent = "Adicione pelo menos um item ao carrinho.";
+    return;
+  }
+
+  const order = {
+    id: crypto.randomUUID(),
+    companySlug: COMPANY_SLUG,
+    table,
+    customer,
+    items: cart.map((item) => ({ ...item })),
+    total: cartTotal(),
+    status: "new",
+    createdAt: new Date().toISOString()
+  };
+
+  if (db) {
+    const { data, error } = await db
+      .from("fila_orders")
+      .insert({
+        company_slug: COMPANY_SLUG,
+        table_label: table,
+        customer_name: customer,
+        status: "new",
+        total: order.total
+      })
+      .select()
+      .single();
+
+    if (error) {
+      elements.orderMessage.textContent = `Nao consegui enviar pedido: ${error.message}`;
+      return;
+    }
+
+    const itemsPayload = order.items.map((item) => ({
+      order_id: data.id,
+      product_id: isUuid(item.id) ? item.id : null,
+      name: item.name,
+      quantity: item.quantity,
+      unit_price: item.price
+    }));
+    const { error: itemsError } = await db.from("fila_order_items").insert(itemsPayload);
+    if (itemsError) {
+      elements.orderMessage.textContent = `Pedido criado, mas os itens falharam: ${itemsError.message}`;
+      return;
+    }
+
+    order.id = data.id;
+    order.createdAt = data.created_at;
+    state.orders.push(order);
+  } else {
+    state.orders.push(order);
+  }
+
+  cart = [];
+  elements.orderMessage.textContent = `Pedido enviado para a cozinha. Status: ${orderStatusLabel(order.status)}.`;
+  persistLocalState();
+  if (db) await refreshProFromSupabase();
+  render();
+}
+
+async function advanceOrder(id) {
+  const current = state.orders.find((order) => order.id === id);
+  const next = current ? nextOrderStatus(current.status) : null;
+  if (!next) return;
+  if (db) {
+    const { error } = await db
+      .from("fila_orders")
+      .update({ status: next, updated_at: new Date().toISOString() })
+      .eq("id", id)
+      .eq("company_slug", COMPANY_SLUG);
+    if (error) return alert(`Nao consegui atualizar pedido: ${error.message}`);
+  }
+  state.orders = state.orders.map((order) => {
+    if (order.id !== id) return order;
+    return { ...order, status: next };
+  });
+  persistLocalState();
+  render();
+}
+
+async function closeCheck(table) {
+  if (db) {
+    const { error } = await db
+      .from("fila_orders")
+      .update({ status: "closed", updated_at: new Date().toISOString() })
+      .eq("company_slug", COMPANY_SLUG)
+      .eq("table_label", table)
+      .neq("status", "closed");
+    if (error) return alert(`Nao consegui fechar comanda: ${error.message}`);
+  }
+  state.orders = state.orders.map((order) => (
+    order.table === table ? { ...order, status: "closed" } : order
+  ));
+  persistLocalState();
+  render();
+}
+
+function getActiveProducts() {
+  return state.products.filter((product) => product.active);
+}
+
+function cartTotal() {
+  return cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+}
+
+function nextOrderStatus(status) {
+  const index = ORDER_STATUS_FLOW.indexOf(status);
+  return index >= 0 ? ORDER_STATUS_FLOW[index + 1] : null;
+}
+
+function orderStatusLabel(status) {
+  if (status === "closed") return "Comanda fechada";
+  return ORDER_STATUS_LABELS[status] || status || "Novo";
+}
+
+function parseMoney(value) {
+  const normalized = String(value || "")
+    .replace(/\./g, "")
+    .replace(",", ".")
+    .replace(/[^\d.]/g, "");
+  return Number(normalized) || 0;
+}
+
+function isUuid(value) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value || "");
+}
+
+function formatCurrency(value) {
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL"
+  }).format(Number(value) || 0);
+}
+
+function formatTime(value) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(new Date(value));
 }
 
 function formatNumber(number) {
