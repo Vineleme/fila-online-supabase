@@ -2006,12 +2006,10 @@ async function finishCalledTicket() {
       alert(`Não consegui finalizar: ${error.message}`);
       return;
     }
-    await changeUsedTables(partyBucket(current.partySize), -1);
     await refreshFromSupabase();
   } else {
     current.status = "done";
     state.currentTicketId = null;
-    changeUsedTablesLocal(partyBucket(current.partySize), -1);
     persistLocalState();
   }
 
@@ -2079,10 +2077,8 @@ async function handleTicketAction(action, id) {
         alert(`Não consegui finalizar: ${error.message}`);
         return;
       }
-      await changeUsedTables(partyBucket(ticket.partySize), -1);
       if (state.myTicketId === id) {
-        state.myTicketId = null;
-        localStorage.removeItem(`${MY_TICKET_KEY}-${COMPANY_SLUG}`);
+        localStorage.setItem(`${MY_TICKET_KEY}-${COMPANY_SLUG}`, id);
       }
     }
 
@@ -2119,9 +2115,7 @@ async function handleTicketAction(action, id) {
 
   if (action === "done") {
     ticket.status = "done";
-    changeUsedTablesLocal(partyBucket(ticket.partySize), -1);
     if (state.currentTicketId === ticket.id) state.currentTicketId = null;
-    if (state.myTicketId === id) state.myTicketId = null;
   }
 
   if (action === "remove") {
@@ -2258,6 +2252,7 @@ function renderClientProducts() {
   const showOrdering = Boolean(state.company.menuEnabled && activeProducts.length);
   elements.clientOrderPanel.hidden = !showOrdering;
   if (!showOrdering) return;
+  applyTicketCheckToOrderForm();
 
   elements.clientProductList.innerHTML = activeProducts.map((product) => `
     <article class="product-card">
@@ -2275,6 +2270,23 @@ function renderClientProducts() {
   elements.clientProductList.querySelectorAll("[data-add-product]").forEach((button) => {
     button.addEventListener("click", () => addToCart(button.dataset.addProduct));
   });
+}
+
+function applyTicketCheckToOrderForm() {
+  if (!elements.orderTableInput || !elements.orderCustomerInput) return;
+
+  const ticket = getCheckTicket();
+  if (!ticket) {
+    elements.orderTableInput.readOnly = false;
+    elements.orderCustomerInput.readOnly = false;
+    return;
+  }
+
+  const checkLabel = ticketCheckLabel(ticket);
+  elements.orderTableInput.value = checkLabel;
+  elements.orderCustomerInput.value = ticket.name || elements.orderCustomerInput.value;
+  elements.orderTableInput.readOnly = true;
+  elements.orderCustomerInput.readOnly = true;
 }
 
 function renderCart() {
@@ -2315,7 +2327,7 @@ function renderClientOrderStatus() {
     <h3>Ultimos pedidos</h3>
     ${relevantOrders.map((order) => `
       <article class="order-status-card">
-        <strong>Mesa ${escapeHtml(order.table)} - ${orderStatusLabel(order.status)}</strong>
+        <strong>${escapeHtml(checkDisplayLabel(order.table))} - ${orderStatusLabel(order.status)}</strong>
         <span>${order.items.map((item) => `${item.quantity}x ${escapeHtml(item.name)}`).join(", ")}</span>
         <small>${formatCurrency(order.total)} - ${formatTime(order.createdAt)}</small>
       </article>
@@ -2398,7 +2410,7 @@ function renderChecks() {
     return `
       <article class="check-card">
         <div>
-          <strong>Mesa ${escapeHtml(table)}</strong>
+          <strong>${escapeHtml(checkDisplayLabel(table))}</strong>
           <span>${orders.length} pedido(s) - ${items.join(", ")}</span>
         </div>
         <div>
@@ -2419,7 +2431,7 @@ function orderCard(order) {
   return `
     <article class="order-card">
       <div>
-        <strong>Mesa ${escapeHtml(order.table)} - ${escapeHtml(order.customer || "Cliente")}</strong>
+        <strong>${escapeHtml(checkDisplayLabel(order.table))} - ${escapeHtml(order.customer || "Cliente")}</strong>
         <span>${order.items.map((item) => `${item.quantity}x ${escapeHtml(item.name)}`).join(", ")}</span>
         <small>${orderStatusLabel(order.status)} - ${formatCurrency(order.total)} - ${formatTime(order.createdAt)}</small>
       </div>
@@ -2488,7 +2500,10 @@ function renderMyTicket() {
 
   const ahead = countAhead(ticket);
   const wait = estimateWait(ticket);
-  const statusText = ticket.status === "called" ? "Sua vez chegou" : ticket.status === "done" ? "Finalizado" : "Aguardando";
+  const statusText = ticket.status === "called" ? "Sua vez chegou" : ticket.status === "done" ? "Comanda aberta" : "Aguardando";
+  const checkNotice = ticket.status === "done"
+    ? `<p class="called-note">Atendimento iniciado. Seus pedidos entram na comanda ${escapeHtml(ticketCheckLabel(ticket))}.</p>`
+    : "";
   const calledNotice = ticket.status === "called"
     ? `<p class="called-note">Sua vez chegou. Você tem 10 minutos para comparecer à recepção.</p>`
     : "";
@@ -2497,6 +2512,7 @@ function renderMyTicket() {
     <h2>Minha senha</h2>
     <div class="ticket-number">${formatNumber(ticket.number)}</div>
     ${calledNotice}
+    ${checkNotice}
     <div class="ticket-grid">
       <div class="metric"><strong>${ahead}</strong><span>grupos na frente</span></div>
       <div class="metric wait-metric"><strong>${formatDuration(wait)}</strong><span>espera estimada</span></div>
@@ -2649,6 +2665,23 @@ function getCurrentTicket() {
 
 function getMyTicket() {
   return state.queue.find((item) => item.id === state.myTicketId);
+}
+
+function getCheckTicket() {
+  const ticket = getMyTicket();
+  return ticket && ["called", "done"].includes(ticket.status) ? ticket : null;
+}
+
+function ticketCheckLabel(ticket) {
+  return `Fila ${formatNumber(ticket.number)}`;
+}
+
+function ticketForCheckLabel(label) {
+  return state.queue.find((ticket) => ticketCheckLabel(ticket) === label);
+}
+
+function checkDisplayLabel(label) {
+  return String(label || "").startsWith("Fila ") ? `Comanda ${label}` : `Mesa ${label}`;
 }
 
 function nextNumber() {
@@ -3001,11 +3034,12 @@ function removeFromCart(id) {
 }
 
 async function submitTableOrder() {
-  const table = elements.orderTableInput.value.trim();
-  const customer = elements.orderCustomerInput.value.trim();
+  const ticket = getCheckTicket();
+  const table = ticket ? ticketCheckLabel(ticket) : elements.orderTableInput.value.trim();
+  const customer = ticket ? ticket.name : elements.orderCustomerInput.value.trim();
 
   if (!table || !customer) {
-    elements.orderMessage.textContent = "Informe mesa e nome para enviar o pedido.";
+    elements.orderMessage.textContent = "Informe mesa ou comanda e nome para enviar o pedido.";
     return;
   }
 
@@ -3091,6 +3125,7 @@ async function advanceOrder(id) {
 }
 
 async function closeCheck(table) {
+  const checkTicket = ticketForCheckLabel(table);
   if (db) {
     const { error } = await db
       .from("fila_orders")
@@ -3099,6 +3134,9 @@ async function closeCheck(table) {
       .eq("table_label", table)
       .neq("status", "closed");
     if (error) return alert(`Nao consegui fechar comanda: ${error.message}`);
+    if (checkTicket) await changeUsedTables(partyBucket(checkTicket.partySize), -1);
+  } else if (checkTicket) {
+    changeUsedTablesLocal(partyBucket(checkTicket.partySize), -1);
   }
   state.orders = state.orders.map((order) => (
     order.table === table ? { ...order, status: "closed" } : order
