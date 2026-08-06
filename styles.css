@@ -333,6 +333,15 @@ h2 {
   box-shadow: 0 28px 90px rgba(0, 0, 0, 0.46);
 }
 
+.lead-card-logo {
+  display: block;
+  width: min(250px, 70%);
+  height: auto;
+  filter:
+    drop-shadow(0 14px 24px rgba(0, 0, 0, 0.38))
+    drop-shadow(0 0 2px rgba(255, 255, 255, 0.72));
+}
+
 .lead-card-heading {
   display: grid;
   grid-template-columns: 72px minmax(0, 1fr);
