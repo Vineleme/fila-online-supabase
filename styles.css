@@ -2463,11 +2463,18 @@ html[data-access-mode="admin"] #adminQueuePanel.is-active {
   display: grid;
   gap: 12px;
   padding: 16px;
+  background: #ffffff;
+  color: var(--ink);
+  box-shadow: var(--shadow-soft);
 }
 
 .cart-panel h3,
 .kitchen-column h3 {
   margin: 0;
+}
+
+.cart-panel h3 {
+  color: var(--ink);
 }
 
 .cart-list {
@@ -2476,8 +2483,17 @@ html[data-access-mode="admin"] #adminQueuePanel.is-active {
 }
 
 .cart-item {
-  border-bottom: 1px solid var(--line);
-  padding-bottom: 8px;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 2px 0 10px;
+  color: var(--ink);
+}
+
+.cart-item span {
+  color: var(--ink);
+}
+
+.cart-item strong {
+  color: var(--ink);
 }
 
 .cart-item button,
@@ -2488,6 +2504,12 @@ html[data-access-mode="admin"] #adminQueuePanel.is-active {
   border-radius: 8px;
   padding: 0 10px;
   font-size: 0.82rem;
+}
+
+.cart-item button {
+  border: 1px solid rgba(249, 115, 22, 0.24);
+  background: #fff7ed;
+  color: var(--brand-dark);
 }
 
 .product-form {
