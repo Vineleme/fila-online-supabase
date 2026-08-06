@@ -1,12 +1,13 @@
 {
-  "name": "FILA AÍ",
-  "short_name": "FILA AÍ",
-  "description": "Sistema de fila de espera para restaurantes.",
-  "start_url": "/fila-online-supabase/",
-  "scope": "/fila-online-supabase/",
+  "name": "Fila Aí",
+  "short_name": "Fila Aí",
+  "description": "Sistema premium de fila digital para restaurantes.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#030405",
-  "theme_color": "#030405",
+  "background_color": "#FFFFFF",
+  "theme_color": "#F97316",
   "icons": [
     {
       "src": "/assets/icons/icon-192.png?v=icon-4",
