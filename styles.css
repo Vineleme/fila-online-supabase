@@ -162,7 +162,6 @@ h2 {
   width: clamp(104px, 12vw, 148px);
   align-items: center;
   flex: 0 0 auto;
-  min-width: 0;
 }
 
 .nav-brand-mark img {
@@ -293,7 +292,7 @@ h2 {
 .hero-media {
   position: relative;
   display: grid;
-  gap: clamp(10px, 2vh, 18px);
+  gap: 10px;
   place-items: center;
   border: 0;
   border-radius: 0;
@@ -315,8 +314,6 @@ h2 {
 
 .brand-wordmark-stage,
 .brand-symbol-stage {
-  display: grid;
-  place-items: center;
   position: relative;
   width: 100%;
 }
@@ -327,19 +324,8 @@ h2 {
 
 .brand-symbol-stage {
   z-index: 1;
-  width: min(78%, 430px);
-  margin-top: clamp(-8px, -1.1vw, -16px);
-}
-
-.brand-wordmark {
-  width: min(100%, 620px);
-}
-
-.brand-symbol {
-  width: 100%;
-  max-height: min(42vh, 430px);
-  object-fit: contain;
-  object-position: center;
+  width: min(72%, 390px);
+  margin-top: -18px;
 }
 
 .brand-wordmark,
@@ -395,7 +381,7 @@ h2 {
   }
 
   .brand-symbol-stage {
-    width: min(76%, 430px);
+    width: min(70%, 400px);
   }
 }
 
@@ -456,11 +442,41 @@ h2 {
   gap: 16px;
 }
 
+.seo-intro {
+  display: grid;
+  grid-template-columns: 0.72fr 1.28fr;
+  gap: 28px;
+  align-items: start;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.seo-intro h2,
+.seo-content h2,
+.faq-section h2,
+.seo-page-hero h1 {
+  margin-top: 10px;
+  font-size: clamp(2rem, 4.2vw, 4.3rem);
+  line-height: 0.96;
+}
+
+.seo-intro p,
+.seo-content .section-heading p,
+.faq-section .section-heading p,
+.seo-page-hero p,
+.seo-page-content p,
+.seo-page-content li {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 1.02rem;
+  line-height: 1.68;
+}
+
 .feature-band article,
 .pricing-grid article,
 .brand-grid article,
 .demo-grid article,
-.preview-card {
+.preview-card,
+.seo-content-grid article {
   border: 1px solid rgba(255, 255, 255, 0.11);
   border-radius: 8px;
   padding: 24px;
@@ -528,6 +544,91 @@ h2 {
 .demo-section {
   display: grid;
   gap: 22px;
+}
+
+.seo-content {
+  display: grid;
+  gap: 24px;
+}
+
+.seo-content-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.seo-content-grid article {
+  display: grid;
+  gap: 10px;
+}
+
+.seo-content-grid h3,
+.seo-page-content h2,
+.seo-page-content h3 {
+  margin: 0;
+  color: #fff;
+  font-size: clamp(1.35rem, 2.4vw, 2rem);
+  line-height: 1.05;
+}
+
+.faq-section {
+  display: grid;
+  gap: 22px;
+}
+
+.faq-list {
+  display: grid;
+  gap: 12px;
+}
+
+.faq-list details {
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.faq-list summary {
+  cursor: pointer;
+  padding: 20px 22px;
+  color: #fff;
+  font-size: 1.08rem;
+  font-weight: 850;
+}
+
+.faq-list details p {
+  padding: 0 22px 22px;
+  color: rgba(255, 255, 255, 0.68);
+  line-height: 1.62;
+}
+
+.seo-page-hero {
+  display: grid;
+  gap: 18px;
+  padding: 74px 0 48px;
+}
+
+.seo-page-content {
+  display: grid;
+  gap: 28px;
+  padding-top: 24px;
+}
+
+.seo-page-content article {
+  display: grid;
+  gap: 12px;
+}
+
+.seo-page-content ul {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding-left: 22px;
+}
+
+.seo-page-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .demo-grid {
@@ -869,14 +970,6 @@ html:has(.access-shell:not([hidden])) body {
   color: rgba(255, 255, 255, 0.68);
 }
 
-.access-card #accessMessage {
-  min-height: 22px;
-  border-radius: 8px;
-  padding: 8px 10px;
-  background: rgba(255, 255, 255, 0.08);
-  color: #f8fafc;
-}
-
 .access-card input {
   border-color: rgba(15, 23, 42, 0.16);
   background: #fff;
@@ -913,18 +1006,14 @@ html:has(.access-shell:not([hidden])) body {
   min-height: 34px;
   align-items: center;
   gap: 10px;
-  color: #f8fafc;
+  color: rgba(255, 255, 255, 0.74);
   font-size: 0.9rem;
   font-weight: 750;
 }
 
-.access-card .remember-row input {
-  flex: 0 0 auto;
+.remember-row input {
   width: 18px;
-  height: 18px;
   min-height: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.55);
-  background: #111827;
   accent-color: #22c55e;
 }
 
@@ -1132,78 +1221,6 @@ html:has(.access-shell:not([hidden])) body {
 .link-stack a:nth-child(2) {
   background: #22c55e;
   color: #041007;
-}
-
-.access-actions,
-.owner-session-actions,
-.admin-session-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-}
-
-.owner-session-actions,
-.admin-session-actions {
-  justify-content: flex-end;
-}
-
-.owner-shell .ghost-link {
-  border-color: rgba(245, 158, 11, 0.56);
-  background: #f59e0b;
-  color: #050505;
-  box-shadow: 0 12px 26px rgba(245, 158, 11, 0.18);
-}
-
-.owner-shell .ghost-link:hover {
-  border-color: rgba(34, 197, 94, 0.62);
-  background: #22c55e;
-  color: #041007;
-}
-
-.owner-shell .ghost {
-  border-color: rgba(255, 255, 255, 0.18);
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
-}
-
-.owner-shell .ghost:hover {
-  border-color: rgba(245, 158, 11, 0.56);
-  background: rgba(245, 158, 11, 0.16);
-  color: #fff;
-}
-
-.owner-crm-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  padding: 8px;
-  background: #070a0d;
-}
-
-.owner-crm-tab {
-  min-height: 40px;
-  border-radius: 8px;
-  padding: 0 16px;
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.74);
-  font-weight: 900;
-}
-
-.owner-crm-tab.is-active {
-  background: linear-gradient(135deg, #f59e0b, #22c55e);
-  color: #050505;
-}
-
-.owner-dashboard > .owner-tab-panel {
-  display: none;
-}
-
-.owner-dashboard > .owner-tab-panel.is-active {
-  display: grid;
-  gap: 18px;
 }
 
 .owner-prospect-panel {
@@ -1629,32 +1646,6 @@ html[data-access-mode="admin"] .company-logo {
   box-shadow: 0 10px 28px rgba(23, 33, 31, 0.08);
 }
 
-.panel.access-card {
-  border-color: rgba(15, 23, 42, 0.14);
-  background: #ffffff;
-  color: #050505;
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.42);
-}
-
-.panel.access-card h2,
-.panel.access-card label,
-.panel.access-card .remember-row,
-.panel.access-card .ghost-link,
-.panel.access-card #accessMessage {
-  color: #050505;
-}
-
-.panel.access-card #accessMessage {
-  min-height: 24px;
-  background: #f1f5f9;
-  border: 1px solid #d7e0ea;
-}
-
-.panel.access-card .remember-row input {
-  border-color: #64748b;
-  background: #ffffff;
-}
-
 .compact {
   width: min(420px, 100%);
 }
@@ -1684,7 +1675,6 @@ html[data-access-mode="admin"] .company-logo {
 .ghost {
   border: 1px solid var(--line);
   background: var(--panel);
-  color: var(--ink);
 }
 
 .muted {
@@ -1875,27 +1865,6 @@ html[data-access-mode="admin"] .company-logo {
 .admin-shell {
   display: grid;
   gap: 16px;
-}
-
-.admin-session-bar {
-  display: flex;
-  width: min(100%, 980px);
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  justify-self: center;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 12px 14px;
-  background: #fff;
-  color: #17211f;
-  box-shadow: 0 10px 24px rgba(17, 24, 39, 0.08);
-}
-
-.admin-session-bar span {
-  color: #66736f;
-  font-size: 0.86rem;
-  font-weight: 850;
 }
 
 .admin-tabs {
@@ -2187,29 +2156,6 @@ html[data-access-mode="admin"] #adminQueuePanel.is-active {
 .ghost-link {
   border: 1px solid var(--line);
   background: var(--panel);
-  color: var(--ink);
-}
-
-html[data-access-mode="admin"] .ghost,
-html[data-access-mode="admin"] .ghost-link {
-  border-color: #cbd5e1;
-  background: #ffffff;
-  color: #17211f;
-}
-
-html[data-access-mode="admin"] .ghost:hover,
-html[data-access-mode="admin"] .ghost-link:hover {
-  border-color: var(--brand);
-  background: var(--brand-soft);
-  color: var(--brand-dark);
-}
-
-html[data-access-mode="admin"] .admin-tab {
-  color: #17211f;
-}
-
-html[data-access-mode="admin"] .admin-tab.is-active {
-  color: #fff;
 }
 
 .support-button {
@@ -2266,7 +2212,7 @@ html[data-access-mode="admin"] .admin-tab.is-active {
   }
 
   .nav-brand-mark {
-    width: min(116px, 38vw);
+    width: 116px;
   }
 
   .landing-nav div {
@@ -2276,6 +2222,7 @@ html[data-access-mode="admin"] .admin-tab.is-active {
   }
 
   .landing-hero,
+  .seo-intro,
   .feature-band,
   .split-section,
   .dashboard-preview,
@@ -2287,6 +2234,7 @@ html[data-access-mode="admin"] .admin-tab.is-active {
   .owner-grid,
   .prospect-summary,
   .prospect-toolbar,
+  .seo-content-grid,
   .demo-grid,
   .mini-table-grid {
     grid-template-columns: 1fr;
@@ -2307,8 +2255,7 @@ html[data-access-mode="admin"] .admin-tab.is-active {
 
   .landing-hero {
     min-height: auto;
-    overflow: hidden;
-    padding-top: 14px;
+    padding-top: 18px;
   }
 
   .hero-copy {
@@ -2319,12 +2266,9 @@ html[data-access-mode="admin"] .admin-tab.is-active {
 
   .mobile-hero-symbol {
     display: block;
-    width: min(58vw, 218px);
-    max-height: 27svh;
+    width: min(48vw, 190px);
     height: auto;
-    margin: 0 auto 4px;
-    object-fit: contain;
-    object-position: center;
+    margin-bottom: 2px;
     filter:
       drop-shadow(0 18px 28px rgba(0, 0, 0, 0.5))
       drop-shadow(0 0 2px rgba(255, 255, 255, 0.72))
@@ -2337,8 +2281,7 @@ html[data-access-mode="admin"] .admin-tab.is-active {
 
   .hero-copy h1,
   .final-cta h2 {
-    font-size: clamp(2.1rem, 12vw, 2.7rem);
-    line-height: 1;
+    font-size: 2.7rem;
   }
 
   .topbar,
@@ -2427,19 +2370,6 @@ html[data-access-mode="admin"] .admin-tab.is-active {
 
   .admin-tabs {
     width: 100%;
-  }
-
-  .admin-session-bar {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .admin-session-bar span {
-    text-align: center;
-  }
-
-  .admin-session-actions {
-    justify-content: center;
   }
 
   .admin-tab {
