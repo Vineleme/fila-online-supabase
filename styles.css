@@ -3036,8 +3036,9 @@ textarea {
 }
 
 .landing-hero {
-  grid-template-columns: minmax(0, 0.9fr) minmax(360px, 0.86fr);
-  gap: clamp(28px, 4vw, 58px);
+  grid-template-columns: minmax(420px, 500px) minmax(420px, 1fr);
+  gap: clamp(42px, 5vw, 86px);
+  align-items: center;
   min-height: min(820px, calc(100svh - 76px));
   padding: clamp(44px, 7vw, 96px) 0 72px;
 }
@@ -3045,7 +3046,7 @@ textarea {
 .hero-copy {
   gap: 24px;
   min-width: 0;
-  max-width: 620px;
+  max-width: 500px;
 }
 
 .landing-eyebrow {
@@ -3057,11 +3058,11 @@ textarea {
 
 .hero-copy h1,
 .final-cta h2 {
-  max-width: 620px;
+  max-width: 500px;
   color: var(--fa-graphite);
-  font-size: clamp(2.65rem, 5.05vw, 4.85rem);
+  font-size: clamp(2.7rem, 4.2vw, 4.25rem);
   font-weight: 800;
-  line-height: 1.04;
+  line-height: 1.05;
   overflow-wrap: normal;
 }
 
@@ -3069,7 +3070,7 @@ textarea {
 .split-section p,
 .final-cta p,
 .section-heading p {
-  max-width: 680px;
+  max-width: 560px;
   color: var(--fa-muted);
   font-size: 1.05rem;
   line-height: 1.75;
@@ -3117,7 +3118,9 @@ textarea {
 
 .hero-product-mockup {
   position: relative;
+  width: min(100%, 560px);
   min-height: 520px;
+  justify-self: end;
 }
 
 .mockup-window {
@@ -3939,6 +3942,22 @@ html[data-access-mode="fila"] .tab.is-active {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
+  }
+}
+
+@media (max-width: 1120px) {
+  .landing-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-copy,
+  .hero-copy h1 {
+    max-width: 760px;
+  }
+
+  .hero-product-mockup {
+    justify-self: center;
+    width: min(100%, 640px);
   }
 }
 
