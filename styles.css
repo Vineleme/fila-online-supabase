@@ -4338,3 +4338,58 @@ html[data-access-mode="fila"] #clientOrderPanel .cart-item button {
   color: #f97316 !important;
   -webkit-text-fill-color: #f97316 !important;
 }
+
+.order-card {
+  background: #111827 !important;
+  color: #f8fafc !important;
+  -webkit-text-fill-color: #f8fafc !important;
+  border-color: rgba(31, 41, 55, 0.18) !important;
+}
+
+.order-card strong {
+  color: #f8fafc !important;
+  -webkit-text-fill-color: #f8fafc !important;
+  opacity: 1 !important;
+}
+
+.order-card span {
+  display: block;
+  margin-top: 4px;
+  color: #dbeafe !important;
+  -webkit-text-fill-color: #dbeafe !important;
+  opacity: 1 !important;
+  line-height: 1.45;
+}
+
+.order-card small {
+  display: block;
+  margin-top: 6px;
+  color: #bfdbfe !important;
+  -webkit-text-fill-color: #bfdbfe !important;
+  opacity: 1 !important;
+}
+
+.kitchen-board {
+  grid-template-columns: repeat(4, minmax(240px, 1fr)) !important;
+  padding-bottom: 8px;
+}
+
+.kitchen-column {
+  min-width: 240px !important;
+  border-color: #d1d5db !important;
+}
+
+.kitchen-column .order-card {
+  grid-template-columns: 1fr !important;
+  align-items: stretch !important;
+}
+
+.kitchen-column .mini-actions {
+  display: grid;
+}
+
+.kitchen-column .mini-actions button {
+  width: 100%;
+  min-height: 38px;
+  margin-top: 2px;
+}
