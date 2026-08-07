@@ -324,6 +324,7 @@ const elements = {
   productPrepInput: document.querySelector("#productPrepInput"),
   productDescriptionInput: document.querySelector("#productDescriptionInput"),
   productImageUrlInput: document.querySelector("#productImageUrlInput"),
+  productImageFileInput: document.querySelector("#productImageFileInput"),
   adminProductList: document.querySelector("#adminProductList"),
   adminOrdersList: document.querySelector("#adminOrdersList"),
   kitchenBoard: document.querySelector("#kitchenBoard"),
@@ -1620,6 +1621,7 @@ function bindEvents() {
   elements.companyLogoFileInput.addEventListener("change", () => handleBrandFileUpload("logo"));
   elements.companyCoverFileInput.addEventListener("change", () => handleBrandFileUpload("cover"));
   elements.menuPdfFileInput?.addEventListener("change", handleMenuPdfUpload);
+  elements.productImageFileInput?.addEventListener("change", handleProductImageUpload);
   elements.saveMenuSettingsButton?.addEventListener("click", saveMenuSettings);
   elements.productForm?.addEventListener("submit", addProduct);
   elements.sendOrderButton?.addEventListener("click", submitTableOrder);
@@ -2024,6 +2026,84 @@ async function handleBrandFileUpload(type) {
   const { data } = db.storage.from(ASSETS_BUCKET).getPublicUrl(path);
   urlInput.value = data.publicUrl;
   elements.brandUploadStatus.textContent = "Imagem enviada. Clique em Salvar configuração para aplicar no restaurante.";
+}
+
+async function handleProductImageUpload() {
+  const file = elements.productImageFileInput?.files?.[0];
+  if (!file) return;
+
+  if (!db) {
+    elements.menuUploadStatus.textContent = "Upload precisa do Supabase configurado.";
+    elements.productImageFileInput.value = "";
+    return;
+  }
+
+  if (!file.type.startsWith("image/")) {
+    elements.menuUploadStatus.textContent = "Escolha uma imagem do produto.";
+    elements.productImageFileInput.value = "";
+    return;
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    elements.menuUploadStatus.textContent = "Use uma imagem de ate 5 MB.";
+    elements.productImageFileInput.value = "";
+    return;
+  }
+
+  let dimensions;
+  try {
+    dimensions = await readImageDimensions(file);
+  } catch (error) {
+    elements.menuUploadStatus.textContent = "Nao consegui ler essa imagem. Tente outro arquivo.";
+    elements.productImageFileInput.value = "";
+    return;
+  }
+
+  const ratio = dimensions.width / dimensions.height;
+  if (dimensions.width < 800 || dimensions.height < 500 || ratio < 1.25 || ratio > 2.2) {
+    elements.menuUploadStatus.textContent = "Use foto horizontal com minimo 800x500 px. O ideal e 1600x1000 ou 1200x750.";
+    elements.productImageFileInput.value = "";
+    return;
+  }
+
+  elements.menuUploadStatus.textContent = "Enviando imagem do produto...";
+  elements.productImageFileInput.disabled = true;
+
+  const extension = file.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
+  const path = `${COMPANY_SLUG}/products/${Date.now()}-${slugify(file.name)}.${extension}`;
+  const { error } = await db.storage.from(ASSETS_BUCKET).upload(path, file, {
+    cacheControl: "31536000",
+    upsert: true,
+    contentType: file.type
+  });
+
+  elements.productImageFileInput.disabled = false;
+  elements.productImageFileInput.value = "";
+
+  if (error) {
+    elements.menuUploadStatus.textContent = `Nao consegui enviar imagem: ${error.message}`;
+    return;
+  }
+
+  const { data } = db.storage.from(ASSETS_BUCKET).getPublicUrl(path);
+  elements.productImageUrlInput.value = data.publicUrl;
+  elements.menuUploadStatus.textContent = "Imagem pronta. Agora clique em Adicionar produto.";
+}
+
+function readImageDimensions(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const image = new Image();
+    image.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve({ width: image.naturalWidth, height: image.naturalHeight });
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Invalid image"));
+    };
+    image.src = url;
+  });
 }
 
 async function addTicketFromAdmin(event) {
@@ -3119,6 +3199,7 @@ async function addProduct(event) {
   state.company.menuEnabled = true;
   elements.menuEnabledInput.checked = true;
   elements.productForm.reset();
+  if (elements.productImageFileInput) elements.productImageFileInput.value = "";
   elements.menuUploadStatus.textContent = "Produto adicionado ao cardapio Pro.";
   persistLocalState();
   render();

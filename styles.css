@@ -2570,6 +2570,14 @@ html[data-access-mode="admin"] #adminQueuePanel.is-active {
   grid-column: span 3;
 }
 
+.product-form small {
+  display: block;
+  margin-top: 6px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
 .product-admin-item {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
