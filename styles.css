@@ -4393,3 +4393,31 @@ html[data-access-mode="fila"] #clientOrderPanel .cart-item button {
   min-height: 38px;
   margin-top: 2px;
 }
+
+.kitchen-board .kitchen-column h3 {
+  color: #1f2937 !important;
+  -webkit-text-fill-color: #1f2937 !important;
+  opacity: 1 !important;
+}
+
+.kitchen-board .order-card > div:first-child,
+.kitchen-board .order-card > div:first-child *,
+.kitchen-board .order-card strong,
+.kitchen-board .order-card span,
+.kitchen-board .order-card small {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  opacity: 1 !important;
+  text-shadow: none !important;
+}
+
+.kitchen-board .order-card span {
+  color: #e5e7eb !important;
+  -webkit-text-fill-color: #e5e7eb !important;
+}
+
+.kitchen-board .order-card small {
+  color: #bfdbfe !important;
+  -webkit-text-fill-color: #bfdbfe !important;
+  font-weight: 750;
+}
