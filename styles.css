@@ -3906,6 +3906,33 @@ html[data-access-mode="fila"] .tab.is-active {
   box-shadow: 0 12px 28px rgba(249, 115, 22, 0.24);
 }
 
+html[data-access-mode="fila"] .cart-panel {
+  border-color: #e5e7eb;
+  background: #ffffff;
+  color: #1f2937;
+}
+
+html[data-access-mode="fila"] .cart-panel h3,
+html[data-access-mode="fila"] .cart-item,
+html[data-access-mode="fila"] .cart-item span,
+html[data-access-mode="fila"] .cart-item strong {
+  color: #1f2937;
+}
+
+html[data-access-mode="fila"] .cart-panel > strong {
+  color: var(--fa-orange);
+}
+
+html[data-access-mode="fila"] .cart-item {
+  border-bottom-color: #e5e7eb;
+}
+
+html[data-access-mode="fila"] .cart-item button {
+  border-color: rgba(249, 115, 22, 0.26);
+  background: #fff7ed;
+  color: #c2410c;
+}
+
 .company-logo,
 .stats div,
 .tabs,
