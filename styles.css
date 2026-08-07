@@ -3194,15 +3194,59 @@ textarea {
   background: var(--fa-graphite);
 }
 
-.mockup-sidebar span {
+.mockup-sidebar button {
   width: 34px;
   height: 34px;
+  display: grid;
+  place-items: center;
+  border: 0;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.11);
+  background: linear-gradient(135deg, #fb923c, var(--fa-orange));
+  box-shadow: 0 10px 22px rgba(249, 115, 22, 0.25);
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
 }
 
+.mockup-sidebar button::before {
+  color: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.mockup-sidebar button:nth-child(1)::before {
+  content: "QR";
+}
+
+.mockup-sidebar button:nth-child(2)::before {
+  content: "2";
+}
+
+.mockup-sidebar button:nth-child(3)::before {
+  content: "✓";
+}
+
+.mockup-sidebar button:hover,
+.mockup-sidebar button:focus-visible,
 .mockup-sidebar .is-active {
-  background: var(--fa-orange);
+  box-shadow: 0 14px 30px rgba(249, 115, 22, 0.42), 0 0 0 4px rgba(249, 115, 22, 0.16);
+  opacity: 1;
+  transform: translateY(-1px);
+}
+
+.mockup-sidebar button:not(.is-active) {
+  opacity: 0.76;
+}
+
+.mockup-content,
+.phone-mockup {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.hero-product-mockup.is-step-changing .mockup-content,
+.hero-product-mockup.is-step-changing .phone-mockup {
+  opacity: 0.62;
+  transform: translateY(2px);
 }
 
 .mockup-content {

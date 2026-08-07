@@ -72,24 +72,24 @@
             </div>
             <div class="mockup-dashboard">
               <div class="mockup-sidebar">
-                <span class="is-active"></span>
-                <span></span>
-                <span></span>
+                <button class="is-active" type="button" data-demo-step="0" aria-label="Mostrar entrada por QR Code"></button>
+                <button type="button" data-demo-step="1" aria-label="Mostrar acompanhamento da fila"></button>
+                <button type="button" data-demo-step="2" aria-label="Mostrar chamada do cliente"></button>
               </div>
               <div class="mockup-content">
                 <div class="mockup-header">
                   <div>
-                    <small>Restaurante Aurora</small>
-                    <strong>Fila em tempo real</strong>
+                    <small data-demo-kicker>Restaurante Aurora</small>
+                    <strong data-demo-title>Fila em tempo real</strong>
                   </div>
-                  <b>Aberta</b>
+                  <b data-demo-badge>Aberta</b>
                 </div>
                 <div class="mockup-metrics">
-                  <article><strong>18</strong><span>aguardando</span></article>
-                  <article><strong>12 min</strong><span>estimativa</span></article>
-                  <article><strong>04</strong><span>mesas livres</span></article>
+                  <article><strong data-demo-metric-one>18</strong><span data-demo-label-one>aguardando</span></article>
+                  <article><strong data-demo-metric-two>12 min</strong><span data-demo-label-two>estimativa</span></article>
+                  <article><strong data-demo-metric-three>04</strong><span data-demo-label-three>mesas livres</span></article>
                 </div>
-                <div class="mockup-list">
+                <div class="mockup-list" data-demo-list>
                   <div><span>023</span><strong>Marina Costa</strong><small>2 pessoas</small></div>
                   <div class="is-called"><span>024</span><strong>Rafael Lima</strong><small>Sua vez</small></div>
                   <div><span>025</span><strong>Bianca Alves</strong><small>4 pessoas</small></div>
@@ -98,10 +98,10 @@
             </div>
           </div>
           <div class="phone-mockup">
-            <small>Sua vez está chegando</small>
-            <strong>05</strong>
-            <span>grupos na frente</span>
-            <button type="button">Detalhes da fila</button>
+            <small data-demo-phone-kicker>Sua vez está chegando</small>
+            <strong data-demo-phone-number>05</strong>
+            <span data-demo-phone-label>grupos na frente</span>
+            <button type="button" data-demo-phone-button>Detalhes da fila</button>
           </div>
         </aside>
       </section>

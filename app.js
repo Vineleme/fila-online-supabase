@@ -15,6 +15,45 @@ const ORDER_STATUS_LABELS = {
   delivered: "Entregue"
 };
 
+const LANDING_DEMO_STEPS = [
+  {
+    kicker: "Entrada digital",
+    title: "Cliente escaneia o QR Code",
+    badge: "Passo 01",
+    metrics: [["QR", "na recepcao"], ["10s", "para entrar"], ["0", "papel"]],
+    rows: [
+      ["QR", "Mesa da recepcao", "escaneado"],
+      ["023", "Marina Costa", "na fila"],
+      ["024", "Rafael Lima", "cadastro recebido"]
+    ],
+    phone: ["Fila aberta", "QR", "toque para entrar", "Entrar na fila"]
+  },
+  {
+    kicker: "Acompanhamento",
+    title: "Fila em tempo real",
+    badge: "Aberta",
+    metrics: [["18", "aguardando"], ["12 min", "estimativa"], ["04", "mesas livres"]],
+    rows: [
+      ["023", "Marina Costa", "2 pessoas"],
+      ["024", "Rafael Lima", "sua vez em breve"],
+      ["025", "Bianca Alves", "4 pessoas"]
+    ],
+    phone: ["Sua vez esta chegando", "05", "grupos na frente", "Detalhes da fila"]
+  },
+  {
+    kicker: "Chamada",
+    title: "Cliente chamado e comanda aberta",
+    badge: "Passo 03",
+    metrics: [["024", "senha chamada"], ["Fila 024", "comanda"], ["novo", "pedido"]],
+    rows: [
+      ["024", "Rafael Lima", "comanda aberta"],
+      ["1x", "Burger da casa", "cozinha"],
+      ["1x", "Limonada", "preparo"]
+    ],
+    phone: ["Atendimento iniciado", "024", "comanda aberta", "Ver cardapio"]
+  }
+];
+
 const DEFAULT_PRODUCTS = [
   {
     id: "burger-casa",
@@ -371,9 +410,79 @@ function bindActivationEvents() {
 }
 
 function bindLandingEvents() {
+  setupLandingMockupDemo();
   if (!elements.trialRequestForm) return;
 
   elements.trialRequestForm.addEventListener("submit", submitTrialRequest);
+}
+
+function setupLandingMockupDemo() {
+  const mockup = document.querySelector(".hero-product-mockup");
+  if (!mockup) return;
+
+  const buttons = [...mockup.querySelectorAll("[data-demo-step]")];
+  if (!buttons.length) return;
+
+  let activeStep = 0;
+  let timer;
+
+  const showStep = (index) => {
+    activeStep = (index + LANDING_DEMO_STEPS.length) % LANDING_DEMO_STEPS.length;
+    const step = LANDING_DEMO_STEPS[activeStep];
+
+    mockup.classList.add("is-step-changing");
+    window.setTimeout(() => mockup.classList.remove("is-step-changing"), 180);
+
+    setText("[data-demo-kicker]", step.kicker);
+    setText("[data-demo-title]", step.title);
+    setText("[data-demo-badge]", step.badge);
+    setText("[data-demo-metric-one]", step.metrics[0][0]);
+    setText("[data-demo-label-one]", step.metrics[0][1]);
+    setText("[data-demo-metric-two]", step.metrics[1][0]);
+    setText("[data-demo-label-two]", step.metrics[1][1]);
+    setText("[data-demo-metric-three]", step.metrics[2][0]);
+    setText("[data-demo-label-three]", step.metrics[2][1]);
+    setText("[data-demo-phone-kicker]", step.phone[0]);
+    setText("[data-demo-phone-number]", step.phone[1]);
+    setText("[data-demo-phone-label]", step.phone[2]);
+    setText("[data-demo-phone-button]", step.phone[3]);
+
+    const list = mockup.querySelector("[data-demo-list]");
+    if (list) {
+      list.innerHTML = step.rows.map((row, rowIndex) => `
+        <div class="${rowIndex === 1 ? "is-called" : ""}">
+          <span>${escapeHtml(row[0])}</span>
+          <strong>${escapeHtml(row[1])}</strong>
+          <small>${escapeHtml(row[2])}</small>
+        </div>
+      `).join("");
+    }
+
+    buttons.forEach((button, buttonIndex) => {
+      button.classList.toggle("is-active", buttonIndex === activeStep);
+      button.setAttribute("aria-pressed", String(buttonIndex === activeStep));
+    });
+  };
+
+  const restart = () => {
+    window.clearInterval(timer);
+    timer = window.setInterval(() => showStep(activeStep + 1), 3600);
+  };
+
+  const setText = (selector, value) => {
+    const node = mockup.querySelector(selector);
+    if (node) node.textContent = value;
+  };
+
+  buttons.forEach((button) => {
+    button.addEventListener("click", () => {
+      showStep(Number(button.dataset.demoStep) || 0);
+      restart();
+    });
+  });
+
+  showStep(0);
+  restart();
 }
 
 function bindAccessEvents() {
