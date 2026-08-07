@@ -4421,3 +4421,46 @@ html[data-access-mode="fila"] #clientOrderPanel .cart-item button {
   -webkit-text-fill-color: #bfdbfe !important;
   font-weight: 750;
 }
+
+.order-admin-list .order-card,
+.order-status-list .order-status-card,
+#clientOrderStatus .order-status-card,
+.product-admin-item {
+  background: #111827 !important;
+  color: #f8fafc !important;
+  -webkit-text-fill-color: #f8fafc !important;
+  border-color: rgba(31, 41, 55, 0.18) !important;
+}
+
+.order-admin-list .order-card *,
+.order-status-list .order-status-card *,
+#clientOrderStatus .order-status-card *,
+.product-admin-item * {
+  opacity: 1 !important;
+  text-shadow: none !important;
+}
+
+.order-admin-list .order-card strong,
+.order-status-list .order-status-card strong,
+#clientOrderStatus .order-status-card strong,
+.product-admin-item strong {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+.order-admin-list .order-card span,
+.order-status-list .order-status-card span,
+#clientOrderStatus .order-status-card span,
+.product-admin-item span {
+  color: #e5e7eb !important;
+  -webkit-text-fill-color: #e5e7eb !important;
+}
+
+.order-admin-list .order-card small,
+.order-status-list .order-status-card small,
+#clientOrderStatus .order-status-card small,
+.product-admin-item small {
+  color: #bfdbfe !important;
+  -webkit-text-fill-color: #bfdbfe !important;
+  font-weight: 750;
+}
