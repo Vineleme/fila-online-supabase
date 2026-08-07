@@ -2570,10 +2570,6 @@ html[data-access-mode="admin"] #adminQueuePanel.is-active {
   grid-column: span 3;
 }
 
-.product-form .is-hidden-field {
-  display: none;
-}
-
 .product-form small {
   display: block;
   margin-top: 6px;
