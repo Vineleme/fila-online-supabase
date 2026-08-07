@@ -57,43 +57,47 @@ grant select, insert, update, delete on public.fila_order_items to anon;
 drop policy if exists "Public can read fila products" on public.fila_products;
 create policy "Public can read fila products"
   on public.fila_products for select
-  to anon
+  to anon, authenticated
   using (true);
 
 drop policy if exists "Anon can manage fila products" on public.fila_products;
-create policy "Anon can manage fila products"
+drop policy if exists "Public can manage fila products" on public.fila_products;
+create policy "Public can manage fila products"
   on public.fila_products for all
-  to anon
+  to anon, authenticated
   using (true)
   with check (true);
 
 drop policy if exists "Anon can create fila orders" on public.fila_orders;
-create policy "Anon can create fila orders"
+drop policy if exists "Public can create fila orders" on public.fila_orders;
+create policy "Public can create fila orders"
   on public.fila_orders for insert
-  to anon
+  to anon, authenticated
   with check (status = 'new');
 
 drop policy if exists "Public can read fila orders" on public.fila_orders;
 create policy "Public can read fila orders"
   on public.fila_orders for select
-  to anon
+  to anon, authenticated
   using (true);
 
 drop policy if exists "Anon can update fila orders" on public.fila_orders;
-create policy "Anon can update fila orders"
+drop policy if exists "Public can update fila orders" on public.fila_orders;
+create policy "Public can update fila orders"
   on public.fila_orders for update
-  to anon
+  to anon, authenticated
   using (true)
   with check (true);
 
 drop policy if exists "Anon can create fila order items" on public.fila_order_items;
-create policy "Anon can create fila order items"
+drop policy if exists "Public can create fila order items" on public.fila_order_items;
+create policy "Public can create fila order items"
   on public.fila_order_items for insert
-  to anon
+  to anon, authenticated
   with check (true);
 
 drop policy if exists "Public can read fila order items" on public.fila_order_items;
 create policy "Public can read fila order items"
   on public.fila_order_items for select
-  to anon
+  to anon, authenticated
   using (true);
