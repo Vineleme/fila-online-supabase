@@ -4322,3 +4322,19 @@ html[data-access-mode="fila"] #clientOrderPanel .cart-item button {
   width: 100%;
   margin: 12px 0 4px;
 }
+
+.check-card strong {
+  color: #f8fafc !important;
+  -webkit-text-fill-color: #f8fafc !important;
+}
+
+.check-card span {
+  color: #cbd5e1 !important;
+  -webkit-text-fill-color: #cbd5e1 !important;
+  opacity: 1 !important;
+}
+
+.check-card b {
+  color: #f97316 !important;
+  -webkit-text-fill-color: #f97316 !important;
+}
