@@ -3371,6 +3371,7 @@ function addToCart(id) {
     });
   }
   renderCart();
+  if (ACCESS_MODE === "fila") closeCartDrawer();
   pulseCartSummary();
 }
 

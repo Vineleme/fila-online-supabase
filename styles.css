@@ -4605,7 +4605,7 @@ html[data-access-mode="fila"] #clientOrderPanel .cart-item button {
   font-weight: 800;
 }
 
-@media (max-width: 760px) {
+@media (max-width: 980px), (hover: none) and (pointer: coarse) {
   #clientOrderPanel .cart-panel {
     position: fixed !important;
     top: auto !important;
@@ -4616,6 +4616,7 @@ html[data-access-mode="fila"] #clientOrderPanel .cart-item button {
     max-height: min(70vh, 520px) !important;
     overflow: auto !important;
     border-radius: 14px !important;
+    display: none !important;
     transform: translateY(calc(100% + 28px)) !important;
     visibility: hidden !important;
     pointer-events: none !important;
@@ -4623,6 +4624,7 @@ html[data-access-mode="fila"] #clientOrderPanel .cart-item button {
   }
 
   #clientOrderPanel .cart-panel.is-open {
+    display: grid !important;
     transform: translateY(0) !important;
     visibility: visible !important;
     pointer-events: auto !important;
