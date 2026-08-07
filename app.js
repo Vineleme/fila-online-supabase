@@ -7,6 +7,10 @@ const SAVED_ACCESS_KEY = "fila-ai-saved-access";
 const OWNER_EMAIL_KEY = "fila-ai-owner-email";
 const PROSPECT_STATUS_KEY = "fila-ai-owner-prospect-status";
 const OWNER_CUSTOM_PROSPECTS_KEY = "fila-ai-owner-custom-prospects";
+const BILLING_PIX_KEY = "11943678179";
+const BILLING_PIX_NAME = "Fila Ai";
+const BILLING_BANK_LINK = "https://api.whatsapp.com/send?phone=5511943678179&text=Quero%20receber%20o%20link%20de%20pagamento%20do%20FILA%20AI";
+const BILLING_CONTRACT_LINK = "https://api.whatsapp.com/send?phone=5511943678179&text=Quero%20assinar%20o%20contrato%20anual%20do%20FILA%20AI";
 
 const ORDER_STATUS_FLOW = ["new", "preparing", "ready", "delivered"];
 const ORDER_STATUS_LABELS = {
@@ -287,6 +291,7 @@ const elements = {
   billingStatusText: document.querySelector("#billingStatusText"),
   billingRequestForm: document.querySelector("#billingRequestForm"),
   billingPlanInput: document.querySelector("#billingPlanInput"),
+  billingPaymentPanel: document.querySelector("#billingPaymentPanel"),
   billingRequestMessage: document.querySelector("#billingRequestMessage"),
   logoutButton: document.querySelector("#logoutButton"),
   companyNameInput: document.querySelector("#companyNameInput"),
@@ -1797,6 +1802,7 @@ function bindEvents() {
   elements.saveCompanyButton.addEventListener("click", saveCompanySettings);
   elements.adminAddForm.addEventListener("submit", addTicketFromAdmin);
   elements.billingRequestForm.addEventListener("submit", submitBillingRequest);
+  elements.billingPlanInput?.addEventListener("change", renderBillingPaymentPanel);
   elements.companyLogoFileInput.addEventListener("change", () => handleBrandFileUpload("logo"));
   elements.companyCoverFileInput.addEventListener("change", () => handleBrandFileUpload("cover"));
   elements.menuPdfFileInput?.addEventListener("change", handleMenuPdfUpload);
@@ -2610,9 +2616,47 @@ function renderBillingStatus() {
     ? `Teste encerrado. Para continuar usando o FILA AI, efetue o pagamento ou entre em contato com o suporte. Status: ${ownerStatus}. Pagamento: ${payment}.`
     : `Status: ${ownerStatus}. Pagamento: ${payment}. ${trialText}.`;
   elements.billingRequestForm.hidden = payment === "pago" || ownerStatus === "ativo";
+  renderBillingPaymentPanel();
   elements.billingRequestMessage.textContent = payment === "pago"
     ? "Plano ativo. Obrigado por continuar usando o FILA AÍ."
     : "";
+}
+
+function renderBillingPaymentPanel() {
+  if (!elements.billingPaymentPanel || !elements.billingPlanInput) return;
+  const plan = elements.billingPlanInput.value;
+  const isAnnual = plan === "anual";
+  const pixMessage = `Pix FILA AI\nChave: ${BILLING_PIX_KEY}\nFavorecido: ${BILLING_PIX_NAME}\nRestaurante: ${state.company.name}\nPlano: ${isAnnual ? "Anual" : "Mensal"}`;
+
+  elements.billingPaymentPanel.hidden = false;
+  elements.billingPaymentPanel.innerHTML = isAnnual
+    ? `
+      <div>
+        <strong>Plano anual</strong>
+        <p>Assine o contrato online e solicite o link de pagamento para concluir a ativacao.</p>
+      </div>
+      <div class="billing-payment-actions">
+        <a href="${BILLING_CONTRACT_LINK}" target="_blank" rel="noreferrer">Assinar contrato</a>
+        <a href="${BILLING_BANK_LINK}" target="_blank" rel="noreferrer">Solicitar link de pagamento</a>
+      </div>
+    `
+    : `
+      <div>
+        <strong>Pagamento mensal via Pix</strong>
+        <p>Use a chave Pix abaixo e envie o comprovante para liberar ou renovar o acesso.</p>
+        <code>${escapeHtml(BILLING_PIX_KEY)}</code>
+        <small>Favorecido: ${escapeHtml(BILLING_PIX_NAME)}</small>
+      </div>
+      <div class="billing-payment-actions">
+        <button type="button" data-copy-pix="${escapeHtml(pixMessage)}">Copiar Pix</button>
+        <a href="${BILLING_BANK_LINK}" target="_blank" rel="noreferrer">Enviar comprovante</a>
+      </div>
+    `;
+
+  elements.billingPaymentPanel.querySelector("[data-copy-pix]")?.addEventListener("click", async (event) => {
+    await navigator.clipboard.writeText(event.currentTarget.dataset.copyPix).catch(() => {});
+    event.currentTarget.textContent = "Pix copiado";
+  });
 }
 
 async function submitBillingRequest(event) {
@@ -2638,6 +2682,7 @@ async function submitBillingRequest(event) {
   }
 
   elements.billingRequestMessage.textContent = "Pedido enviado. O FILA AÍ vai chamar você para finalizar o pagamento.";
+  renderBillingPaymentPanel();
   await refreshFromSupabase();
 }
 
