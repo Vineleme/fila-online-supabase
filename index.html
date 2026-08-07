@@ -634,8 +634,17 @@
               </div>
               <div id="clientProductList" class="product-grid"></div>
             </div>
-            <aside class="cart-panel">
-              <h3>Carrinho</h3>
+            <button id="cartDrawerToggle" class="cart-fab" type="button" hidden>
+              <span>Carrinho</span>
+              <b id="cartCount">0</b>
+              <small id="cartFabTotal">R$ 0,00</small>
+            </button>
+            <div id="cartDrawerOverlay" class="cart-drawer-overlay" hidden></div>
+            <aside id="cartDrawer" class="cart-panel">
+              <div class="cart-panel-header">
+                <h3>Carrinho</h3>
+                <button id="closeCartButton" class="text-button" type="button">Fechar</button>
+              </div>
               <div id="cartItems" class="cart-list"></div>
               <strong id="cartTotal">R$ 0,00</strong>
               <button id="sendOrderButton" class="primary" type="button">Enviar pedido</button>

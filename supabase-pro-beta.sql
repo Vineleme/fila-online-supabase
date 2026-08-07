@@ -101,3 +101,27 @@ create policy "Public can read fila order items"
   on public.fila_order_items for select
   to anon, authenticated
   using (true);
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'fila_products'
+  ) then
+    alter publication supabase_realtime add table public.fila_products;
+  end if;
+
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'fila_orders'
+  ) then
+    alter publication supabase_realtime add table public.fila_orders;
+  end if;
+
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'fila_order_items'
+  ) then
+    alter publication supabase_realtime add table public.fila_order_items;
+  end if;
+end $$;

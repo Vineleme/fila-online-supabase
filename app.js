@@ -183,6 +183,11 @@ const db = hasSupabaseConfig
 let state = loadLocalState();
 let audioContext;
 let cart = [];
+let realtimeChannel;
+let refreshInFlight = false;
+let queuedRefresh = false;
+let realtimeFallbackTimer;
+let lastClientStage = "";
 
 const elements = {
   landingPage: document.querySelector("#landingPage"),
@@ -314,6 +319,12 @@ const elements = {
   orderCustomerInput: document.querySelector("#orderCustomerInput"),
   cartItems: document.querySelector("#cartItems"),
   cartTotal: document.querySelector("#cartTotal"),
+  cartCount: document.querySelector("#cartCount"),
+  cartFabTotal: document.querySelector("#cartFabTotal"),
+  cartDrawer: document.querySelector("#cartDrawer"),
+  cartDrawerToggle: document.querySelector("#cartDrawerToggle"),
+  cartDrawerOverlay: document.querySelector("#cartDrawerOverlay"),
+  closeCartButton: document.querySelector("#closeCartButton"),
   sendOrderButton: document.querySelector("#sendOrderButton"),
   orderMessage: document.querySelector("#orderMessage"),
   clientOrderStatus: document.querySelector("#clientOrderStatus"),
@@ -1628,6 +1639,9 @@ function bindEvents() {
   elements.productForm?.addEventListener("submit", addProduct);
   elements.sendOrderButton?.addEventListener("click", submitTableOrder);
   elements.orderTableInput?.addEventListener("input", renderClientOrderStatus);
+  elements.cartDrawerToggle?.addEventListener("click", openCartDrawer);
+  elements.closeCartButton?.addEventListener("click", closeCartDrawer);
+  elements.cartDrawerOverlay?.addEventListener("click", closeCartDrawer);
   elements.copyQueueLinkButton?.addEventListener("click", copyQueueLink);
   elements.changeAdminPinButton?.addEventListener("click", changeAdminPin);
   elements.suggestAdminPinButton?.addEventListener("click", suggestAdminPin);
@@ -1706,34 +1720,45 @@ async function ensureCompany() {
 }
 
 async function refreshFromSupabase() {
+  if (refreshInFlight) {
+    queuedRefresh = true;
+    return;
+  }
+
+  refreshInFlight = true;
   try {
     await ensureCompany();
+
+    const { data: tickets, error: ticketsError } = await db
+      .from("queue_tickets")
+      .select("*")
+      .eq("company_slug", COMPANY_SLUG)
+      .order("created_at", { ascending: true });
+
+    if (ticketsError) {
+      elements.publicQueue.innerHTML = `<li class="panel muted">Erro ao carregar fila: ${escapeHtml(ticketsError.message)}</li>`;
+      return;
+    }
+
+    state.queue = (tickets || []).map(fromSupabaseTicket);
+    if (state.myTicketId && !state.queue.some((ticket) => ticket.id === state.myTicketId)) {
+      state.myTicketId = null;
+      localStorage.removeItem(`${MY_TICKET_KEY}-${COMPANY_SLUG}`);
+    }
+    state.currentTicketId = state.queue.find((ticket) => ticket.status === "called")?.id || null;
+    await refreshProFromSupabase();
+    fillCompanyForm();
+    restoreAdminAccess();
+    render();
   } catch (error) {
-    elements.publicQueue.innerHTML = `<li class="panel muted">Erro ao carregar empresa: ${escapeHtml(error.message)}</li>`;
-    return;
+    elements.publicQueue.innerHTML = `<li class="panel muted">Erro ao carregar dados: ${escapeHtml(error.message)}</li>`;
+  } finally {
+    refreshInFlight = false;
+    if (queuedRefresh) {
+      queuedRefresh = false;
+      refreshFromSupabase();
+    }
   }
-
-  const { data: tickets, error: ticketsError } = await db
-    .from("queue_tickets")
-    .select("*")
-    .eq("company_slug", COMPANY_SLUG)
-    .order("created_at", { ascending: true });
-
-  if (ticketsError) {
-    elements.publicQueue.innerHTML = `<li class="panel muted">Erro ao carregar fila: ${escapeHtml(ticketsError.message)}</li>`;
-    return;
-  }
-
-  state.queue = (tickets || []).map(fromSupabaseTicket);
-  if (state.myTicketId && !state.queue.some((ticket) => ticket.id === state.myTicketId)) {
-    state.myTicketId = null;
-    localStorage.removeItem(`${MY_TICKET_KEY}-${COMPANY_SLUG}`);
-  }
-  state.currentTicketId = state.queue.find((ticket) => ticket.status === "called")?.id || null;
-  await refreshProFromSupabase();
-  fillCompanyForm();
-  restoreAdminAccess();
-  render();
 }
 
 async function refreshProFromSupabase() {
@@ -1773,13 +1798,24 @@ function restoreAdminAccess() {
 }
 
 function subscribeToRealtime() {
-  db.channel(`queue-${COMPANY_SLUG}`)
+  if (realtimeChannel) return;
+
+  const handleRealtimeChange = () => refreshFromSupabase();
+  realtimeChannel = db.channel(`queue-${COMPANY_SLUG}`)
     .on("postgres_changes", { event: "*", schema: "public", table: "queue_tickets" }, refreshFromSupabase)
-    .on("postgres_changes", { event: "*", schema: "public", table: "queue_companies" }, refreshFromSupabase)
-    .on("postgres_changes", { event: "*", schema: "public", table: "fila_products" }, refreshFromSupabase)
-    .on("postgres_changes", { event: "*", schema: "public", table: "fila_orders" }, refreshFromSupabase)
-    .on("postgres_changes", { event: "*", schema: "public", table: "fila_order_items" }, refreshFromSupabase)
+    .on("postgres_changes", { event: "*", schema: "public", table: "queue_companies" }, handleRealtimeChange)
+    .on("postgres_changes", { event: "*", schema: "public", table: "fila_products" }, handleRealtimeChange)
+    .on("postgres_changes", { event: "*", schema: "public", table: "fila_orders" }, handleRealtimeChange)
+    .on("postgres_changes", { event: "*", schema: "public", table: "fila_order_items" }, handleRealtimeChange)
     .subscribe();
+
+  realtimeFallbackTimer = window.setInterval(() => {
+    if (!document.hidden) refreshFromSupabase();
+  }, 20000);
+
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) refreshFromSupabase();
+  });
 }
 
 async function saveCompanySettings() {
@@ -2468,10 +2504,18 @@ function renderClientMenu() {
 function renderClientProducts() {
   if (!elements.clientOrderPanel || !elements.clientProductList) return;
   const activeProducts = getActiveProducts();
-  const showOrdering = Boolean(state.company.menuEnabled && activeProducts.length);
+  const checkTicket = getCheckTicket();
+  const allowDirectOrder = ACCESS_MODE !== "fila";
+  const showOrdering = Boolean(state.company.menuEnabled && activeProducts.length && (allowDirectOrder || checkTicket));
   elements.clientOrderPanel.hidden = !showOrdering;
+  if (elements.cartDrawerToggle) elements.cartDrawerToggle.hidden = !showOrdering;
+  if (!showOrdering) {
+    closeCartDrawer();
+    lastClientStage = getClientStage();
+  }
   if (!showOrdering) return;
   applyTicketCheckToOrderForm();
+  maybeFocusOrderingStage();
 
   elements.clientProductList.innerHTML = activeProducts.map((product) => `
     <article class="product-card">
@@ -2511,8 +2555,42 @@ function applyTicketCheckToOrderForm() {
   elements.orderCustomerInput.readOnly = true;
 }
 
+function getClientStage() {
+  const ticket = getMyTicket();
+  if (!ticket) return "no-ticket";
+  if (getCheckTicket()) return "ordering";
+  if (ticket.status === "called") return ticket.checkRequested ? "check-requested" : "called";
+  return "waiting";
+}
+
+function maybeFocusOrderingStage() {
+  const stage = getClientStage();
+  if (lastClientStage && lastClientStage !== "ordering" && stage === "ordering") {
+    window.setTimeout(() => {
+      elements.clientOrderPanel?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 180);
+  }
+  lastClientStage = stage;
+}
+
+function openCartDrawer() {
+  elements.cartDrawer?.classList.add("is-open");
+  if (elements.cartDrawerOverlay) elements.cartDrawerOverlay.hidden = false;
+}
+
+function closeCartDrawer() {
+  elements.cartDrawer?.classList.remove("is-open");
+  if (elements.cartDrawerOverlay) elements.cartDrawerOverlay.hidden = true;
+}
+
 function renderCart() {
   if (!elements.cartItems || !elements.cartTotal) return;
+  const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const total = cartTotal();
+  if (elements.cartCount) elements.cartCount.textContent = String(itemCount);
+  if (elements.cartFabTotal) elements.cartFabTotal.textContent = formatCurrency(total);
+  elements.cartDrawerToggle?.classList.toggle("has-items", itemCount > 0);
+
   if (!cart.length) {
     elements.cartItems.innerHTML = `<p class="muted">Nenhum item selecionado.</p>`;
     elements.cartTotal.textContent = formatCurrency(0);
@@ -2526,7 +2604,7 @@ function renderCart() {
       <button type="button" data-cart-remove="${escapeHtml(item.id)}">Remover</button>
     </div>
   `).join("");
-  elements.cartTotal.textContent = formatCurrency(cartTotal());
+  elements.cartTotal.textContent = formatCurrency(total);
   elements.cartItems.querySelectorAll("[data-cart-remove]").forEach((button) => {
     button.addEventListener("click", () => removeFromCart(button.dataset.cartRemove));
   });
@@ -2632,7 +2710,7 @@ function renderKitchenBoard() {
     const orders = state.orders.filter((order) => order.status === status);
     return `
       <section class="kitchen-column">
-        <h3>${ORDER_STATUS_LABELS[status]}</h3>
+        <h3><span>${ORDER_STATUS_LABELS[status]}</span><b>${orders.length}</b></h3>
         ${orders.length ? orders.map(orderCard).join("") : `<p class="muted">Sem pedidos.</p>`}
       </section>
     `;
@@ -2752,7 +2830,7 @@ function renderMyTicket() {
   const wait = estimateWait(ticket);
   const statusText = ticket.status === "called" ? "Sua vez chegou" : ticket.status === "done" ? "Comanda aberta" : "Aguardando";
   const checkNotice = ticket.status === "done"
-    ? `<p class="called-note">Atendimento iniciado. Seus pedidos entram na comanda ${escapeHtml(ticketCheckLabel(ticket))}.</p>`
+    ? `<p class="called-note">Atendimento iniciado. O cardapio abriu abaixo e seus pedidos entram na comanda ${escapeHtml(ticketCheckLabel(ticket))}.</p>`
     : "";
   const requestPendingNotice = ticket.status === "called" && ticket.checkRequested
     ? `<p class="called-note">Comanda solicitada. Aguarde a recepcao liberar para fazer pedidos.</p>`
@@ -3293,6 +3371,7 @@ function addToCart(id) {
     });
   }
   renderCart();
+  if (window.matchMedia("(max-width: 760px)").matches) openCartDrawer();
 }
 
 function removeFromCart(id) {
@@ -3367,6 +3446,7 @@ async function submitTableOrder() {
   }
 
   cart = [];
+  closeCartDrawer();
   elements.orderMessage.textContent = `Pedido enviado para a cozinha. Status: ${orderStatusLabel(order.status)}.`;
   persistLocalState();
   if (db) await refreshProFromSupabase();
