@@ -1564,7 +1564,8 @@ function bindEvents() {
       name,
       service: partyLabel(partySize),
       party_size: partySize,
-      status: "waiting"
+      status: "waiting",
+      check_requested: false
     };
 
     if (db) {
@@ -1587,7 +1588,8 @@ function bindEvents() {
         ...ticket,
         id: crypto.randomUUID(),
         createdAt: Date.now(),
-        calledAt: null
+        calledAt: null,
+        checkRequested: false
       };
       state.queue.push(localTicket);
       state.myTicketId = localTicket.id;
@@ -1631,7 +1633,7 @@ function bindEvents() {
   elements.suggestAdminPinButton?.addEventListener("click", suggestAdminPin);
 
   elements.callNextButton.addEventListener("click", callNextTicket);
-  elements.finishCalledButton.addEventListener("click", finishCalledTicket);
+  elements.finishCalledButton.addEventListener("click", openCalledTicketCheck);
   elements.resetButton.addEventListener("click", resetQueue);
 
   window.addEventListener("storage", () => {
@@ -2123,7 +2125,8 @@ async function addTicketFromAdmin(event) {
     name,
     service: partyLabel(partySize),
     party_size: partySize,
-    status: "waiting"
+    status: "waiting",
+    check_requested: false
   };
 
   if (db) {
@@ -2144,7 +2147,8 @@ async function addTicketFromAdmin(event) {
       ...ticket,
       id: crypto.randomUUID(),
       createdAt: Date.now(),
-      calledAt: null
+      calledAt: null,
+      checkRequested: false
     });
     persistLocalState();
   }
@@ -2184,25 +2188,57 @@ async function callNextTicket() {
   render();
 }
 
-async function finishCalledTicket() {
+async function openCalledTicketCheck() {
   const current = getCurrentTicket();
   if (!current) return;
+  await openTicketCheck(current.id);
+}
+
+async function openTicketCheck(ticketId) {
+  const ticket = state.queue.find((item) => item.id === ticketId);
+  if (!ticket || ticket.status !== "called") return;
 
   if (db) {
     const { error } = await db.rpc("fila_admin_update_ticket", {
       p_company_slug: COMPANY_SLUG,
       p_admin_pin: adminSessionPin(),
-      p_ticket_id: current.id,
+      p_ticket_id: ticket.id,
       p_status: "done"
     });
     if (error) {
-      alert(`Não consegui finalizar: ${error.message}`);
+      alert(`Nao consegui abrir comanda: ${error.message}`);
+      return;
+    }
+    localStorage.setItem(`${MY_TICKET_KEY}-${COMPANY_SLUG}`, ticket.id);
+    await refreshFromSupabase();
+  } else {
+    ticket.status = "done";
+    state.currentTicketId = null;
+    state.myTicketId = ticket.id;
+    persistLocalState();
+  }
+
+  render();
+}
+
+async function requestTicketCheck(ticketId) {
+  const ticket = state.queue.find((item) => item.id === ticketId);
+  if (!ticket || ticket.status !== "called") return;
+
+  if (db) {
+    const { error } = await db
+      .from("queue_tickets")
+      .update({ check_requested: true })
+      .eq("id", ticket.id)
+      .eq("company_slug", COMPANY_SLUG)
+      .eq("status", "called");
+    if (error) {
+      alert(`Nao consegui solicitar comanda: ${error.message}`);
       return;
     }
     await refreshFromSupabase();
   } else {
-    current.status = "done";
-    state.currentTicketId = null;
+    ticket.checkRequested = true;
     persistLocalState();
   }
 
@@ -2260,19 +2296,8 @@ async function handleTicketAction(action, id) {
     }
 
     if (action === "done") {
-      const { error } = await db.rpc("fila_admin_update_ticket", {
-        p_company_slug: COMPANY_SLUG,
-        p_admin_pin: adminSessionPin(),
-        p_ticket_id: id,
-        p_status: "done"
-      });
-      if (error) {
-        alert(`Não consegui finalizar: ${error.message}`);
-        return;
-      }
-      if (state.myTicketId === id) {
-        localStorage.setItem(`${MY_TICKET_KEY}-${COMPANY_SLUG}`, id);
-      }
+      await openTicketCheck(id);
+      return;
     }
 
     if (action === "remove") {
@@ -2300,6 +2325,7 @@ async function handleTicketAction(action, id) {
 
     ticket.status = "called";
     ticket.calledAt = Date.now();
+    ticket.checkRequested = false;
     state.currentTicketId = ticket.id;
     changeUsedTablesLocal(partyBucket(ticket.partySize), 1);
     playCallSound();
@@ -2307,8 +2333,8 @@ async function handleTicketAction(action, id) {
   }
 
   if (action === "done") {
-    ticket.status = "done";
-    if (state.currentTicketId === ticket.id) state.currentTicketId = null;
+    await openTicketCheck(id);
+    return;
   }
 
   if (action === "remove") {
@@ -2728,6 +2754,12 @@ function renderMyTicket() {
   const checkNotice = ticket.status === "done"
     ? `<p class="called-note">Atendimento iniciado. Seus pedidos entram na comanda ${escapeHtml(ticketCheckLabel(ticket))}.</p>`
     : "";
+  const requestPendingNotice = ticket.status === "called" && ticket.checkRequested
+    ? `<p class="called-note">Comanda solicitada. Aguarde a recepcao liberar para fazer pedidos.</p>`
+    : "";
+  const checkRequest = ticket.status === "called" && !ticket.checkRequested
+    ? `<button class="primary request-check-button" type="button" data-request-check="${escapeHtml(ticket.id)}">Solicitar comanda</button>`
+    : "";
   const calledNotice = ticket.status === "called"
     ? `<p class="called-note">Sua vez chegou. Você tem 10 minutos para comparecer à recepção.</p>`
     : "";
@@ -2736,6 +2768,8 @@ function renderMyTicket() {
     <h2>Minha senha</h2>
     <div class="ticket-number">${formatNumber(ticket.number)}</div>
     ${calledNotice}
+    ${requestPendingNotice}
+    ${checkRequest}
     ${checkNotice}
     <div class="ticket-grid">
       <div class="metric"><strong>${ahead}</strong><span>grupos na frente</span></div>
@@ -2743,6 +2777,10 @@ function renderMyTicket() {
       <div class="metric"><strong>${statusText}</strong><span>status</span></div>
     </div>
   `;
+
+  elements.myTicket.querySelector("[data-request-check]")?.addEventListener("click", async (event) => {
+    await requestTicketCheck(event.currentTarget.dataset.requestCheck);
+  });
 }
 
 function renderPublicQueue() {
@@ -2766,16 +2804,17 @@ function renderAdminQueue() {
   elements.adminQueue.innerHTML = visibleTickets.map((ticket) => {
     const calledClass = ticket.status === "called" ? " is-called" : "";
     const canCall = ticket.status === "waiting" && tableAvailabilityFor(partyBucket(ticket.partySize)).available > 0;
+    const checkRequestLabel = ticket.checkRequested ? " - Solicitou comanda" : "";
     return `
       <div class="admin-item${calledClass}">
         <span class="place">${formatNumber(ticket.number)}</span>
         <span class="person">
           <strong>${escapeHtml(ticket.name)}</strong>
-          <span>${partyLabel(ticket.partySize)} - ${statusLabel(ticket.status)} - ${formatDuration(estimateWait(ticket))}</span>
+          <span>${partyLabel(ticket.partySize)} - ${statusLabel(ticket.status)}${checkRequestLabel} - ${formatDuration(estimateWait(ticket))}</span>
         </span>
         <span class="mini-actions">
           <button type="button" data-action="call" data-id="${ticket.id}" ${canCall ? "" : "disabled"}>Chamar</button>
-          <button type="button" data-action="done" data-id="${ticket.id}">Finalizar</button>
+          <button type="button" data-action="done" data-id="${ticket.id}" ${ticket.status === "called" ? "" : "disabled"}>Abrir comanda</button>
           <button type="button" data-action="remove" data-id="${ticket.id}">Remover</button>
         </span>
       </div>
@@ -3008,6 +3047,7 @@ function fromSupabaseTicket(ticket) {
     service: ticket.service,
     partySize: ticket.party_size || 2,
     status: ticket.status,
+    checkRequested: ticket.check_requested || false,
     createdAt: ticket.created_at,
     calledAt: ticket.called_at
   };

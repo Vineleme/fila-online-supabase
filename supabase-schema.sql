@@ -96,13 +96,15 @@ create table if not exists public.queue_tickets (
   name text not null check (char_length(trim(name)) >= 2),
   service text not null,
   status text not null default 'waiting' check (status in ('waiting', 'called', 'done')),
+  check_requested boolean not null default false,
   created_at timestamptz not null default now(),
   called_at timestamptz
 );
 
 alter table public.queue_tickets
   add column if not exists company_slug text not null default 'restaurante-demo',
-  add column if not exists party_size integer not null default 2 check (party_size between 1 and 20);
+  add column if not exists party_size integer not null default 2 check (party_size between 1 and 20),
+  add column if not exists check_requested boolean not null default false;
 
 alter table public.queue_companies
   add column if not exists used_2 integer not null default 0 check (used_2 between 0 and 99),
@@ -130,6 +132,9 @@ create index if not exists queue_tickets_status_created_idx
 
 create index if not exists queue_tickets_company_status_created_idx
   on public.queue_tickets (company_slug, status, created_at);
+
+create index if not exists queue_tickets_check_requested_idx
+  on public.queue_tickets (company_slug, check_requested, status);
 
 insert into public.queue_settings (id, avg_minutes)
 values (1, 5)
