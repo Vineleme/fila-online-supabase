@@ -4464,3 +4464,29 @@ html[data-access-mode="fila"] #clientOrderPanel .cart-item button {
   -webkit-text-fill-color: #bfdbfe !important;
   font-weight: 750;
 }
+
+#clientOrderStatus .client-order-history-card {
+  background: #111827 !important;
+  color: #f8fafc !important;
+  -webkit-text-fill-color: initial !important;
+  border-color: rgba(31, 41, 55, 0.2) !important;
+}
+
+#clientOrderStatus .client-order-history-title {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+#clientOrderStatus .client-order-history-items {
+  color: #e5e7eb !important;
+  -webkit-text-fill-color: #e5e7eb !important;
+  opacity: 1 !important;
+}
+
+#clientOrderStatus .client-order-history-meta {
+  color: #bfdbfe !important;
+  -webkit-text-fill-color: #bfdbfe !important;
+  opacity: 1 !important;
+  font-weight: 800;
+}
