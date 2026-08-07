@@ -4796,6 +4796,36 @@ html[data-access-mode="fila"] #clientOrderPanel .cart-item button {
   opacity: 1 !important;
 }
 
+#adminQueuePanel .admin-item:not(.is-called) {
+  background: #111827 !important;
+  color: #f8fafc !important;
+  -webkit-text-fill-color: initial !important;
+  border-color: rgba(31, 41, 55, 0.18) !important;
+}
+
+#adminQueuePanel .admin-item:not(.is-called) .person strong {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+#adminQueuePanel .admin-item:not(.is-called) .person span {
+  color: #dbeafe !important;
+  -webkit-text-fill-color: #dbeafe !important;
+  opacity: 1 !important;
+}
+
+#adminQueuePanel .admin-item.is-called .person strong {
+  color: #14532d !important;
+  -webkit-text-fill-color: #14532d !important;
+}
+
+#adminQueuePanel .admin-item.is-called .person span {
+  color: #166534 !important;
+  -webkit-text-fill-color: #166534 !important;
+  opacity: 1 !important;
+}
+
 @media (max-width: 980px) {
   .owner-companies-panel .owner-item {
     grid-template-columns: 1fr !important;
