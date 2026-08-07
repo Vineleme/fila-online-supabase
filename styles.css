@@ -4604,3 +4604,75 @@ html[data-access-mode="fila"] #clientOrderPanel .cart-item button {
   opacity: 1 !important;
   font-weight: 800;
 }
+
+@media (max-width: 760px) {
+  #clientOrderPanel .cart-panel {
+    position: fixed !important;
+    top: auto !important;
+    left: 12px !important;
+    right: 12px !important;
+    bottom: 12px !important;
+    z-index: 80 !important;
+    max-height: min(70vh, 520px) !important;
+    overflow: auto !important;
+    border-radius: 14px !important;
+    transform: translateY(calc(100% + 28px)) !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    transition: transform 0.22s ease, visibility 0.22s ease !important;
+  }
+
+  #clientOrderPanel .cart-panel.is-open {
+    transform: translateY(0) !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+  }
+
+  #clientOrderPanel .cart-fab:not([hidden]) {
+    left: 50% !important;
+    right: auto !important;
+    bottom: 10px !important;
+    width: min(calc(100% - 28px), 390px) !important;
+    min-height: 46px !important;
+    padding: 0 14px !important;
+    transform: translateX(-50%) !important;
+    grid-template-columns: 1fr auto auto !important;
+    border-radius: 999px !important;
+    background: #1f2937 !important;
+    box-shadow: 0 12px 32px rgba(31, 41, 55, 0.22) !important;
+  }
+
+  #clientOrderPanel .cart-fab span,
+  #clientOrderPanel .cart-fab small,
+  #clientOrderPanel .cart-fab b {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+  }
+
+  #clientOrderPanel .cart-fab b {
+    min-width: 26px !important;
+    height: 26px !important;
+    background: #f97316 !important;
+    font-size: 0.78rem !important;
+  }
+
+  #clientOrderPanel .cart-fab small {
+    font-size: 0.82rem !important;
+  }
+
+  #clientOrderPanel .cart-fab.is-updated {
+    animation: cartSummaryPulseMobile 0.24s ease !important;
+  }
+}
+
+@keyframes cartSummaryPulseMobile {
+  0% {
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+  45% {
+    transform: translateX(-50%) translateY(-2px) scale(1.01);
+  }
+  100% {
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
