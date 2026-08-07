@@ -1849,8 +1849,8 @@ async function saveMenuSettings() {
   const company = {
     ...state.company,
     menuEnabled: Boolean(elements.menuEnabledInput.checked),
-    menuTitle: elements.menuTitleInput.value.trim() || "Cardápio do restaurante",
-    menuPdfUrl: normalizeUrl(elements.menuPdfUrlInput.value, "")
+    menuTitle: elements.menuTitleInput?.value.trim() || "Cardápio do restaurante",
+    menuPdfUrl: normalizeUrl(elements.menuPdfUrlInput?.value, "")
   };
 
   state.company = company;
@@ -1875,12 +1875,12 @@ async function saveMenuSettings() {
   }
 
   persistLocalState();
-  elements.menuUploadStatus.textContent = "Cardapio salvo. Produtos e pedidos ficam ativos quando o Pro estiver ligado.";
+  elements.menuUploadStatus.textContent = "Status do Pro salvo. Produtos e pedidos ficam ativos quando o Pro estiver ligado.";
   render();
 }
 
 async function handleMenuPdfUpload() {
-  const file = elements.menuPdfFileInput.files?.[0];
+  const file = elements.menuPdfFileInput?.files?.[0];
   if (!file) return;
 
   if (!db) {

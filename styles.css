@@ -2570,6 +2570,10 @@ html[data-access-mode="admin"] #adminQueuePanel.is-active {
   grid-column: span 3;
 }
 
+.product-form .is-hidden-field {
+  display: none;
+}
+
 .product-form small {
   display: block;
   margin-top: 6px;
@@ -2583,6 +2587,18 @@ html[data-access-mode="admin"] #adminQueuePanel.is-active {
   grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 12px;
   align-items: center;
+}
+
+.product-admin-item strong {
+  color: #f8fafc;
+}
+
+.product-admin-item span {
+  color: #cbd5e1;
+}
+
+.product-admin-item small {
+  color: #94a3b8;
 }
 
 .order-card {

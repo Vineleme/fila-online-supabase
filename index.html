@@ -811,7 +811,7 @@
             <div class="section-title">
               <div>
                 <h2>Cardápio Pro</h2>
-                <p class="muted">Cadastre produtos para o cliente pedir pela mesa. O PDF continua disponível como apoio.</p>
+                <p class="muted">Cadastre produtos com foto, preço e preparo para o cliente pedir pelo celular.</p>
               </div>
               <label class="switch-row">
                 <input id="menuEnabledInput" type="checkbox" />
@@ -839,8 +839,7 @@
                 Descrição
                 <input id="productDescriptionInput" maxlength="140" placeholder="Descrição curta para o cliente" />
               </label>
-              <label class="wide-field">
-                Imagem do produto
+              <label class="wide-field is-hidden-field">
                 <input id="productImageUrlInput" type="url" maxlength="500" placeholder="https://.../foto-do-prato.jpg" />
               </label>
               <label class="wide-field">
@@ -851,21 +850,7 @@
               <button class="primary" type="submit">Adicionar produto</button>
             </form>
             <div id="adminProductList" class="product-admin-list"></div>
-            <div class="config-grid">
-              <label>
-                Título do botão
-                <input id="menuTitleInput" maxlength="60" placeholder="Cardápio do restaurante" />
-              </label>
-              <label>
-                Link do PDF
-                <input id="menuPdfUrlInput" type="url" placeholder="https://.../cardapio.pdf" />
-              </label>
-            </div>
-            <label>
-              Enviar PDF
-              <input id="menuPdfFileInput" type="file" accept="application/pdf,.pdf" />
-            </label>
-            <p id="menuUploadStatus" class="muted" role="status">Envie o cardápio em PDF ou cole um link pronto.</p>
+            <p id="menuUploadStatus" class="muted" role="status">Adicione uma foto horizontal para manter o cardápio bonito no celular.</p>
             <div class="qr-panel">
               <div>
                 <h3>QR Code da fila</h3>
@@ -878,7 +863,7 @@
               <img id="queueQrImage" alt="QR Code da fila" />
             </div>
             <a id="adminSupportLink" class="support-button" href="https://api.whatsapp.com/send?phone=5511943678179&text=Preciso%20de%20suporte%20no%20FILA%20A%C3%8D" target="_blank" rel="noreferrer">Acionar suporte prioritário</a>
-            <button id="saveMenuSettingsButton" class="primary" type="button">Salvar menu</button>
+            <button id="saveMenuSettingsButton" class="primary" type="button">Salvar status do Pro</button>
           </section>
 
           <section id="adminOrdersPanel" class="panel admin-tab-panel">
