@@ -4783,6 +4783,19 @@ html[data-access-mode="fila"] #clientOrderPanel .cart-item button {
   white-space: nowrap !important;
 }
 
+.owner-recovery-info,
+.owner-recovery-info h2,
+.owner-recovery-info .muted {
+  color: #1f2937 !important;
+  -webkit-text-fill-color: #1f2937 !important;
+}
+
+.owner-recovery-info .muted {
+  color: #4b5563 !important;
+  -webkit-text-fill-color: #4b5563 !important;
+  opacity: 1 !important;
+}
+
 @media (max-width: 980px) {
   .owner-companies-panel .owner-item {
     grid-template-columns: 1fr !important;
