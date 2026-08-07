@@ -2631,7 +2631,16 @@ html[data-access-mode="admin"] #adminQueuePanel.is-active {
   gap: 10px;
   align-content: start;
   padding: 12px;
-  background: var(--brand-soft);
+  background: #ffffff;
+  box-shadow: var(--shadow-soft);
+}
+
+.kitchen-column h3 {
+  color: var(--ink);
+}
+
+.kitchen-column .muted {
+  color: var(--muted);
 }
 
 .order-status-list {
