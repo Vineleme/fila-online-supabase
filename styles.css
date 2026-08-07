@@ -4270,3 +4270,50 @@ html[data-access-mode="fila"] #clientOrderPanel .cart-item button {
   color: #c2410c !important;
   -webkit-text-fill-color: #c2410c !important;
 }
+
+#clientOrderPanel .cart-panel {
+  border-color: #d1d5db !important;
+  background: #ffffff !important;
+  color: #111827 !important;
+  -webkit-text-fill-color: #111827 !important;
+}
+
+#clientOrderPanel .cart-panel h3,
+#clientOrderPanel .cart-item,
+#clientOrderPanel .cart-item span,
+#clientOrderPanel .cart-item strong {
+  color: #111827 !important;
+  -webkit-text-fill-color: #111827 !important;
+  opacity: 1 !important;
+}
+
+#clientOrderPanel .cart-panel > strong {
+  color: #f97316 !important;
+  -webkit-text-fill-color: #f97316 !important;
+}
+
+#clientOrderPanel .cart-item button {
+  border-color: rgba(249, 115, 22, 0.3) !important;
+  background: #fff7ed !important;
+  color: #c2410c !important;
+  -webkit-text-fill-color: #c2410c !important;
+}
+
+#clientOrderPanel .product-card strong {
+  color: #f8fafc !important;
+  -webkit-text-fill-color: #f8fafc !important;
+  opacity: 1 !important;
+}
+
+#clientOrderPanel .product-card span,
+#clientOrderPanel .product-card p,
+#clientOrderPanel .product-card small {
+  color: #e5e7eb !important;
+  -webkit-text-fill-color: #e5e7eb !important;
+  opacity: 1 !important;
+}
+
+#clientOrderPanel .product-card b {
+  color: #f97316 !important;
+  -webkit-text-fill-color: #f97316 !important;
+}
