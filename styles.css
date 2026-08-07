@@ -3054,6 +3054,10 @@ html[data-access-mode="admin"] #adminQueuePanel.is-active {
     font-weight: 800;
   }
 
+  .cart-fab.is-updated {
+    animation: cartSummaryPulse 0.28s ease;
+  }
+
   .cart-drawer-overlay:not([hidden]) {
     position: fixed;
     inset: 0;
@@ -4212,6 +4216,18 @@ html[data-access-mode="fila"] .cart-item button {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
+  }
+}
+
+@keyframes cartSummaryPulse {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+  45% {
+    transform: translateY(-2px) scale(1.015);
+  }
+  100% {
+    transform: translateY(0) scale(1);
   }
 }
 

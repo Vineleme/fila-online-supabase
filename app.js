@@ -3371,7 +3371,7 @@ function addToCart(id) {
     });
   }
   renderCart();
-  if (window.matchMedia("(max-width: 760px)").matches) openCartDrawer();
+  pulseCartSummary();
 }
 
 function removeFromCart(id) {
@@ -3379,6 +3379,13 @@ function removeFromCart(id) {
     .map((item) => item.id === id ? { ...item, quantity: item.quantity - 1 } : item)
     .filter((item) => item.quantity > 0);
   renderCart();
+}
+
+function pulseCartSummary() {
+  if (!elements.cartDrawerToggle) return;
+  elements.cartDrawerToggle.classList.remove("is-updated");
+  void elements.cartDrawerToggle.offsetWidth;
+  elements.cartDrawerToggle.classList.add("is-updated");
 }
 
 async function submitTableOrder() {
