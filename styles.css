@@ -3190,14 +3190,8 @@ textarea {
   align-content: start;
   justify-items: center;
   gap: 18px;
-  padding: 24px 16px;
+  padding: 40px 16px 24px;
   background: var(--fa-graphite);
-}
-
-.mockup-sidebar img {
-  width: 42px;
-  height: 42px;
-  object-fit: contain;
 }
 
 .mockup-sidebar span {
