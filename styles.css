@@ -1385,6 +1385,69 @@ html:has(.access-shell:not([hidden])) body {
   gap: 18px;
 }
 
+.owner-quick-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.owner-recovery-info {
+  border-color: rgba(249, 115, 22, 0.24);
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.1), rgba(255, 255, 255, 0.03));
+}
+
+.owner-work-panel {
+  display: grid;
+  gap: 16px;
+}
+
+.owner-tab-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 6px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.owner-crm-tab {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  gap: 8px;
+  border-radius: 8px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.owner-crm-tab.is-active {
+  background: #f97316;
+  color: #fff;
+}
+
+.owner-crm-tab b {
+  display: inline-grid;
+  min-width: 24px;
+  height: 24px;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  color: inherit;
+  font-size: 0.76rem;
+}
+
+.owner-crm-tab b[hidden] {
+  display: none;
+}
+
+.owner-tab-panel {
+  display: none;
+}
+
+.owner-tab-panel.is-active {
+  display: grid;
+  gap: 12px;
+}
+
 .owner-list {
   display: grid;
   gap: 10px;
@@ -1416,6 +1479,19 @@ html:has(.access-shell:not([hidden])) body {
   margin-top: 4px;
   color: rgba(255, 255, 255, 0.52);
   font-size: 0.78rem;
+}
+
+.owner-expired-note {
+  display: block;
+  width: fit-content;
+  margin-top: 8px;
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: rgba(249, 115, 22, 0.16);
+  color: #fed7aa;
+  font-size: 0.78rem;
+  font-style: normal;
+  font-weight: 800;
 }
 
 .owner-actions,

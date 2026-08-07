@@ -6,6 +6,7 @@ const ADMIN_SAVED_PREFIX = "fila-ai-admin-saved";
 const SAVED_ACCESS_KEY = "fila-ai-saved-access";
 const OWNER_EMAIL_KEY = "fila-ai-owner-email";
 const PROSPECT_STATUS_KEY = "fila-ai-owner-prospect-status";
+const OWNER_CUSTOM_PROSPECTS_KEY = "fila-ai-owner-custom-prospects";
 
 const ORDER_STATUS_FLOW = ["new", "preparing", "ready", "delivered"];
 const ORDER_STATUS_LABELS = {
@@ -235,9 +236,14 @@ const elements = {
   ownerAccountMessage: document.querySelector("#ownerAccountMessage"),
   ownerAuthMessage: document.querySelector("#ownerAuthMessage"),
   ownerRequestsList: document.querySelector("#ownerRequestsList"),
+  ownerRecoveryList: document.querySelector("#ownerRecoveryList"),
   ownerCompaniesList: document.querySelector("#ownerCompaniesList"),
   ownerTokensList: document.querySelector("#ownerTokensList"),
   ownerBillingList: document.querySelector("#ownerBillingList"),
+  ownerRequestsBadge: document.querySelector("#ownerRequestsBadge"),
+  ownerRecoveryBadge: document.querySelector("#ownerRecoveryBadge"),
+  ownerTokensBadge: document.querySelector("#ownerTokensBadge"),
+  ownerBillingBadge: document.querySelector("#ownerBillingBadge"),
   ownerCrmTabs: document.querySelectorAll(".owner-crm-tab"),
   ownerTabPanels: document.querySelectorAll(".owner-tab-panel"),
   prospectStateFilter: document.querySelector("#prospectStateFilter"),
@@ -763,6 +769,10 @@ async function handleAccessCeoLogin(email, password) {
 
 async function handleAccessForgotPassword() {
   const rawUser = elements.accessUserInput.value.trim();
+  if (rawUser && !rawUser.includes("@")) {
+    await requestRestaurantAccessRecovery(rawUser);
+    return;
+  }
   if (!rawUser) {
     elements.accessMessage.textContent = "Informe o usuário ou e-mail antes de recuperar a senha.";
     elements.accessUserInput.focus();
@@ -775,6 +785,31 @@ async function handleAccessForgotPassword() {
   }
 
   await sendOwnerPasswordReset(rawUser, elements.accessMessage);
+}
+
+async function requestRestaurantAccessRecovery(rawUser) {
+  const slug = slugify(rawUser);
+  if (!slug) {
+    elements.accessMessage.textContent = "Informe o usuario do restaurante para solicitar recuperacao.";
+    return;
+  }
+
+  if (!db) {
+    elements.accessMessage.textContent = "Banco indisponivel. Peca ao dono do Fila Ai para gerar um novo PIN.";
+    return;
+  }
+
+  const { error } = await db.from("subscription_requests").insert({
+    company_slug: slug,
+    company_name: titleFromSlug(slug),
+    contact_phone: "",
+    plan: "recuperacao-acesso",
+    status: "novo"
+  });
+
+  elements.accessMessage.textContent = error
+    ? `Nao consegui solicitar recuperacao: ${error.message}`
+    : "Solicitacao enviada. O dono do Fila Ai vai gerar um novo acesso para o restaurante.";
 }
 
 async function handleRestaurantAccessSecure(slug, password, passwordHash) {
@@ -897,6 +932,7 @@ async function submitTrialRequest(event) {
 
 async function refreshOwnerDashboard() {
   if (!db) {
+    if (elements.ownerRecoveryList) elements.ownerRecoveryList.innerHTML = `<p class="muted">Supabase nao configurado.</p>`;
     elements.ownerRequestsList.innerHTML = `<p class="muted">Supabase não configurado.</p>`;
     elements.ownerCompaniesList.innerHTML = `<p class="muted">Supabase não configurado.</p>`;
     return;
@@ -914,29 +950,49 @@ async function refreshOwnerDashboard() {
     db.from("subscription_requests").select("*").order("created_at", { ascending: false })
   ]);
 
+  const safeRequests = requests || [];
+  const safeCompanies = companies || [];
+  const safeTokens = tokens || [];
+  const safeBilling = billing || [];
+  const recoveryRequests = safeBilling.filter((request) => request.plan === "recuperacao-acesso");
+  const planRequests = safeBilling.filter((request) => request.plan !== "recuperacao-acesso");
+
+  setOwnerBadge(elements.ownerRequestsBadge, safeRequests.filter((request) => request.status !== "token gerado").length);
+  setOwnerBadge(elements.ownerRecoveryBadge, recoveryRequests.filter((request) => request.status !== "contatado").length);
+  setOwnerBadge(elements.ownerTokensBadge, safeTokens.filter((token) => !token.used_at && token.status !== "cancelado").length);
+  setOwnerBadge(elements.ownerBillingBadge, planRequests.filter((request) => request.status !== "pago").length);
+
   if (requestsError) {
     elements.ownerRequestsList.innerHTML = `<p class="muted">Erro: ${escapeHtml(requestsError.message)}</p>`;
   } else {
-    renderOwnerRequests(requests || []);
+    renderOwnerRequests(safeRequests);
   }
 
   if (companiesError) {
     elements.ownerCompaniesList.innerHTML = `<p class="muted">Erro: ${escapeHtml(companiesError.message)}</p>`;
   } else {
-    renderOwnerCompanies(companies || []);
+    renderOwnerCompanies(safeCompanies);
   }
 
   if (tokensError) {
     elements.ownerTokensList.innerHTML = `<p class="muted">Erro: ${escapeHtml(tokensError.message)}</p>`;
   } else {
-    renderOwnerTokens(tokens || []);
+    renderOwnerTokens(safeTokens);
   }
 
   if (billingError) {
     elements.ownerBillingList.innerHTML = `<p class="muted">Erro: ${escapeHtml(billingError.message)}</p>`;
+    if (elements.ownerRecoveryList) elements.ownerRecoveryList.innerHTML = `<p class="muted">Erro: ${escapeHtml(billingError.message)}</p>`;
   } else {
-    renderOwnerBilling(billing || []);
+    renderOwnerRecovery(recoveryRequests, safeCompanies);
+    renderOwnerBilling(planRequests);
   }
+}
+
+function setOwnerBadge(element, count) {
+  if (!element) return;
+  element.textContent = String(count);
+  element.hidden = count <= 0;
 }
 
 function renderOwnerRequests(requests) {
@@ -974,6 +1030,7 @@ function renderOwnerCompanies(companies) {
   const origin = window.location.origin + window.location.pathname;
   elements.ownerCompaniesList.innerHTML = companies.map((company) => {
     const trial = trialStatus(company);
+    const expired = isTrialExpired(company);
     const adminUrl = `${origin}?empresa=${encodeURIComponent(company.slug)}&modo=admin`;
     const filaUrl = `${origin}?empresa=${encodeURIComponent(company.slug)}&modo=fila`;
     const contactDigits = whatsappPhone(company.contact_phone);
@@ -984,6 +1041,7 @@ function renderOwnerCompanies(companies) {
         <div>
           <strong>${escapeHtml(company.name)}</strong>
           <span>${escapeHtml(company.owner_status || "teste")} - ${escapeHtml(company.payment_status || "pagamento pendente")} - Plano ${escapeHtml(company.monthly_price === "pro" ? "Pro beta" : "Essencial")} - ${trial}</span>
+          ${expired ? `<em class="owner-expired-note">Teste encerrado. Oriente o restaurante a efetuar o pagamento para continuar usando.</em>` : ""}
           <small>Usuario do restaurante: ${escapeHtml(company.slug)}. A senha nao e exibida por seguranca; gere um novo PIN se o cliente esquecer.</small>
         </div>
         <div class="link-stack">
@@ -997,6 +1055,8 @@ function renderOwnerCompanies(companies) {
           <button type="button" data-company-action="reset-pin" data-slug="${escapeHtml(company.slug)}" data-company-name="${escapeHtml(company.name)}" data-contact-phone="${escapeHtml(company.contact_phone || "")}">Gerar novo PIN</button>
           <button type="button" data-company-action="send-pin" data-slug="${escapeHtml(company.slug)}" data-company-name="${escapeHtml(company.name)}" data-contact-phone="${escapeHtml(company.contact_phone || "")}">Gerar e enviar PIN</button>
           <button type="button" data-company-action="blocked" data-slug="${escapeHtml(company.slug)}">Bloquear</button>
+          <button type="button" data-company-action="lead" data-slug="${escapeHtml(company.slug)}" data-company-name="${escapeHtml(company.name)}" data-contact-phone="${escapeHtml(company.contact_phone || "")}">Transformar em lead</button>
+          <button type="button" data-company-action="delete" data-slug="${escapeHtml(company.slug)}" data-company-name="${escapeHtml(company.name)}">Excluir</button>
         </div>
       </article>
     `;
@@ -1043,6 +1103,40 @@ function renderOwnerTokens(tokens) {
 
   elements.ownerTokensList.querySelectorAll("[data-token-action]").forEach((button) => {
     button.addEventListener("click", () => handleOwnerTokenAction(button));
+  });
+}
+
+function renderOwnerRecovery(requests, companies) {
+  if (!elements.ownerRecoveryList) return;
+  if (!requests.length) {
+    elements.ownerRecoveryList.innerHTML = `<p class="muted">Nenhuma solicitacao de recuperacao.</p>`;
+    return;
+  }
+
+  elements.ownerRecoveryList.innerHTML = requests.map((request) => {
+    const company = companies.find((item) => item.slug === request.company_slug) || {};
+    const name = company.name || request.company_name || request.company_slug;
+    const phone = company.contact_phone || request.contact_phone || "";
+    return `
+      <article class="owner-item">
+        <div>
+          <strong>${escapeHtml(name)}</strong>
+          <span>Solicitou recuperacao de acesso - ${escapeHtml(statusLabel(request.status || "novo"))}</span>
+          <small>Usuario: ${escapeHtml(request.company_slug)} - ${formatDate(request.created_at)}</small>
+        </div>
+        <div class="owner-actions">
+          <button type="button" data-company-action="send-pin" data-slug="${escapeHtml(request.company_slug)}" data-company-name="${escapeHtml(name)}" data-contact-phone="${escapeHtml(phone)}">Gerar e enviar PIN</button>
+          <button type="button" data-billing-action="contacted" data-billing-id="${request.id}">Marcar contatado</button>
+        </div>
+      </article>
+    `;
+  }).join("");
+
+  elements.ownerRecoveryList.querySelectorAll("[data-company-action]").forEach((button) => {
+    button.addEventListener("click", () => handleOwnerCompanyAction(button));
+  });
+  elements.ownerRecoveryList.querySelectorAll("[data-billing-action]").forEach((button) => {
+    button.addEventListener("click", () => handleOwnerBillingAction(button));
   });
 }
 
@@ -1171,12 +1265,38 @@ function filteredProspectRows() {
 
 function getProspectRows() {
   const saved = loadProspectState();
-  return OWNER_PROSPECTS.map((prospect) => ({
+  return [...OWNER_PROSPECTS, ...loadCustomProspects()].map((prospect) => ({
     ...prospect,
     status: saved[prospect.id]?.status || "novo",
     nextAction: saved[prospect.id]?.nextAction || "",
     notes: saved[prospect.id]?.notes || ""
   }));
+}
+
+function loadCustomProspects() {
+  try {
+    const rows = JSON.parse(localStorage.getItem(OWNER_CUSTOM_PROSPECTS_KEY) || "[]");
+    return Array.isArray(rows) ? rows : [];
+  } catch {
+    localStorage.removeItem(OWNER_CUSTOM_PROSPECTS_KEY);
+    return [];
+  }
+}
+
+function addOwnerLeadFromCompany(company) {
+  const id = `company-${slugify(company.slug || company.name)}`;
+  const rows = loadCustomProspects().filter((row) => row.id !== id);
+  rows.unshift({
+    id,
+    name: company.name || titleFromSlug(company.slug),
+    state: "Lead",
+    city: "Central do Dono",
+    phone: company.phone || "",
+    priority: "Alta",
+    pain: "Teste encerrado ou pagamento pendente. Retomar contato comercial para ativar plano.",
+    status: "retorno"
+  });
+  localStorage.setItem(OWNER_CUSTOM_PROSPECTS_KEY, JSON.stringify(rows));
 }
 
 function loadProspectState() {
@@ -1363,6 +1483,16 @@ async function handleOwnerCompanyAction(button) {
     return;
   }
 
+  if (action === "delete") {
+    await deleteOwnerCompany(button);
+    return;
+  }
+
+  if (action === "lead") {
+    await convertCompanyToLead(button);
+    return;
+  }
+
   const updates = {
     paid: { owner_status: "ativo", payment_status: "pago" },
     pending: { owner_status: "teste", payment_status: "pendente" },
@@ -1383,6 +1513,42 @@ async function handleOwnerCompanyAction(button) {
     return;
   }
 
+  await refreshOwnerDashboard();
+}
+
+async function deleteOwnerCompany(button) {
+  const slug = button.dataset.slug;
+  const name = button.dataset.companyName || slug;
+  const confirmed = window.confirm(`Excluir ${name} da Central do Dono? Essa acao remove o acesso do restaurante.`);
+  if (!confirmed) return;
+
+  const { error } = await db.from("queue_companies").delete().eq("slug", slug);
+  if (error) {
+    alert(`Nao consegui excluir restaurante: ${error.message}`);
+    return;
+  }
+
+  await refreshOwnerDashboard();
+}
+
+async function convertCompanyToLead(button) {
+  const slug = button.dataset.slug;
+  const name = button.dataset.companyName || titleFromSlug(slug);
+  const phone = button.dataset.contactPhone || "";
+  addOwnerLeadFromCompany({ slug, name, phone });
+
+  const { error } = await db
+    .from("queue_companies")
+    .update({ owner_status: "lead", payment_status: "pendente", queue_open: false, updated_at: new Date().toISOString() })
+    .eq("slug", slug);
+
+  if (error) {
+    alert(`Lead salvo neste aparelho, mas nao consegui atualizar restaurante: ${error.message}`);
+    return;
+  }
+
+  alert(`${name} foi transformado em lead no funil comercial.`);
+  renderProspectTable();
   await refreshOwnerDashboard();
 }
 
@@ -2438,8 +2604,11 @@ function renderBillingStatus() {
     : "sem periodo de teste definido";
   const payment = state.company.paymentStatus || "pendente";
   const ownerStatus = state.company.ownerStatus || "teste";
+  const trialExpired = isTrialExpired({ trial_ends_at: state.company.trialEndsAt });
 
-  elements.billingStatusText.textContent = `Status: ${ownerStatus}. Pagamento: ${payment}. ${trialText}.`;
+  elements.billingStatusText.textContent = trialExpired
+    ? `Teste encerrado. Para continuar usando o FILA AI, efetue o pagamento ou entre em contato com o suporte. Status: ${ownerStatus}. Pagamento: ${payment}.`
+    : `Status: ${ownerStatus}. Pagamento: ${payment}. ${trialText}.`;
   elements.billingRequestForm.hidden = payment === "pago" || ownerStatus === "ativo";
   elements.billingRequestMessage.textContent = payment === "pago"
     ? "Plano ativo. Obrigado por continuar usando o FILA AÍ."
@@ -3728,6 +3897,10 @@ function trialStatus(company) {
   if (days < 0) return `teste vencido há ${Math.abs(days)} dia(s)`;
   if (days === 0) return "teste vence hoje";
   return `teste vence em ${days} dia(s)`;
+}
+
+function isTrialExpired(company) {
+  return Boolean(company.trial_ends_at && new Date(company.trial_ends_at).getTime() < Date.now());
 }
 
 function statusLabel(status) {
