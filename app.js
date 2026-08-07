@@ -2548,10 +2548,10 @@ function renderClientOrderStatus() {
   elements.clientOrderStatus.innerHTML = `
     <h3>Ultimos pedidos</h3>
     ${relevantOrders.map((order) => `
-      <article class="order-status-card client-order-history-card">
-        <strong class="client-order-history-title">${escapeHtml(checkDisplayLabel(order.table))} - ${orderStatusLabel(order.status)}</strong>
-        <span class="client-order-history-items">${order.items.map((item) => `${item.quantity}x ${escapeHtml(item.name)}`).join(", ")}</span>
-        <small class="client-order-history-meta">${formatCurrency(order.total)} - ${formatTime(order.createdAt)}</small>
+      <article class="order-status-card client-order-history-card" style="background:#111827 !important;color:#ffffff !important;-webkit-text-fill-color:#ffffff !important;border-color:rgba(31,41,55,0.2) !important;">
+        <strong class="client-order-history-title" style="color:#ffffff !important;-webkit-text-fill-color:#ffffff !important;opacity:1 !important;">${escapeHtml(checkDisplayLabel(order.table))} - ${orderStatusLabel(order.status)}</strong>
+        <span class="client-order-history-items" style="color:#ffffff !important;-webkit-text-fill-color:#ffffff !important;opacity:1 !important;">${order.items.map((item) => `${item.quantity}x ${escapeHtml(item.name)}`).join(", ")}</span>
+        <small class="client-order-history-meta" style="color:#ffffff !important;-webkit-text-fill-color:#ffffff !important;opacity:1 !important;font-weight:800;">${formatCurrency(order.total)} - ${formatTime(order.createdAt)}</small>
       </article>
     `).join("")}
   `;
