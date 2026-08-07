@@ -2829,6 +2829,7 @@ function renderClientOrderStatus() {
   const table = elements.orderTableInput?.value.trim();
   const relevantOrders = state.orders
     .filter((order) => !table || order.table === table)
+    .filter((order) => order.status !== "closed")
     .slice(-4)
     .reverse();
 
