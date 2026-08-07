@@ -7,12 +7,16 @@ create table if not exists public.fila_products (
   name text not null,
   category text not null default 'Cardapio',
   description text not null default '',
+  image_url text not null default '',
   price numeric(10, 2) not null check (price >= 0),
   prep_minutes integer not null default 10 check (prep_minutes between 1 and 180),
   active boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.fila_products
+  add column if not exists image_url text not null default '';
 
 create table if not exists public.fila_orders (
   id uuid primary key default gen_random_uuid(),

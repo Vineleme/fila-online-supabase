@@ -2422,7 +2422,53 @@ html[data-access-mode="admin"] #adminQueuePanel.is-active {
 .product-card {
   display: grid;
   gap: 10px;
-  padding: 14px;
+  overflow: hidden;
+  padding: 0;
+}
+
+.product-card-body,
+.product-card > div:not(.product-card-body):not(.product-image-placeholder) {
+  padding-inline: 14px;
+}
+
+.product-card-body {
+  display: grid;
+  gap: 8px;
+  padding-top: 14px;
+}
+
+.product-card > div:not(.product-card-body):not(.product-image-placeholder) {
+  padding-bottom: 0;
+}
+
+.product-card > button {
+  margin: 0 14px 14px;
+}
+
+.product-image,
+.product-image-placeholder {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  border-radius: 0 0 8px 8px;
+}
+
+.product-image {
+  display: block;
+  object-fit: cover;
+  background: #f3f4f6;
+}
+
+.product-image-placeholder,
+.product-thumb {
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, #fff7ed, #ffedd5);
+  color: var(--brand);
+  font-weight: 900;
+}
+
+.product-image-placeholder {
+  font-size: 1.8rem;
 }
 
 .product-card span,
@@ -2441,7 +2487,7 @@ html[data-access-mode="admin"] #adminQueuePanel.is-active {
   line-height: 1.45;
 }
 
-.product-card div,
+.product-card > div:not(.product-card-body):not(.product-image-placeholder),
 .cart-item,
 .check-card {
   display: flex;
@@ -2524,13 +2570,28 @@ html[data-access-mode="admin"] #adminQueuePanel.is-active {
   grid-column: span 3;
 }
 
-.product-admin-item,
+.product-admin-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+}
+
 .order-card {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 12px;
   align-items: center;
   padding: 14px;
+}
+
+.product-thumb {
+  width: 58px;
+  height: 58px;
+  flex: 0 0 auto;
+  border-radius: 8px;
+  object-fit: cover;
+  overflow: hidden;
 }
 
 .product-admin-item.is-off {
@@ -2864,6 +2925,15 @@ html[data-access-mode="admin"] #adminQueuePanel.is-active {
 
   .product-form .wide-field {
     grid-column: auto;
+  }
+
+  .product-admin-item {
+    grid-template-columns: 64px minmax(0, 1fr);
+  }
+
+  .product-admin-item .mini-actions {
+    grid-column: 1 / -1;
+    justify-content: stretch;
   }
 
   .cart-panel {

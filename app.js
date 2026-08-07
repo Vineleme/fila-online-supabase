@@ -62,6 +62,7 @@ const DEFAULT_PRODUCTS = [
     price: 39.9,
     prepMinutes: 18,
     description: "Pao brioche, blend artesanal, queijo e molho da casa.",
+    imageUrl: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=900&q=80",
     active: true
   },
   {
@@ -71,6 +72,7 @@ const DEFAULT_PRODUCTS = [
     price: 54.9,
     prepMinutes: 24,
     description: "File crocante, molho de tomate, queijo e acompanhamento.",
+    imageUrl: "https://images.unsplash.com/photo-1632778149955-e80f8ceca2e8?auto=format&fit=crop&w=900&q=80",
     active: true
   },
   {
@@ -80,6 +82,7 @@ const DEFAULT_PRODUCTS = [
     price: 14.9,
     prepMinutes: 5,
     description: "Limao, hortela e gelo batido.",
+    imageUrl: "https://images.unsplash.com/photo-1621263764928-df1444c5e859?auto=format&fit=crop&w=900&q=80",
     active: true
   }
 ];
@@ -320,6 +323,7 @@ const elements = {
   productPriceInput: document.querySelector("#productPriceInput"),
   productPrepInput: document.querySelector("#productPrepInput"),
   productDescriptionInput: document.querySelector("#productDescriptionInput"),
+  productImageUrlInput: document.querySelector("#productImageUrlInput"),
   adminProductList: document.querySelector("#adminProductList"),
   adminOrdersList: document.querySelector("#adminOrdersList"),
   kitchenBoard: document.querySelector("#kitchenBoard"),
@@ -2365,9 +2369,12 @@ function renderClientProducts() {
 
   elements.clientProductList.innerHTML = activeProducts.map((product) => `
     <article class="product-card">
-      <span>${escapeHtml(product.category || "Cardapio")}</span>
-      <strong>${escapeHtml(product.name)}</strong>
-      <p>${escapeHtml(product.description || "Produto disponivel para pedido na mesa.")}</p>
+      ${productImageMarkup(product)}
+      <div class="product-card-body">
+        <span>${escapeHtml(product.category || "Cardapio")}</span>
+        <strong>${escapeHtml(product.name)}</strong>
+        <p>${escapeHtml(product.description || "Produto disponivel para pedido na mesa.")}</p>
+      </div>
       <div>
         <b>${formatCurrency(product.price)}</b>
         <small>${Number(product.prepMinutes) || 10} min</small>
@@ -2453,6 +2460,7 @@ function renderAdminProducts() {
 
   elements.adminProductList.innerHTML = state.products.map((product) => `
     <article class="product-admin-item${product.active ? "" : " is-off"}">
+      ${productThumbMarkup(product)}
       <div>
         <strong>${escapeHtml(product.name)}</strong>
         <span>${escapeHtml(product.category || "Sem categoria")} - ${formatCurrency(product.price)} - ${Number(product.prepMinutes) || 10} min</span>
@@ -2471,6 +2479,33 @@ function renderAdminProducts() {
   elements.adminProductList.querySelectorAll("[data-product-remove]").forEach((button) => {
     button.addEventListener("click", () => removeProduct(button.dataset.productRemove));
   });
+}
+
+function productImageMarkup(product) {
+  const url = normalizeUrl(product.imageUrl, "");
+  if (!url) {
+    return `<div class="product-image-placeholder" aria-hidden="true">${escapeHtml(productInitials(product.name))}</div>`;
+  }
+
+  return `<img class="product-image" src="${escapeHtml(url)}" alt="${escapeHtml(product.name)}" loading="lazy" />`;
+}
+
+function productThumbMarkup(product) {
+  const url = normalizeUrl(product.imageUrl, "");
+  if (!url) {
+    return `<div class="product-thumb" aria-hidden="true">${escapeHtml(productInitials(product.name))}</div>`;
+  }
+
+  return `<img class="product-thumb" src="${escapeHtml(url)}" alt="" loading="lazy" />`;
+}
+
+function productInitials(name) {
+  return String(name || "Produto")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join("") || "P";
 }
 
 function renderAdminOrders() {
@@ -2906,6 +2941,7 @@ function fromSupabaseProduct(product) {
     description: product.description || "",
     price: Number(product.price) || 0,
     prepMinutes: product.prep_minutes || 10,
+    imageUrl: product.image_url || "",
     active: product.active ?? true
   };
 }
@@ -2918,6 +2954,7 @@ function toSupabaseProduct(product) {
     description: product.description || "",
     price: product.price,
     prep_minutes: product.prepMinutes || 10,
+    image_url: product.imageUrl || "",
     active: product.active ?? true
   };
 }
@@ -3042,6 +3079,7 @@ async function addProduct(event) {
   const price = parseMoney(elements.productPriceInput.value);
   const prepMinutes = clamp(Number(elements.productPrepInput.value) || 10, 1, 180);
   const description = elements.productDescriptionInput.value.trim();
+  const imageUrl = normalizeUrl(elements.productImageUrlInput?.value.trim(), "");
 
   if (!name || price <= 0) {
     elements.menuUploadStatus.textContent = "Informe nome e preco do produto.";
@@ -3055,6 +3093,7 @@ async function addProduct(event) {
     price,
     prepMinutes,
     description,
+    imageUrl,
     active: true
   };
 
