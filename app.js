@@ -138,6 +138,7 @@ const TICKET_STORAGE_KEYS = [...new Set([
   `${MY_TICKET_KEY}-${COMPANY_SLUG}`,
   `${MY_TICKET_KEY}-${REQUESTED_COMPANY_SLUG}`
 ])];
+const TICKET_SNAPSHOT_KEYS = TICKET_STORAGE_KEYS.map((key) => `${key}-snapshot`);
 const TRIAL_TOKEN = (params.get("token") || "").trim();
 const ACCESS_MODE = normalizeAccessMode(params.get("modo") || params.get("tela") || params.get("view") || (TRIAL_TOKEN ? "ativar" : ""));
 const ADMIN_TAB = normalizeAdminTab(params.get("aba") || params.get("tab") || params.get("painel") || "");
@@ -213,14 +214,46 @@ function loadSavedTicketId() {
   return null;
 }
 
-function saveMyTicketId(ticketId) {
+function loadSavedTicketSnapshot() {
+  for (const key of TICKET_SNAPSHOT_KEYS) {
+    try {
+      const snapshot = JSON.parse(localStorage.getItem(key) || "null");
+      if (snapshot?.id) return snapshot;
+    } catch {}
+  }
+  return null;
+}
+
+function normalizeSavedTicket(ticket) {
+  if (!ticket) return null;
+  return {
+    id: ticket.id,
+    companySlug: ticket.companySlug || ticket.company_slug || COMPANY_SLUG,
+    number: Number(ticket.number) || 0,
+    name: ticket.name || "",
+    service: ticket.service || partyLabel(ticket.partySize || ticket.party_size || 2),
+    partySize: Number(ticket.partySize || ticket.party_size) || 2,
+    status: ticket.status || "waiting",
+    checkRequested: Boolean(ticket.checkRequested || ticket.check_requested),
+    createdAt: ticket.createdAt || ticket.created_at || new Date().toISOString(),
+    calledAt: ticket.calledAt || ticket.called_at || null,
+    savedAt: new Date().toISOString()
+  };
+}
+
+function saveMyTicketId(ticketId, ticket = null) {
   state.myTicketId = ticketId;
   TICKET_STORAGE_KEYS.forEach((key) => localStorage.setItem(key, ticketId));
+  const snapshot = normalizeSavedTicket(ticket || state.queue.find((item) => item.id === ticketId));
+  if (snapshot) {
+    TICKET_SNAPSHOT_KEYS.forEach((key) => localStorage.setItem(key, JSON.stringify(snapshot)));
+  }
 }
 
 function clearMyTicketId() {
   state.myTicketId = null;
   TICKET_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key));
+  TICKET_SNAPSHOT_KEYS.forEach((key) => localStorage.removeItem(key));
 }
 
 const elements = {
@@ -1835,7 +1868,7 @@ function bindEvents() {
       elements.nameInput.focus();
       return;
     }
-    if (getMyTicket()) {
+    if (state.myTicketId) {
       alert("Este aparelho já tem uma senha ativa na fila.");
       render();
       return;
@@ -1864,7 +1897,7 @@ function bindEvents() {
         return;
       }
 
-      saveMyTicketId(data.id);
+      saveMyTicketId(data.id, fromSupabaseTicket(data));
       await refreshFromSupabase();
     } else {
       const localTicket = {
@@ -1875,7 +1908,7 @@ function bindEvents() {
         checkRequested: false
       };
       state.queue.push(localTicket);
-      saveMyTicketId(localTicket.id);
+      saveMyTicketId(localTicket.id, localTicket);
       persistLocalState();
     }
 
@@ -2033,8 +2066,9 @@ async function refreshFromSupabase() {
     }
 
     state.queue = (tickets || []).map(fromSupabaseTicket);
-    if (state.myTicketId && !state.queue.some((ticket) => ticket.id === state.myTicketId)) {
-      clearMyTicketId();
+    const refreshedTicket = state.queue.find((ticket) => ticket.id === state.myTicketId);
+    if (refreshedTicket) {
+      saveMyTicketId(refreshedTicket.id, refreshedTicket);
     }
     state.currentTicketId = state.queue.find((ticket) => ticket.status === "called")?.id || null;
     await refreshProFromSupabase();
@@ -2537,12 +2571,12 @@ async function openTicketCheck(ticketId) {
       alert(`Nao consegui abrir comanda: ${error.message}`);
       return;
     }
-    saveMyTicketId(ticket.id);
+    saveMyTicketId(ticket.id, { ...ticket, status: "done" });
     await refreshFromSupabase();
   } else {
     ticket.status = "done";
     state.currentTicketId = null;
-    saveMyTicketId(ticket.id);
+    saveMyTicketId(ticket.id, ticket);
     persistLocalState();
   }
 
@@ -2574,11 +2608,15 @@ async function requestTicketCheck(ticketId) {
 }
 
 async function leaveQueue(ticketId) {
-  const ticket = state.queue.find((item) => item.id === ticketId);
-  if (!ticket || ticket.status === "done") return;
+  const ticket = state.queue.find((item) => item.id === ticketId) || getMyTicket();
+  if (!ticket || ticket.status === "done") {
+    clearMyTicketId();
+    render();
+    return;
+  }
   if (!confirm("Sair da fila agora?")) return;
 
-  if (db) {
+  if (db && state.queue.some((item) => item.id === ticket.id)) {
     const { error } = await db
       .from("queue_tickets")
       .delete()
@@ -2591,6 +2629,9 @@ async function leaveQueue(ticketId) {
     if (ticket.status === "called") {
       await changeUsedTables(partyBucket(ticket.partySize), -1);
     }
+    clearMyTicketId();
+    await refreshFromSupabase();
+  } else if (db) {
     clearMyTicketId();
     await refreshFromSupabase();
   } else {
@@ -3431,7 +3472,23 @@ function getCurrentTicket() {
 }
 
 function getMyTicket() {
-  return state.queue.find((item) => item.id === state.myTicketId);
+  const ticket = state.queue.find((item) => item.id === state.myTicketId);
+  if (ticket) return ticket;
+  const snapshot = loadSavedTicketSnapshot();
+  if (snapshot?.id === state.myTicketId) return snapshot;
+  if (!state.myTicketId) return null;
+  return {
+    id: state.myTicketId,
+    companySlug: COMPANY_SLUG,
+    number: 0,
+    name: "Cliente",
+    service: "Fila ativa",
+    partySize: 2,
+    status: "waiting",
+    checkRequested: false,
+    createdAt: new Date().toISOString(),
+    calledAt: null
+  };
 }
 
 function getCheckTicket() {
