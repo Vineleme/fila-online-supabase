@@ -331,3 +331,26 @@ begin
     alter publication supabase_realtime add table public.queue_tickets;
   end if;
 end $$;
+
+create or replace function public.fila_admin_reset_queue(p_company_slug text, p_admin_pin text)
+returns void
+language plpgsql
+security definer
+set search_path to 'public'
+as $function$
+begin
+  if not public.fila_admin_authorized(p_company_slug, p_admin_pin) then
+    raise exception 'admin_not_authorized';
+  end if;
+
+  delete from public.queue_tickets
+  where company_slug = p_company_slug;
+
+  update public.queue_companies
+  set used_2 = 0,
+      used_4 = 0,
+      used_6 = 0,
+      updated_at = now()
+  where slug = p_company_slug;
+end;
+$function$;

@@ -1950,7 +1950,7 @@ function applyAccessMode() {
 }
 
 async function ensureCompany() {
-  if (!db) return;
+  if (!db) return true;
 
   const adminPin = adminSessionPin();
   const rpcName = adminPin ? "fila_admin_company" : "fila_public_company";
@@ -1963,8 +1963,22 @@ async function ensureCompany() {
 
   if (data?.[0]) {
     state.company = fromSupabaseCompany(data[0]);
-    return;
+    return true;
   }
+
+  state.company = {
+    ...defaultCompany,
+    slug: COMPANY_SLUG,
+    name: "Restaurante indisponivel",
+    queueOpen: false,
+    ownerStatus: "bloqueado",
+    paymentStatus: "indisponivel"
+  };
+  state.queue = [];
+  state.currentTicketId = null;
+  state.myTicketId = null;
+  localStorage.removeItem(`${MY_TICKET_KEY}-${COMPANY_SLUG}`);
+  return false;
 }
 
 async function refreshFromSupabase() {
@@ -1976,7 +1990,12 @@ async function refreshFromSupabase() {
   refreshInFlight = true;
   try {
     await loadBillingSettings();
-    await ensureCompany();
+    const companyExists = await ensureCompany();
+    if (!companyExists) {
+      fillCompanyForm();
+      render();
+      return;
+    }
 
     const { data: tickets, error: ticketsError } = await db
       .from("queue_tickets")
@@ -2578,11 +2597,16 @@ async function resetQueue() {
       return;
     }
     localStorage.removeItem(`${MY_TICKET_KEY}-${COMPANY_SLUG}`);
+    state.currentTicketId = null;
+    state.myTicketId = null;
     await refreshFromSupabase();
   } else {
     state.queue = [];
     state.currentTicketId = null;
     state.myTicketId = null;
+    state.company.used2 = 0;
+    state.company.used4 = 0;
+    state.company.used6 = 0;
     persistLocalState();
   }
 
