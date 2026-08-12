@@ -5253,3 +5253,86 @@ html[data-access-mode="fila"] #myTicket.ticket-panel.is-called {
 html[data-access-mode="fila"] #myTicket + * {
   margin-top: 0 !important;
 }
+
+html[data-access-mode="fila"] .topbar {
+  min-height: 250px !important;
+  padding: 10px 16px 14px !important;
+}
+
+html[data-access-mode="fila"] .client-fila-brand img {
+  width: 138px !important;
+  height: 46px !important;
+}
+
+html[data-access-mode="fila"] .client-fila-brand span {
+  margin-top: -7px !important;
+  font-size: 0.68rem !important;
+}
+
+html[data-access-mode="fila"] .company-logo {
+  width: 86px !important;
+  height: 86px !important;
+  box-shadow: 0 12px 30px rgba(31, 41, 55, 0.12), 0 0 0 6px rgba(249, 115, 22, 0.08) !important;
+}
+
+html[data-access-mode="fila"] .topbar .eyebrow {
+  margin: 4px 0 2px !important;
+  font-size: 0.66rem !important;
+}
+
+html[data-access-mode="fila"] .topbar h1 {
+  font-size: 1.55rem !important;
+}
+
+html[data-access-mode="fila"] #myTicket.ticket-panel,
+html[data-access-mode="fila"] #myTicket.ticket-panel.is-waiting,
+html[data-access-mode="fila"] #myTicket.ticket-panel.is-called {
+  padding: 20px 24px 18px !important;
+}
+
+html[data-access-mode="fila"] #myTicket .ticket-minimal {
+  gap: 5px !important;
+}
+
+html[data-access-mode="fila"] #myTicket .ticket-minimal h2 {
+  font-size: 0.98rem !important;
+  line-height: 1.16 !important;
+}
+
+html[data-access-mode="fila"] #myTicket .ticket-ahead-label {
+  margin-top: 4px !important;
+}
+
+html[data-access-mode="fila"] #myTicket .ticket-progress-ring {
+  width: 104px !important;
+  height: 104px !important;
+}
+
+html[data-access-mode="fila"] #myTicket .ticket-progress-ring strong {
+  font-size: 3.35rem !important;
+}
+
+html[data-access-mode="fila"] #myTicket .ticket-groups-label {
+  margin-top: -8px !important;
+}
+
+html[data-access-mode="fila"] #myTicket .ticket-minimal small {
+  margin-top: 3px !important;
+  font-size: 0.72rem !important;
+}
+
+html[data-access-mode="fila"] #myTicket .ticket-details-button,
+html[data-access-mode="fila"] #myTicket .ticket-menu-button {
+  width: min(100%, 196px) !important;
+  min-height: 34px !important;
+  margin-top: 5px !important;
+  font-size: 0.78rem !important;
+}
+
+html[data-access-mode="fila"] #myTicket .ticket-leave-button {
+  font-size: 0.68rem !important;
+}
+
+html[data-access-mode="fila"] .order-status-list {
+  margin-top: 0 !important;
+}

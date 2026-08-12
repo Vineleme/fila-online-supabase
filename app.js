@@ -129,7 +129,11 @@ const OWNER_PROSPECTS = [
 ].map(([id, name, state, city, phone, priority, pain]) => ({ id, name, state, city, phone, priority, pain }));
 
 const params = new URLSearchParams(window.location.search);
-const COMPANY_SLUG = slugify(params.get("empresa") || "restaurante-demo");
+const COMPANY_ALIASES = {
+  "adriana-turri": "restaurante-demo"
+};
+const REQUESTED_COMPANY_SLUG = slugify(params.get("empresa") || "restaurante-demo");
+const COMPANY_SLUG = COMPANY_ALIASES[REQUESTED_COMPANY_SLUG] || REQUESTED_COMPANY_SLUG;
 const TRIAL_TOKEN = (params.get("token") || "").trim();
 const ACCESS_MODE = normalizeAccessMode(params.get("modo") || params.get("tela") || params.get("view") || (TRIAL_TOKEN ? "ativar" : ""));
 const ADMIN_TAB = normalizeAdminTab(params.get("aba") || params.get("tab") || params.get("painel") || "");

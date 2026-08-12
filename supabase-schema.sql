@@ -354,3 +354,26 @@ begin
   where slug = p_company_slug;
 end;
 $function$;
+
+create or replace function public.fila_normalize_ticket_company_slug()
+returns trigger
+language plpgsql
+set search_path to 'public'
+as $function$
+begin
+  if new.company_slug = 'adriana-turri' then
+    new.company_slug := 'restaurante-demo';
+  end if;
+
+  if not exists (select 1 from public.queue_companies where slug = new.company_slug) then
+    raise exception 'company_not_found';
+  end if;
+
+  return new;
+end;
+$function$;
+
+drop trigger if exists fila_normalize_ticket_company_slug_trigger on public.queue_tickets;
+create trigger fila_normalize_ticket_company_slug_trigger
+before insert or update of company_slug on public.queue_tickets
+for each row execute function public.fila_normalize_ticket_company_slug();
