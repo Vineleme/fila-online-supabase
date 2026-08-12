@@ -3339,8 +3339,8 @@ function renderTableStatus() {
       <div class="table-card${canCall ? " is-ready" : ""}">
         <div class="table-people" aria-hidden="true">${seatDots(bucket)}</div>
         <strong>${tableLabel(bucket)}</strong>
-        <span class="availability">${status.available} de ${status.total} livres</span>
-        <small>${status.used} ocupadas - ${waiting} aguardando</small>
+        <span class="availability">${status.available} ${status.available === 1 ? "mesa livre" : "mesas livres"} de ${status.total}</span>
+        <small>${status.used} ${status.used === 1 ? "ocupada" : "ocupadas"} · ${waiting} aguardando</small>
         <div class="table-stepper">
           <button type="button" data-table-action="free" data-bucket="${bucket}" ${status.used <= 0 ? "disabled" : ""}>-</button>
           <span>ocupadas</span>
@@ -4221,7 +4221,7 @@ function tableLabel(bucket) {
 
 function seatDots(bucket) {
   const count = bucket === 6 ? 6 : bucket;
-  return Array.from({ length: count }, () => `<span></span>`).join("") + (bucket === 6 ? `<b>+</b>` : "");
+  return Array.from({ length: count }, () => `<span class="seat-person"></span>`).join("") + (bucket === 6 ? `<b>+</b>` : "");
 }
 
 function slugify(value) {

@@ -2332,7 +2332,7 @@ html[data-access-mode="admin"] #adminQueuePanel.is-active {
 
 .table-card {
   display: grid;
-  gap: 10px;
+  gap: 8px;
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 16px;
@@ -2349,8 +2349,10 @@ html[data-access-mode="admin"] #adminQueuePanel.is-active {
 }
 
 .availability {
-  font-size: 1.8rem;
-  font-weight: 800;
+  color: var(--ink);
+  font-size: 1.32rem;
+  line-height: 1.08;
+  font-weight: 900;
 }
 
 .table-card small {
@@ -2365,22 +2367,46 @@ html[data-access-mode="admin"] #adminQueuePanel.is-active {
 
 .table-people {
   display: flex;
-  min-height: 28px;
+  min-height: 30px;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
 }
 
-.table-people span {
-  width: 18px;
-  height: 18px;
-  border-radius: 999px;
+.seat-person {
+  position: relative;
+  width: 15px;
+  height: 23px;
+  flex: 0 0 15px;
+}
+
+.seat-person::before,
+.seat-person::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   background: var(--brand);
-  box-shadow: 0 10px 18px rgba(13, 110, 253, 0.18);
+}
+
+.seat-person::before {
+  top: 0;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+}
+
+.seat-person::after {
+  bottom: 0;
+  width: 15px;
+  height: 10px;
+  border-radius: 8px 8px 5px 5px;
 }
 
 .table-people b {
   color: var(--brand);
-  font-size: 1.1rem;
+  font-size: 1rem;
+  line-height: 1;
+  font-weight: 950;
 }
 
 .table-stepper {
