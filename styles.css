@@ -5137,3 +5137,86 @@ html[data-access-mode="fila"] #clientOrderPanel .cart-item button {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 }
+
+html[data-access-mode="fila"] #myTicket.ticket-panel,
+html[data-access-mode="fila"] #myTicket.ticket-panel.is-waiting,
+html[data-access-mode="fila"] #myTicket.ticket-panel.is-called {
+  width: min(100%, 330px) !important;
+  margin: 0 auto !important;
+  border: 1px solid rgba(31, 41, 55, 0.08) !important;
+  background: #fffdfb !important;
+  color: #1f2937 !important;
+  -webkit-text-fill-color: initial !important;
+  box-shadow: 0 22px 60px rgba(31, 41, 55, 0.11) !important;
+}
+
+html[data-access-mode="fila"] #myTicket .ticket-minimal,
+html[data-access-mode="fila"] #myTicket .ticket-minimal *:not(.ticket-details-button):not(.ticket-menu-button):not(.ticket-leave-button) {
+  color: #1f2937 !important;
+  -webkit-text-fill-color: #1f2937 !important;
+  opacity: 1 !important;
+  text-shadow: none !important;
+}
+
+html[data-access-mode="fila"] #myTicket .ticket-progress-ring {
+  background: #fffdfb !important;
+}
+
+html[data-access-mode="fila"] #myTicket .ticket-progress-ring::after {
+  background: #fffdfb !important;
+}
+
+html[data-access-mode="fila"] #myTicket .ticket-progress-ring strong {
+  color: #f97316 !important;
+  -webkit-text-fill-color: #f97316 !important;
+}
+
+html[data-access-mode="fila"] #myTicket .ticket-minimal small,
+html[data-access-mode="fila"] #myTicket .ticket-minimal small b {
+  color: #1f2937 !important;
+  -webkit-text-fill-color: #1f2937 !important;
+}
+
+html[data-access-mode="fila"] #myTicket .ticket-details-button {
+  border-color: #111827 !important;
+  background: #111827 !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+html[data-access-mode="fila"] #myTicket .ticket-menu-button {
+  border-color: rgba(249, 115, 22, 0.28) !important;
+  background: #fff7ed !important;
+  color: #c2410c !important;
+  -webkit-text-fill-color: #c2410c !important;
+}
+
+html[data-access-mode="fila"] #myTicket .ticket-leave-button {
+  color: #ef4444 !important;
+  -webkit-text-fill-color: #ef4444 !important;
+}
+
+html[data-access-mode="fila"] .topbar {
+  justify-content: initial !important;
+  overflow: hidden;
+}
+
+html[data-access-mode="fila"] .client-fila-brand img {
+  display: block;
+  width: 156px !important;
+  height: 54px !important;
+  object-fit: cover !important;
+  object-position: center 52% !important;
+}
+
+html[data-access-mode="fila"] .brand-heading {
+  transform: none !important;
+}
+
+html[data-access-mode="fila"] .company-logo {
+  display: block;
+  margin: 0 auto !important;
+  object-fit: contain !important;
+  object-position: center !important;
+  background: #ffffff !important;
+}
