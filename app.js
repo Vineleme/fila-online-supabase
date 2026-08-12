@@ -134,6 +134,10 @@ const COMPANY_ALIASES = {
 };
 const REQUESTED_COMPANY_SLUG = slugify(params.get("empresa") || "restaurante-demo");
 const COMPANY_SLUG = COMPANY_ALIASES[REQUESTED_COMPANY_SLUG] || REQUESTED_COMPANY_SLUG;
+const TICKET_STORAGE_KEYS = [...new Set([
+  `${MY_TICKET_KEY}-${COMPANY_SLUG}`,
+  `${MY_TICKET_KEY}-${REQUESTED_COMPANY_SLUG}`
+])];
 const TRIAL_TOKEN = (params.get("token") || "").trim();
 const ACCESS_MODE = normalizeAccessMode(params.get("modo") || params.get("tela") || params.get("view") || (TRIAL_TOKEN ? "ativar" : ""));
 const ADMIN_TAB = normalizeAdminTab(params.get("aba") || params.get("tab") || params.get("painel") || "");
@@ -174,7 +178,7 @@ const defaultState = {
   company: defaultCompany,
   avgMinutes: 70,
   currentTicketId: null,
-  myTicketId: localStorage.getItem(`${MY_TICKET_KEY}-${COMPANY_SLUG}`),
+  myTicketId: loadSavedTicketId(),
   queue: [],
   products: DEFAULT_PRODUCTS.map((product) => ({ ...product })),
   orders: [],
@@ -200,6 +204,24 @@ let refreshInFlight = false;
 let queuedRefresh = false;
 let realtimeFallbackTimer;
 let lastClientStage = "";
+
+function loadSavedTicketId() {
+  for (const key of TICKET_STORAGE_KEYS) {
+    const ticketId = localStorage.getItem(key);
+    if (ticketId) return ticketId;
+  }
+  return null;
+}
+
+function saveMyTicketId(ticketId) {
+  state.myTicketId = ticketId;
+  TICKET_STORAGE_KEYS.forEach((key) => localStorage.setItem(key, ticketId));
+}
+
+function clearMyTicketId() {
+  state.myTicketId = null;
+  TICKET_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key));
+}
 
 const elements = {
   landingPage: document.querySelector("#landingPage"),
@@ -1842,8 +1864,7 @@ function bindEvents() {
         return;
       }
 
-      state.myTicketId = data.id;
-      localStorage.setItem(`${MY_TICKET_KEY}-${COMPANY_SLUG}`, data.id);
+      saveMyTicketId(data.id);
       await refreshFromSupabase();
     } else {
       const localTicket = {
@@ -1854,7 +1875,7 @@ function bindEvents() {
         checkRequested: false
       };
       state.queue.push(localTicket);
-      state.myTicketId = localTicket.id;
+      saveMyTicketId(localTicket.id);
       persistLocalState();
     }
 
@@ -1980,8 +2001,7 @@ async function ensureCompany() {
   };
   state.queue = [];
   state.currentTicketId = null;
-  state.myTicketId = null;
-  localStorage.removeItem(`${MY_TICKET_KEY}-${COMPANY_SLUG}`);
+  clearMyTicketId();
   return false;
 }
 
@@ -2014,8 +2034,7 @@ async function refreshFromSupabase() {
 
     state.queue = (tickets || []).map(fromSupabaseTicket);
     if (state.myTicketId && !state.queue.some((ticket) => ticket.id === state.myTicketId)) {
-      state.myTicketId = null;
-      localStorage.removeItem(`${MY_TICKET_KEY}-${COMPANY_SLUG}`);
+      clearMyTicketId();
     }
     state.currentTicketId = state.queue.find((ticket) => ticket.status === "called")?.id || null;
     await refreshProFromSupabase();
@@ -2518,12 +2537,12 @@ async function openTicketCheck(ticketId) {
       alert(`Nao consegui abrir comanda: ${error.message}`);
       return;
     }
-    localStorage.setItem(`${MY_TICKET_KEY}-${COMPANY_SLUG}`, ticket.id);
+    saveMyTicketId(ticket.id);
     await refreshFromSupabase();
   } else {
     ticket.status = "done";
     state.currentTicketId = null;
-    state.myTicketId = ticket.id;
+    saveMyTicketId(ticket.id);
     persistLocalState();
   }
 
@@ -2572,8 +2591,7 @@ async function leaveQueue(ticketId) {
     if (ticket.status === "called") {
       await changeUsedTables(partyBucket(ticket.partySize), -1);
     }
-    state.myTicketId = null;
-    localStorage.removeItem(`${MY_TICKET_KEY}-${COMPANY_SLUG}`);
+    clearMyTicketId();
     await refreshFromSupabase();
   } else {
     state.queue = state.queue.filter((item) => item.id !== ticket.id);
@@ -2581,7 +2599,7 @@ async function leaveQueue(ticketId) {
       changeUsedTablesLocal(partyBucket(ticket.partySize), -1);
     }
     if (state.currentTicketId === ticket.id) state.currentTicketId = null;
-    state.myTicketId = null;
+    clearMyTicketId();
     persistLocalState();
   }
 
@@ -2600,14 +2618,13 @@ async function resetQueue() {
       alert(`Não consegui limpar: ${error.message}`);
       return;
     }
-    localStorage.removeItem(`${MY_TICKET_KEY}-${COMPANY_SLUG}`);
+    clearMyTicketId();
     state.currentTicketId = null;
-    state.myTicketId = null;
     await refreshFromSupabase();
   } else {
     state.queue = [];
     state.currentTicketId = null;
-    state.myTicketId = null;
+    clearMyTicketId();
     state.company.used2 = 0;
     state.company.used4 = 0;
     state.company.used6 = 0;
@@ -2656,8 +2673,7 @@ async function handleTicketAction(action, id) {
       });
       if (error) alert(`Não consegui remover: ${error.message}`);
       if (state.myTicketId === id) {
-        state.myTicketId = null;
-        localStorage.removeItem(`${MY_TICKET_KEY}-${COMPANY_SLUG}`);
+        clearMyTicketId();
       }
     }
 
@@ -2688,7 +2704,7 @@ async function handleTicketAction(action, id) {
   if (action === "remove") {
     state.queue = state.queue.filter((item) => item.id !== id);
     if (state.currentTicketId === id) state.currentTicketId = null;
-    if (state.myTicketId === id) state.myTicketId = null;
+    if (state.myTicketId === id) clearMyTicketId();
   }
 
   persistLocalState();
@@ -3656,9 +3672,9 @@ function loadLocalState() {
 function persistLocalState() {
   localStorage.setItem(`${STORAGE_KEY}-${COMPANY_SLUG}`, JSON.stringify(state));
   if (state.myTicketId) {
-    localStorage.setItem(`${MY_TICKET_KEY}-${COMPANY_SLUG}`, state.myTicketId);
+    saveMyTicketId(state.myTicketId);
   } else {
-    localStorage.removeItem(`${MY_TICKET_KEY}-${COMPANY_SLUG}`);
+    clearMyTicketId();
   }
 }
 

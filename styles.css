@@ -5336,3 +5336,7 @@ html[data-access-mode="fila"] #myTicket .ticket-leave-button {
 html[data-access-mode="fila"] .order-status-list {
   margin-top: 0 !important;
 }
+
+html[data-access-mode="fila"] .queue-section {
+  display: none !important;
+}
