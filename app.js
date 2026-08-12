@@ -2876,17 +2876,36 @@ function renderClientProducts() {
   if (!elements.clientOrderPanel || !elements.clientProductList) return;
   const activeProducts = getActiveProducts();
   const checkTicket = getCheckTicket();
+  const ticket = getMyTicket();
   const allowDirectOrder = ACCESS_MODE !== "fila";
-  const showOrdering = Boolean(state.company.menuEnabled && activeProducts.length && (allowDirectOrder || checkTicket));
-  elements.clientOrderPanel.hidden = !showOrdering;
-  if (elements.cartDrawerToggle) elements.cartDrawerToggle.hidden = !showOrdering;
-  if (!showOrdering) {
+  const canOrder = Boolean(allowDirectOrder || checkTicket);
+  const showMenuProducts = Boolean(state.company.menuEnabled && activeProducts.length && (allowDirectOrder || ticket));
+  elements.clientOrderPanel.hidden = !showMenuProducts;
+  elements.clientOrderPanel.classList.toggle("is-browsing-menu", showMenuProducts && !canOrder);
+  if (elements.cartDrawerToggle) elements.cartDrawerToggle.hidden = !canOrder;
+  if (!canOrder) {
     closeCartDrawer();
+  }
+  if (!showMenuProducts) {
     lastClientStage = getClientStage();
   }
-  if (!showOrdering) return;
-  applyTicketCheckToOrderForm();
-  maybeFocusOrderingStage();
+  if (!showMenuProducts) return;
+
+  const title = elements.clientOrderPanel.querySelector(".section-title h2");
+  const description = elements.clientOrderPanel.querySelector(".section-title .muted");
+  if (title) title.textContent = canOrder ? "Cardápio da mesa" : "Menu do restaurante";
+  if (description) {
+    description.textContent = canOrder
+      ? "Escolha os itens, informe a mesa e acompanhe o preparo."
+      : "Consulte os produtos enquanto acompanha sua posição na fila.";
+  }
+
+  if (canOrder) {
+    applyTicketCheckToOrderForm();
+    maybeFocusOrderingStage();
+  } else {
+    lastClientStage = getClientStage();
+  }
 
   elements.clientProductList.innerHTML = activeProducts.map((product) => `
     <article class="product-card">
@@ -2900,7 +2919,7 @@ function renderClientProducts() {
         <b>${formatCurrency(product.price)}</b>
         <small>${Number(product.prepMinutes) || 10} min</small>
       </div>
-      <button type="button" data-add-product="${escapeHtml(product.id)}">Adicionar</button>
+      <button type="button" ${canOrder ? `data-add-product="${escapeHtml(product.id)}"` : "disabled"}>${canOrder ? "Adicionar" : "Liberado na comanda"}</button>
     </article>
   `).join("");
 

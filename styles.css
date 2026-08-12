@@ -5340,3 +5340,22 @@ html[data-access-mode="fila"] .order-status-list {
 html[data-access-mode="fila"] .queue-section {
   display: none !important;
 }
+
+#clientOrderPanel.is-browsing-menu .config-grid,
+#clientOrderPanel.is-browsing-menu .cart-panel,
+#clientOrderPanel.is-browsing-menu .cart-fab,
+#clientOrderPanel.is-browsing-menu .order-status-list {
+  display: none !important;
+}
+
+#clientOrderPanel.is-browsing-menu .order-client-grid {
+  display: block;
+}
+
+#clientOrderPanel.is-browsing-menu .product-card button:disabled {
+  background: #fff7ed;
+  color: #c2410c;
+  border: 1px solid rgba(249, 115, 22, 0.28);
+  box-shadow: none;
+  cursor: default;
+}
