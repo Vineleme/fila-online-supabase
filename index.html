@@ -445,6 +445,33 @@
           <p class="muted">Quando um restaurante clicar em "Esqueci a senha", a solicitação aparece na aba Recuperação. A fila dos clientes não é apagada quando alguém sai da conta ou fecha o app.</p>
         </section>
 
+        <section class="panel owner-billing-settings">
+          <div>
+            <h2>Configuração de pagamento</h2>
+            <p class="muted">Esses dados aparecem para o restaurante quando ele escolhe continuar usando o FILA AÍ.</p>
+          </div>
+          <form id="ownerBillingSettingsForm" class="owner-billing-form">
+            <label>
+              Chave Pix
+              <input id="ownerPixKeyInput" maxlength="80" placeholder="48.968.488/0001-71" />
+            </label>
+            <label>
+              Favorecido
+              <input id="ownerPixNameInput" maxlength="80" placeholder="Fila Ai" />
+            </label>
+            <label>
+              Link de pagamento
+              <input id="ownerPaymentLinkInput" type="url" placeholder="https://..." />
+            </label>
+            <label>
+              Link do contrato anual
+              <input id="ownerContractLinkInput" type="url" placeholder="https://..." />
+            </label>
+            <button class="primary" type="submit">Salvar pagamento</button>
+            <p id="ownerBillingSettingsMessage" class="muted" role="status"></p>
+          </form>
+        </section>
+
         <section class="panel owner-work-panel">
           <div class="owner-tab-nav" aria-label="Atendimentos da central">
             <button class="owner-crm-tab is-active" data-owner-tab="ownerRequestsPanel" type="button">Solicitações de teste <b id="ownerRequestsBadge">0</b></button>

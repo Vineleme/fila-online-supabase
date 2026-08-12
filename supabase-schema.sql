@@ -1,8 +1,18 @@
 create table if not exists public.queue_settings (
   id smallint primary key default 1 check (id = 1),
   avg_minutes integer not null default 5 check (avg_minutes between 1 and 60),
+  billing_pix_key text not null default '48.968.488/0001-71',
+  billing_pix_name text not null default 'Fila Ai',
+  billing_bank_link text not null default 'https://api.whatsapp.com/send?phone=5511943678179&text=Quero%20receber%20o%20link%20de%20pagamento%20do%20FILA%20AI',
+  billing_contract_link text not null default 'https://api.whatsapp.com/send?phone=5511943678179&text=Quero%20assinar%20o%20contrato%20anual%20do%20FILA%20AI',
   updated_at timestamptz not null default now()
 );
+
+alter table public.queue_settings
+  add column if not exists billing_pix_key text not null default '48.968.488/0001-71',
+  add column if not exists billing_pix_name text not null default 'Fila Ai',
+  add column if not exists billing_bank_link text not null default 'https://api.whatsapp.com/send?phone=5511943678179&text=Quero%20receber%20o%20link%20de%20pagamento%20do%20FILA%20AI',
+  add column if not exists billing_contract_link text not null default 'https://api.whatsapp.com/send?phone=5511943678179&text=Quero%20assinar%20o%20contrato%20anual%20do%20FILA%20AI';
 
 create table if not exists public.queue_companies (
   slug text primary key,
@@ -138,7 +148,12 @@ create index if not exists queue_tickets_check_requested_idx
 
 insert into public.queue_settings (id, avg_minutes)
 values (1, 5)
-on conflict (id) do nothing;
+on conflict (id) do update
+set
+  billing_pix_key = coalesce(nullif(public.queue_settings.billing_pix_key, ''), excluded.billing_pix_key),
+  billing_pix_name = coalesce(nullif(public.queue_settings.billing_pix_name, ''), excluded.billing_pix_name),
+  billing_bank_link = coalesce(nullif(public.queue_settings.billing_bank_link, ''), excluded.billing_bank_link),
+  billing_contract_link = coalesce(nullif(public.queue_settings.billing_contract_link, ''), excluded.billing_contract_link);
 
 insert into public.queue_companies (slug, name, admin_pin, tables_2, tables_4, tables_6, dwell_2, dwell_4, dwell_6)
 values ('restaurante-demo', 'Restaurante Demo', '1234', 4, 4, 1, 50, 70, 90)

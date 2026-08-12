@@ -7,10 +7,12 @@ const SAVED_ACCESS_KEY = "fila-ai-saved-access";
 const OWNER_EMAIL_KEY = "fila-ai-owner-email";
 const PROSPECT_STATUS_KEY = "fila-ai-owner-prospect-status";
 const OWNER_CUSTOM_PROSPECTS_KEY = "fila-ai-owner-custom-prospects";
-const BILLING_PIX_KEY = "11943678179";
-const BILLING_PIX_NAME = "Fila Ai";
-const BILLING_BANK_LINK = "https://api.whatsapp.com/send?phone=5511943678179&text=Quero%20receber%20o%20link%20de%20pagamento%20do%20FILA%20AI";
-const BILLING_CONTRACT_LINK = "https://api.whatsapp.com/send?phone=5511943678179&text=Quero%20assinar%20o%20contrato%20anual%20do%20FILA%20AI";
+const DEFAULT_BILLING_SETTINGS = {
+  pixKey: "48.968.488/0001-71",
+  pixName: "Fila Ai",
+  bankLink: "https://api.whatsapp.com/send?phone=5511943678179&text=Quero%20receber%20o%20link%20de%20pagamento%20do%20FILA%20AI",
+  contractLink: "https://api.whatsapp.com/send?phone=5511943678179&text=Quero%20assinar%20o%20contrato%20anual%20do%20FILA%20AI"
+};
 
 const ORDER_STATUS_FLOW = ["new", "preparing", "ready", "delivered"];
 const ORDER_STATUS_LABELS = {
@@ -171,7 +173,8 @@ const defaultState = {
   myTicketId: localStorage.getItem(`${MY_TICKET_KEY}-${COMPANY_SLUG}`),
   queue: [],
   products: DEFAULT_PRODUCTS.map((product) => ({ ...product })),
-  orders: []
+  orders: [],
+  billingSettings: { ...DEFAULT_BILLING_SETTINGS }
 };
 
 const supabaseConfig = window.FILA_SUPABASE || {};
@@ -244,6 +247,12 @@ const elements = {
   ownerCompaniesList: document.querySelector("#ownerCompaniesList"),
   ownerTokensList: document.querySelector("#ownerTokensList"),
   ownerBillingList: document.querySelector("#ownerBillingList"),
+  ownerBillingSettingsForm: document.querySelector("#ownerBillingSettingsForm"),
+  ownerPixKeyInput: document.querySelector("#ownerPixKeyInput"),
+  ownerPixNameInput: document.querySelector("#ownerPixNameInput"),
+  ownerPaymentLinkInput: document.querySelector("#ownerPaymentLinkInput"),
+  ownerContractLinkInput: document.querySelector("#ownerContractLinkInput"),
+  ownerBillingSettingsMessage: document.querySelector("#ownerBillingSettingsMessage"),
   ownerRequestsBadge: document.querySelector("#ownerRequestsBadge"),
   ownerRecoveryBadge: document.querySelector("#ownerRecoveryBadge"),
   ownerTokensBadge: document.querySelector("#ownerTokensBadge"),
@@ -547,6 +556,7 @@ function bindOwnerEvents() {
   });
 
   elements.ownerRefreshButton.addEventListener("click", refreshOwnerDashboard);
+  elements.ownerBillingSettingsForm?.addEventListener("submit", saveOwnerBillingSettings);
   elements.ownerCreateForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     await createTrialToken({
@@ -943,6 +953,9 @@ async function refreshOwnerDashboard() {
     return;
   }
 
+  await loadBillingSettings();
+  fillOwnerBillingSettingsForm();
+
   const [
     { data: requests, error: requestsError },
     { data: companies, error: companiesError },
@@ -992,6 +1005,69 @@ async function refreshOwnerDashboard() {
     renderOwnerRecovery(recoveryRequests, safeCompanies);
     renderOwnerBilling(planRequests);
   }
+}
+
+async function loadBillingSettings() {
+  if (!db) return;
+
+  const { data, error } = await db
+    .from("queue_settings")
+    .select("billing_pix_key, billing_pix_name, billing_bank_link, billing_contract_link")
+    .eq("id", 1)
+    .maybeSingle();
+
+  if (error || !data) return;
+
+  state.billingSettings = {
+    pixKey: data.billing_pix_key || DEFAULT_BILLING_SETTINGS.pixKey,
+    pixName: data.billing_pix_name || DEFAULT_BILLING_SETTINGS.pixName,
+    bankLink: data.billing_bank_link || DEFAULT_BILLING_SETTINGS.bankLink,
+    contractLink: data.billing_contract_link || DEFAULT_BILLING_SETTINGS.contractLink
+  };
+}
+
+function fillOwnerBillingSettingsForm() {
+  if (!elements.ownerBillingSettingsForm) return;
+
+  elements.ownerPixKeyInput.value = state.billingSettings.pixKey;
+  elements.ownerPixNameInput.value = state.billingSettings.pixName;
+  elements.ownerPaymentLinkInput.value = state.billingSettings.bankLink;
+  elements.ownerContractLinkInput.value = state.billingSettings.contractLink;
+}
+
+async function saveOwnerBillingSettings(event) {
+  event.preventDefault();
+
+  if (!db) {
+    elements.ownerBillingSettingsMessage.textContent = "Supabase indisponivel agora.";
+    return;
+  }
+
+  const billingSettings = {
+    pixKey: elements.ownerPixKeyInput.value.trim() || DEFAULT_BILLING_SETTINGS.pixKey,
+    pixName: elements.ownerPixNameInput.value.trim() || DEFAULT_BILLING_SETTINGS.pixName,
+    bankLink: normalizeUrl(elements.ownerPaymentLinkInput.value, DEFAULT_BILLING_SETTINGS.bankLink),
+    contractLink: normalizeUrl(elements.ownerContractLinkInput.value, DEFAULT_BILLING_SETTINGS.contractLink)
+  };
+
+  const { error } = await db
+    .from("queue_settings")
+    .update({
+      billing_pix_key: billingSettings.pixKey,
+      billing_pix_name: billingSettings.pixName,
+      billing_bank_link: billingSettings.bankLink,
+      billing_contract_link: billingSettings.contractLink,
+      updated_at: new Date().toISOString()
+    })
+    .eq("id", 1);
+
+  if (error) {
+    elements.ownerBillingSettingsMessage.textContent = `Nao consegui salvar: ${error.message}`;
+    return;
+  }
+
+  state.billingSettings = billingSettings;
+  elements.ownerBillingSettingsMessage.textContent = "Configuração de pagamento salva.";
 }
 
 function setOwnerBadge(element, count) {
@@ -1899,6 +1975,7 @@ async function refreshFromSupabase() {
 
   refreshInFlight = true;
   try {
+    await loadBillingSettings();
     await ensureCompany();
 
     const { data: tickets, error: ticketsError } = await db
@@ -1976,6 +2053,7 @@ function subscribeToRealtime() {
   realtimeChannel = db.channel(`queue-${COMPANY_SLUG}`)
     .on("postgres_changes", { event: "*", schema: "public", table: "queue_tickets" }, refreshFromSupabase)
     .on("postgres_changes", { event: "*", schema: "public", table: "queue_companies" }, handleRealtimeChange)
+    .on("postgres_changes", { event: "*", schema: "public", table: "queue_settings" }, handleRealtimeChange)
     .on("postgres_changes", { event: "*", schema: "public", table: "fila_products" }, handleRealtimeChange)
     .on("postgres_changes", { event: "*", schema: "public", table: "fila_orders" }, handleRealtimeChange)
     .on("postgres_changes", { event: "*", schema: "public", table: "fila_order_items" }, handleRealtimeChange)
@@ -2626,7 +2704,8 @@ function renderBillingPaymentPanel() {
   if (!elements.billingPaymentPanel || !elements.billingPlanInput) return;
   const plan = elements.billingPlanInput.value;
   const isAnnual = plan === "anual";
-  const pixMessage = `Pix FILA AI\nChave: ${BILLING_PIX_KEY}\nFavorecido: ${BILLING_PIX_NAME}\nRestaurante: ${state.company.name}\nPlano: ${isAnnual ? "Anual" : "Mensal"}`;
+  const billing = state.billingSettings || DEFAULT_BILLING_SETTINGS;
+  const pixMessage = `Pix FILA AI\nChave: ${billing.pixKey}\nFavorecido: ${billing.pixName}\nRestaurante: ${state.company.name}\nPlano: ${isAnnual ? "Anual" : "Mensal"}`;
 
   elements.billingPaymentPanel.hidden = false;
   elements.billingPaymentPanel.innerHTML = isAnnual
@@ -2636,20 +2715,20 @@ function renderBillingPaymentPanel() {
         <p>Assine o contrato online e solicite o link de pagamento para concluir a ativacao.</p>
       </div>
       <div class="billing-payment-actions">
-        <a href="${BILLING_CONTRACT_LINK}" target="_blank" rel="noreferrer">Assinar contrato</a>
-        <a href="${BILLING_BANK_LINK}" target="_blank" rel="noreferrer">Solicitar link de pagamento</a>
+        <a href="${escapeHtml(billing.contractLink)}" target="_blank" rel="noreferrer">Assinar contrato</a>
+        <a href="${escapeHtml(billing.bankLink)}" target="_blank" rel="noreferrer">Solicitar link de pagamento</a>
       </div>
     `
     : `
       <div>
         <strong>Pagamento mensal via Pix</strong>
         <p>Use a chave Pix abaixo e envie o comprovante para liberar ou renovar o acesso.</p>
-        <code>${escapeHtml(BILLING_PIX_KEY)}</code>
-        <small>Favorecido: ${escapeHtml(BILLING_PIX_NAME)}</small>
+        <code>${escapeHtml(billing.pixKey)}</code>
+        <small>Favorecido: ${escapeHtml(billing.pixName)}</small>
       </div>
       <div class="billing-payment-actions">
         <button type="button" data-copy-pix="${escapeHtml(pixMessage)}">Copiar Pix</button>
-        <a href="${BILLING_BANK_LINK}" target="_blank" rel="noreferrer">Enviar comprovante</a>
+        <a href="${escapeHtml(billing.bankLink)}" target="_blank" rel="noreferrer">Enviar comprovante</a>
       </div>
     `;
 
@@ -3469,7 +3548,8 @@ function loadLocalState() {
       company: { ...defaultCompany, ...(stored?.company || {}) },
       queue: stored?.queue || [],
       products: stored?.products?.length ? stored.products : DEFAULT_PRODUCTS.map((product) => ({ ...product })),
-      orders: stored?.orders || []
+      orders: stored?.orders || [],
+      billingSettings: { ...DEFAULT_BILLING_SETTINGS, ...(stored?.billingSettings || {}) }
     };
   } catch {
     return { ...defaultState };
