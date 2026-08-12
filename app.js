@@ -2937,7 +2937,7 @@ function renderClientProducts() {
   if (title) title.textContent = canOrder ? "Cardápio da mesa" : "Menu do restaurante";
   if (description) {
     description.textContent = canOrder
-      ? "Escolha os itens, informe a mesa e acompanhe o preparo."
+      ? "Escolha os itens e envie seu pedido para a comanda."
       : "Consulte os produtos enquanto acompanha sua posição na fila.";
   }
 
@@ -2958,7 +2958,6 @@ function renderClientProducts() {
       </div>
       <div>
         <b>${formatCurrency(product.price)}</b>
-        <small>${Number(product.prepMinutes) || 10} min</small>
       </div>
       <button type="button" ${canOrder ? `data-add-product="${escapeHtml(product.id)}"` : "disabled"}>${canOrder ? "Adicionar" : "Liberado na comanda"}</button>
     </article>
