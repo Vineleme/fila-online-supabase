@@ -2531,6 +2531,40 @@ async function requestTicketCheck(ticketId) {
   render();
 }
 
+async function leaveQueue(ticketId) {
+  const ticket = state.queue.find((item) => item.id === ticketId);
+  if (!ticket || ticket.status === "done") return;
+  if (!confirm("Sair da fila agora?")) return;
+
+  if (db) {
+    const { error } = await db
+      .from("queue_tickets")
+      .delete()
+      .eq("id", ticket.id)
+      .eq("company_slug", COMPANY_SLUG);
+    if (error) {
+      alert(`Nao consegui sair da fila: ${error.message}`);
+      return;
+    }
+    if (ticket.status === "called") {
+      await changeUsedTables(partyBucket(ticket.partySize), -1);
+    }
+    state.myTicketId = null;
+    localStorage.removeItem(`${MY_TICKET_KEY}-${COMPANY_SLUG}`);
+    await refreshFromSupabase();
+  } else {
+    state.queue = state.queue.filter((item) => item.id !== ticket.id);
+    if (ticket.status === "called") {
+      changeUsedTablesLocal(partyBucket(ticket.partySize), -1);
+    }
+    if (state.currentTicketId === ticket.id) state.currentTicketId = null;
+    state.myTicketId = null;
+    persistLocalState();
+  }
+
+  render();
+}
+
 async function resetQueue() {
   if (!confirm("Limpar toda a fila desta empresa?")) return;
 
@@ -3104,6 +3138,7 @@ function renderCalledBanner() {
 function renderMyTicket() {
   const ticket = getMyTicket();
   const acceptingEntries = isQueueAcceptingEntries();
+  elements.myTicket.hidden = !ticket && ACCESS_MODE === "fila";
   elements.myTicket.classList.toggle("is-called", ticket?.status === "called");
   elements.myTicket.classList.toggle("is-waiting", ticket?.status === "waiting");
   elements.joinForm.hidden = Boolean(ticket);
@@ -3123,6 +3158,9 @@ function renderMyTicket() {
   const ahead = countAhead(ticket);
   const wait = estimateWait(ticket);
   const statusText = ticket.status === "called" ? "Sua vez chegou" : ticket.status === "done" ? "Comanda aberta" : "Aguardando";
+  const activeProducts = activeMenuProducts();
+  const menuUrl = normalizeUrl(state.company.menuPdfUrl, "");
+  const hasOrderingMenu = Boolean(state.company.menuEnabled && activeProducts.length);
   const checkNotice = ticket.status === "done"
     ? `<p class="called-note">Atendimento iniciado. O cardapio abriu abaixo e seus pedidos entram na comanda ${escapeHtml(ticketCheckLabel(ticket))}.</p>`
     : "";
@@ -3133,28 +3171,59 @@ function renderMyTicket() {
     ? `<button class="primary request-check-button" type="button" data-request-check="${escapeHtml(ticket.id)}">Solicitar comanda</button>`
     : "";
   const calledNotice = ticket.status === "called"
-    ? `<p class="called-note">Sua vez chegou. Você tem 10 minutos para comparecer à recepção.</p>`
+    ? `<p class="called-note">Sua vez chegou. Voce tem 10 minutos para comparecer a recepcao.</p>`
+    : "";
+  const menuButton = hasOrderingMenu
+    ? `<button class="ghost ticket-menu-button" type="button" data-ticket-menu>Ver menu</button>`
+    : menuUrl
+      ? `<a class="ghost ticket-menu-button" href="${escapeHtml(menuUrl)}" target="_blank" rel="noreferrer">Ver menu</a>`
+      : "";
+  const leaveButton = ticket.status !== "done"
+    ? `<button class="text-button ticket-leave-button" type="button" data-leave-ticket="${escapeHtml(ticket.id)}">Sair da fila</button>`
     : "";
 
   elements.myTicket.innerHTML = `
-    <h2>Minha senha</h2>
-    <div class="ticket-number">${formatNumber(ticket.number)}</div>
+    <div class="ticket-minimal">
+      <p class="ticket-kicker">${statusText}</p>
+      <h2>${ticket.status === "called" ? "Sua vez chegou!" : "Sua vez esta chegando!"}</h2>
+      <div class="ticket-progress-ring" aria-label="${ahead} grupos na frente">
+        <strong>${String(ahead).padStart(2, "0")}</strong>
+      </div>
+      <span class="ticket-ahead-label">Faltam ${ahead} ${ahead === 1 ? "grupo" : "grupos"}</span>
+      <small>Tempo estimado<br><b>${formatDuration(wait)}</b></small>
+      <button class="primary ticket-details-button" type="button" data-ticket-details>Detalhes da fila</button>
+      ${menuButton}
+      ${leaveButton}
+    </div>
     ${calledNotice}
     ${requestPendingNotice}
     ${checkRequest}
     ${checkNotice}
-    <div class="ticket-grid">
+    <div class="ticket-grid ticket-details-grid" hidden>
+      <div class="metric"><strong>${formatNumber(ticket.number)}</strong><span>sua senha</span></div>
       <div class="metric"><strong>${ahead}</strong><span>grupos na frente</span></div>
       <div class="metric wait-metric"><strong>${formatDuration(wait)}</strong><span>espera estimada</span></div>
-      <div class="metric"><strong>${statusText}</strong><span>status</span></div>
     </div>
   `;
 
+  elements.myTicket.querySelector("[data-ticket-details]")?.addEventListener("click", () => {
+    const details = elements.myTicket.querySelector(".ticket-details-grid");
+    if (!details) return;
+    details.hidden = !details.hidden;
+  });
+  elements.myTicket.querySelector("[data-ticket-menu]")?.addEventListener("click", () => {
+    const target = elements.clientOrderPanel && !elements.clientOrderPanel.hidden
+      ? elements.clientOrderPanel
+      : elements.clientMenuPanel;
+    target?.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+  elements.myTicket.querySelector("[data-leave-ticket]")?.addEventListener("click", async (event) => {
+    await leaveQueue(event.currentTarget.dataset.leaveTicket);
+  });
   elements.myTicket.querySelector("[data-request-check]")?.addEventListener("click", async (event) => {
     await requestTicketCheck(event.currentTarget.dataset.requestCheck);
   });
 }
-
 function renderPublicQueue() {
   const ticket = getMyTicket();
 
