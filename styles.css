@@ -5396,3 +5396,34 @@ html[data-access-mode="fila"] .queue-section {
   box-shadow: none;
   cursor: default;
 }
+
+.table-status .table-card,
+.table-status .table-card.is-ready {
+  background: #ffffff !important;
+  color: #1f2937 !important;
+  -webkit-text-fill-color: initial !important;
+}
+
+.table-status .table-card strong,
+.table-status .table-card .availability {
+  color: #111827 !important;
+  -webkit-text-fill-color: #111827 !important;
+  opacity: 1 !important;
+}
+
+.table-status .table-card small,
+.table-status .table-stepper span {
+  color: #6b7280 !important;
+  -webkit-text-fill-color: #6b7280 !important;
+  opacity: 1 !important;
+}
+
+.table-status .table-card em {
+  color: #15803d !important;
+  -webkit-text-fill-color: #15803d !important;
+}
+
+.table-status .table-people b {
+  color: #f97316 !important;
+  -webkit-text-fill-color: #f97316 !important;
+}
