@@ -3158,7 +3158,7 @@ function renderMyTicket() {
   const ahead = countAhead(ticket);
   const wait = estimateWait(ticket);
   const statusText = ticket.status === "called" ? "Sua vez chegou" : ticket.status === "done" ? "Comanda aberta" : "Aguardando";
-  const activeProducts = activeMenuProducts();
+  const activeProducts = getActiveProducts();
   const menuUrl = normalizeUrl(state.company.menuPdfUrl, "");
   const hasOrderingMenu = Boolean(state.company.menuEnabled && activeProducts.length);
   const checkNotice = ticket.status === "done"
