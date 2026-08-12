@@ -3184,12 +3184,12 @@ function renderMyTicket() {
 
   elements.myTicket.innerHTML = `
     <div class="ticket-minimal">
-      <p class="ticket-kicker">${statusText}</p>
       <h2>${ticket.status === "called" ? "Sua vez chegou!" : "Sua vez esta chegando!"}</h2>
+      <span class="ticket-ahead-label">Faltam</span>
       <div class="ticket-progress-ring" aria-label="${ahead} grupos na frente">
         <strong>${String(ahead).padStart(2, "0")}</strong>
       </div>
-      <span class="ticket-ahead-label">Faltam ${ahead} ${ahead === 1 ? "grupo" : "grupos"}</span>
+      <span class="ticket-groups-label">${ahead === 1 ? "grupo" : "grupos"}</span>
       <small>Tempo estimado<br><b>${formatDuration(wait)}</b></small>
       <button class="primary ticket-details-button" type="button" data-ticket-details>Detalhes da fila</button>
       ${menuButton}
