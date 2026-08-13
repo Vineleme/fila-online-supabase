@@ -3377,14 +3377,24 @@ function renderTableStatus() {
     const canCall = status.available > 0 && waiting > 0;
     return `
       <div class="table-card${canCall ? " is-ready" : ""}">
-        <div class="table-people" aria-hidden="true">${seatDots(bucket)}</div>
-        <strong>${tableLabel(bucket)}</strong>
-        <span class="availability">${status.available} ${status.available === 1 ? "mesa livre" : "mesas livres"} de ${status.total}</span>
-        <small>${status.used} ${status.used === 1 ? "ocupada" : "ocupadas"} · ${waiting} aguardando</small>
-        <div class="table-stepper">
-          <button type="button" data-table-action="free" data-bucket="${bucket}" ${status.used <= 0 ? "disabled" : ""}>-</button>
-          <span>ocupadas</span>
-          <button type="button" data-table-action="occupy" data-bucket="${bucket}" ${status.used >= status.total ? "disabled" : ""}>+</button>
+        <div class="table-card-head">
+          <div class="table-people" aria-hidden="true">${seatDots(bucket)}</div>
+          <strong>${tableLabel(bucket)}</strong>
+        </div>
+        <div class="table-availability">
+          <span class="availability">${status.available}</span>
+          <div>
+            <b>${status.available === 1 ? "mesa livre" : "mesas livres"}</b>
+            <small>de ${status.total} ${status.total === 1 ? "mesa" : "mesas"}</small>
+          </div>
+        </div>
+        <div class="table-stats">
+          <span><b>${status.used}</b> ${status.used === 1 ? "ocupada" : "ocupadas"}</span>
+          <span><b>${waiting}</b> aguardando</span>
+        </div>
+        <div class="table-actions">
+          <button class="table-action-free" type="button" data-table-action="free" data-bucket="${bucket}" ${status.used <= 0 ? "disabled" : ""}>Liberar mesa</button>
+          <button class="table-action-occupy" type="button" data-table-action="occupy" data-bucket="${bucket}" ${status.used >= status.total ? "disabled" : ""}>Marcar ocupada</button>
         </div>
         ${canCall ? `<em>Pode chamar agora</em>` : ""}
       </div>

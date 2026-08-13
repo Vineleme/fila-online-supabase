@@ -5427,3 +5427,113 @@ html[data-access-mode="fila"] .queue-section {
   color: #f97316 !important;
   -webkit-text-fill-color: #f97316 !important;
 }
+
+.table-status .table-card {
+  gap: 12px !important;
+}
+
+.table-card-head {
+  display: grid;
+  gap: 6px;
+}
+
+.table-status .table-card > small {
+  display: none !important;
+}
+
+.table-availability {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid rgba(249, 115, 22, 0.18);
+  border-radius: 8px;
+  padding: 12px;
+  background: #fff7ed;
+}
+
+.table-availability .availability {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  flex: 0 0 52px;
+  border-radius: 8px;
+  background: #f97316;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  font-size: 1.85rem;
+  line-height: 1;
+}
+
+.table-availability b,
+.table-availability small {
+  display: block;
+}
+
+.table-availability b {
+  color: #111827 !important;
+  -webkit-text-fill-color: #111827 !important;
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.table-availability small {
+  margin-top: 2px;
+  color: #6b7280 !important;
+  -webkit-text-fill-color: #6b7280 !important;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.table-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.table-stats span {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 9px 10px;
+  background: #f9fafb;
+  color: #4b5563 !important;
+  -webkit-text-fill-color: #4b5563 !important;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.table-stats b {
+  color: #111827 !important;
+  -webkit-text-fill-color: #111827 !important;
+}
+
+.table-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.table-actions button {
+  min-height: 40px;
+  padding: 0 10px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.table-action-free {
+  border: 1px solid rgba(22, 163, 74, 0.26);
+  background: #dcfce7;
+  color: #166534;
+}
+
+.table-action-occupy {
+  border: 1px solid rgba(249, 115, 22, 0.28);
+  background: #f97316;
+  color: #ffffff;
+}
+
+.table-actions button:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
