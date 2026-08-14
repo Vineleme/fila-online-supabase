@@ -402,6 +402,7 @@ const elements = {
   pinInput: document.querySelector("#pinInput"),
   adminRememberInput: document.querySelector("#adminRememberInput"),
   adminForgotButton: document.querySelector("#adminForgotButton"),
+  adminLoginMessage: document.querySelector("#adminLoginMessage"),
   loginButton: document.querySelector("#loginButton"),
   loginPanel: document.querySelector("#loginPanel"),
   adminPanel: document.querySelector("#adminPanel"),
@@ -2283,14 +2284,22 @@ function bindEvents() {
 
   elements.loginButton.addEventListener("click", async () => {
     const pin = elements.pinInput.value.trim();
-    const pinHash = await sha256(pin);
-    if (pin !== state.company.adminPin && pinHash !== state.company.adminPin) {
-      alert("PIN incorreto. Se voce esqueceu a senha, solicite ao dono do Fila Ai a redefinicao pela Central do Dono.");
+    const adminPin = await validateAdminPinForCurrentCompany(pin);
+    if (!adminPin) {
+      if (elements.adminLoginMessage) {
+        elements.adminLoginMessage.textContent = "PIN incorreto. Se voce esqueceu a senha, solicite novo PIN na Central do Dono.";
+      } else {
+        alert("PIN incorreto. Se voce esqueceu a senha, solicite ao dono do Fila Ai a redefinicao pela Central do Dono.");
+      }
       return;
     }
-    openAdminPanel();
-    sessionStorage.setItem(adminAuthKey(COMPANY_SLUG), state.company.adminPin);
+
+    if (elements.adminLoginMessage) elements.adminLoginMessage.textContent = "";
+    sessionStorage.setItem(adminAuthKey(COMPANY_SLUG), adminPin);
+    state.company.adminPin = adminPin;
     saveAdminPasswordChoice();
+    if (db) await refreshFromSupabase();
+    openAdminPanel();
   });
 
   elements.logoutButton.addEventListener("click", logoutAdminSession);
@@ -2383,6 +2392,36 @@ function handleAdminForgotPassword() {
   alert("Se esqueceu o PIN, peça ao dono do Fila Aí para gerar um novo PIN na Central do Dono. Isso não apaga a fila nem os pedidos.");
 }
 
+async function validateAdminPinForCurrentCompany(pin) {
+  if (!pin) return "";
+  const pinHash = await sha256(pin);
+
+  if (!db) {
+    return pin === state.company.adminPin || pinHash === state.company.adminPin ? state.company.adminPin : "";
+  }
+
+  try {
+    const { data: hashOk, error: hashError } = await db.rpc("fila_admin_authorized", {
+      p_company_slug: COMPANY_SLUG,
+      p_admin_pin: pinHash
+    });
+    if (hashError) throw hashError;
+    if (hashOk) return pinHash;
+
+    const { data: plainOk, error: plainError } = await db.rpc("fila_admin_authorized", {
+      p_company_slug: COMPANY_SLUG,
+      p_admin_pin: pin
+    });
+    if (plainError) throw plainError;
+    return plainOk ? pin : "";
+  } catch (error) {
+    if (elements.adminLoginMessage) {
+      elements.adminLoginMessage.textContent = `Nao consegui validar agora: ${error.message}`;
+    }
+    return "";
+  }
+}
+
 function applyAccessMode() {
   if (!ACCESS_MODE) return;
 
@@ -2394,14 +2433,27 @@ function applyAccessMode() {
 async function ensureCompany() {
   if (!db) return true;
 
-  const adminPin = adminSessionPin();
-  const rpcName = adminPin ? "fila_admin_company" : "fila_public_company";
-  const args = adminPin
-    ? { p_company_slug: COMPANY_SLUG, p_admin_pin: adminPin }
-    : { p_company_slug: COMPANY_SLUG };
-  const { data, error } = await db.rpc(rpcName, args);
+  let data = null;
+  const storedAdminPin = sessionStorage.getItem(adminAuthKey(COMPANY_SLUG));
+  if (storedAdminPin) {
+    const { data: adminData, error: adminError } = await db.rpc("fila_admin_company", {
+      p_company_slug: COMPANY_SLUG,
+      p_admin_pin: storedAdminPin
+    });
+    if (adminError) throw adminError;
+    data = adminData;
+    if (!data?.[0]) {
+      sessionStorage.removeItem(adminAuthKey(COMPANY_SLUG));
+    }
+  }
 
-  if (error) throw error;
+  if (!data?.[0]) {
+    const { data: publicData, error: publicError } = await db.rpc("fila_public_company", {
+      p_company_slug: COMPANY_SLUG
+    });
+    if (publicError) throw publicError;
+    data = publicData;
+  }
 
   if (data?.[0]) {
     state.company = fromSupabaseCompany(data[0]);
@@ -4188,7 +4240,7 @@ async function changeUsedTables(bucket, delta) {
 }
 
 function adminSessionPin() {
-  return sessionStorage.getItem(adminAuthKey(COMPANY_SLUG)) || state.company.adminPin || "";
+  return sessionStorage.getItem(adminAuthKey(COMPANY_SLUG)) || (!db ? state.company.adminPin || defaultCompany.adminPin : "");
 }
 
 function fromSupabaseTicket(ticket) {
@@ -4256,7 +4308,7 @@ function fromSupabaseCompany(company) {
   return {
     slug: company.slug,
     name: company.name,
-    adminPin: company.admin_pin || "1234",
+    adminPin: company.admin_pin || (!db ? defaultCompany.adminPin : ""),
     tables2: company.tables_2,
     tables4: company.tables_4,
     tables6: company.tables_6,
