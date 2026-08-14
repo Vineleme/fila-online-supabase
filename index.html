@@ -465,7 +465,7 @@
             </label>
             <label>
               Link do contrato anual
-              <input id="ownerContractLinkInput" type="url" placeholder="https://..." />
+              <input id="ownerContractLinkInput" placeholder="assets/contracts/Contrato_Anual_FILA_AI.docx" />
             </label>
             <button class="primary" type="submit">Salvar pagamento</button>
             <p id="ownerBillingSettingsMessage" class="muted" role="status"></p>
@@ -506,14 +506,17 @@
           <div id="ownerCompaniesList" class="owner-list"></div>
         </section>
 
-        <section class="panel owner-prospect-panel">
+        <section id="ownerProspectPanel" class="panel owner-prospect-panel is-collapsed">
           <div class="section-title prospect-title">
             <div>
               <p class="landing-eyebrow">Central do dono</p>
               <h2>Gestao comercial do FILA AI</h2>
               <p class="muted">Leads para voce, dono do aplicativo, controlar abordagem, retorno e fechamento.</p>
             </div>
-            <button id="exportProspectsButton" class="ghost" type="button">Exportar CSV</button>
+            <div class="prospect-title-actions">
+              <button id="ownerProspectToggleButton" class="ghost" type="button" aria-expanded="false" aria-controls="ownerProspectContent">Abrir prospeccao</button>
+              <button id="exportProspectsButton" class="ghost" type="button">Exportar CSV</button>
+            </div>
           </div>
 
           <div class="prospect-summary" aria-label="Resumo da prospeccao">
@@ -535,49 +538,51 @@
             </div>
           </div>
 
-          <div class="prospect-toolbar">
-            <label>
-              Estado
-              <select id="prospectStateFilter">
-                <option value="todos">Todos</option>
-                <option value="SP">Sao Paulo</option>
-                <option value="RJ">Rio de Janeiro</option>
-                <option value="MG">Minas Gerais</option>
-              </select>
-            </label>
-            <label>
-              Status
-              <select id="prospectStatusFilter">
-                <option value="todos">Todos</option>
-                <option value="novo">Novo</option>
-                <option value="contatar">Contatar hoje</option>
-                <option value="contatado">Contatado</option>
-                <option value="retorno">Retorno marcado</option>
-                <option value="cliente">Cliente</option>
-                <option value="descartado">Descartado</option>
-              </select>
-            </label>
-            <label>
-              Buscar
-              <input id="prospectSearchInput" type="search" placeholder="Restaurante, cidade ou telefone" />
-            </label>
-          </div>
+          <div id="ownerProspectContent" class="prospect-content" hidden>
+            <div class="prospect-toolbar">
+              <label>
+                Estado
+                <select id="prospectStateFilter">
+                  <option value="todos">Todos</option>
+                  <option value="SP">Sao Paulo</option>
+                  <option value="RJ">Rio de Janeiro</option>
+                  <option value="MG">Minas Gerais</option>
+                </select>
+              </label>
+              <label>
+                Status
+                <select id="prospectStatusFilter">
+                  <option value="todos">Todos</option>
+                  <option value="novo">Novo</option>
+                  <option value="contatar">Contatar hoje</option>
+                  <option value="contatado">Contatado</option>
+                  <option value="retorno">Retorno marcado</option>
+                  <option value="cliente">Cliente</option>
+                  <option value="descartado">Descartado</option>
+                </select>
+              </label>
+              <label>
+                Buscar
+                <input id="prospectSearchInput" type="search" placeholder="Restaurante, cidade ou telefone" />
+              </label>
+            </div>
 
-          <div class="prospect-table-wrap">
-            <table class="prospect-table">
-              <thead>
-                <tr>
-                  <th>Lead</th>
-                  <th>Estado</th>
-                  <th>Telefone</th>
-                  <th>Dor percebida</th>
-                  <th>Status</th>
-                  <th>Proxima acao</th>
-                  <th>Acoes</th>
-                </tr>
-              </thead>
-              <tbody id="prospectTableBody"></tbody>
-            </table>
+            <div class="prospect-table-wrap">
+              <table class="prospect-table">
+                <thead>
+                  <tr>
+                    <th>Lead</th>
+                    <th>Estado</th>
+                    <th>Telefone</th>
+                    <th>Dor percebida</th>
+                    <th>Status</th>
+                    <th>Proxima acao</th>
+                    <th>Acoes</th>
+                  </tr>
+                </thead>
+                <tbody id="prospectTableBody"></tbody>
+              </table>
+            </div>
           </div>
         </section>
       </section>
@@ -736,13 +741,14 @@
             <button class="admin-tab" data-admin-tab="adminOrdersPanel" type="button">Pedidos</button>
             <button class="admin-tab" data-admin-tab="adminKitchenPanel" type="button">Cozinha</button>
             <button class="admin-tab" data-admin-tab="adminChecksPanel" type="button">Comandas</button>
+            <button class="admin-tab" data-admin-tab="adminBillingPanel" type="button">Financeiro</button>
             <button class="admin-tab" data-admin-tab="adminConfigPanel" type="button">Configurar</button>
           </div>
 
           <div class="admin-workspace">
-          <section id="adminBillingPanel" class="panel billing-panel">
+          <section id="adminBillingPanel" class="panel admin-tab-panel billing-panel">
             <div>
-              <p class="eyebrow">Teste e pagamento</p>
+              <p class="eyebrow">Financeiro e contrato</p>
               <h2 id="billingTitle">Seu acesso ao FILA AÍ</h2>
               <p id="billingStatusText" class="muted">Carregando status do restaurante...</p>
             </div>

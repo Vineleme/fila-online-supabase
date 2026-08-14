@@ -7,11 +7,27 @@ const SAVED_ACCESS_KEY = "fila-ai-saved-access";
 const OWNER_EMAIL_KEY = "fila-ai-owner-email";
 const PROSPECT_STATUS_KEY = "fila-ai-owner-prospect-status";
 const OWNER_CUSTOM_PROSPECTS_KEY = "fila-ai-owner-custom-prospects";
+const OWNER_PROSPECT_PANEL_KEY = "fila-ai-owner-prospect-panel";
 const DEFAULT_BILLING_SETTINGS = {
   pixKey: "48.968.488/0001-71",
   pixName: "Fila Ai",
   bankLink: "https://api.whatsapp.com/send?phone=5511943678179&text=Quero%20receber%20o%20link%20de%20pagamento%20do%20FILA%20AI",
-  contractLink: "https://api.whatsapp.com/send?phone=5511943678179&text=Quero%20assinar%20o%20contrato%20anual%20do%20FILA%20AI"
+  contractLink: "assets/contracts/Contrato_Anual_FILA_AI.docx"
+};
+const LEGACY_CONTRACT_LINK = "https://api.whatsapp.com/send?phone=5511943678179&text=Quero%20assinar%20o%20contrato%20anual%20do%20FILA%20AI";
+const PLAN_CATALOG = {
+  essencial: {
+    label: "Essencial",
+    monthly: 147,
+    yearly: 1470,
+    features: "Fila digital, QR Code, painel administrativo e suporte."
+  },
+  pro: {
+    label: "Pro beta",
+    monthly: 247,
+    yearly: 2470,
+    features: "Fila, mesas, cardapio, pedidos, cozinha e comanda simples."
+  }
 };
 
 const ORDER_STATUS_FLOW = ["new", "preparing", "ready", "delivered"];
@@ -326,6 +342,9 @@ const elements = {
   prospectHotCount: document.querySelector("#prospectHotCount"),
   prospectContactedCount: document.querySelector("#prospectContactedCount"),
   prospectWonCount: document.querySelector("#prospectWonCount"),
+  ownerProspectPanel: document.querySelector("#ownerProspectPanel"),
+  ownerProspectToggleButton: document.querySelector("#ownerProspectToggleButton"),
+  ownerProspectContent: document.querySelector("#ownerProspectContent"),
   saveProspectsButton: document.querySelector("#saveProspectsButton"),
   prospectSaveMessage: document.querySelector("#prospectSaveMessage"),
   exportProspectsButton: document.querySelector("#exportProspectsButton"),
@@ -598,6 +617,7 @@ function bindOwnerEvents() {
   bindOwnerTabs();
   bindProspectEvents();
   renderProspectTable();
+  restoreProspectPanelState();
 
   restoreOwnerSession();
 
@@ -1062,7 +1082,7 @@ async function refreshOwnerDashboard() {
     if (elements.ownerRecoveryList) elements.ownerRecoveryList.innerHTML = `<p class="muted">Erro: ${escapeHtml(billingError.message)}</p>`;
   } else {
     renderOwnerRecovery(recoveryRequests, safeCompanies);
-    renderOwnerBilling(planRequests);
+    renderOwnerBilling(planRequests, safeCompanies);
   }
 }
 
@@ -1081,7 +1101,7 @@ async function loadBillingSettings() {
     pixKey: data.billing_pix_key || DEFAULT_BILLING_SETTINGS.pixKey,
     pixName: data.billing_pix_name || DEFAULT_BILLING_SETTINGS.pixName,
     bankLink: data.billing_bank_link || DEFAULT_BILLING_SETTINGS.bankLink,
-    contractLink: data.billing_contract_link || DEFAULT_BILLING_SETTINGS.contractLink
+    contractLink: normalizeContractLink(data.billing_contract_link)
   };
 }
 
@@ -1106,7 +1126,7 @@ async function saveOwnerBillingSettings(event) {
     pixKey: elements.ownerPixKeyInput.value.trim() || DEFAULT_BILLING_SETTINGS.pixKey,
     pixName: elements.ownerPixNameInput.value.trim() || DEFAULT_BILLING_SETTINGS.pixName,
     bankLink: normalizeUrl(elements.ownerPaymentLinkInput.value, DEFAULT_BILLING_SETTINGS.bankLink),
-    contractLink: normalizeUrl(elements.ownerContractLinkInput.value, DEFAULT_BILLING_SETTINGS.contractLink)
+    contractLink: normalizeContractLink(elements.ownerContractLinkInput.value)
   };
 
   const { error } = await db
@@ -1280,32 +1300,73 @@ function renderOwnerRecovery(requests, companies) {
   });
 }
 
-function renderOwnerBilling(requests) {
+function renderOwnerBilling(requests, companies = []) {
   if (!requests.length) {
     elements.ownerBillingList.innerHTML = `<p class="muted">Nenhum pedido de plano ainda.</p>`;
     return;
   }
 
-  elements.ownerBillingList.innerHTML = requests.map((request) => `
-    <article class="owner-item">
-      <div>
-        <strong>${escapeHtml(request.company_name || request.company_slug)}</strong>
-        <span>Plano ${escapeHtml(planLabel(request.plan))} - ${escapeHtml(statusLabel(request.status || "novo"))}</span>
-        <small>${escapeHtml(request.contact_phone || "sem telefone")} - ${formatDate(request.created_at)}</small>
-      </div>
-      <div class="owner-actions">
-        <button type="button" data-billing-action="paid" data-billing-id="${request.id}" data-billing-slug="${escapeHtml(request.company_slug)}">Marcar pago</button>
-        <button type="button" data-billing-action="contacted" data-billing-id="${request.id}">Contatado</button>
-      </div>
-    </article>
-  `).join("");
+  elements.ownerBillingList.innerHTML = requests.map((request) => {
+    const company = companies.find((item) => item.slug === request.company_slug) || {};
+    const companyPlan = planFromValue(company.monthly_price);
+    const plan = request.plan === "anual" ? "anual" : "mensal";
+    const quote = billingQuote(companyPlan, plan);
+    const phone = whatsappPhone(request.contact_phone);
+    const hasAcceptedContract = plan === "anual" && (request.status || "").includes("contrato");
+    const message = encodeURIComponent(`Ola! Recebi seu pedido para continuar com o FILA AI.\n\nRestaurante: ${request.company_name || request.company_slug}\nPlano: ${quote.planName} ${planLabel(plan)}\nValor: ${quote.totalText}\nContrato anual: ${plan === "anual" ? "necessario assinar antes da ativacao" : "nao obrigatorio no mensal"}\n\nVou te passar os proximos passos para pagamento e ativacao.`);
+    const whatsUrl = phone ? `https://api.whatsapp.com/send?phone=${phone}&text=${message}` : "";
+    const contractCompany = ownerContractCompany(request, company);
+    return `
+      <article class="owner-item owner-billing-item">
+        <div>
+          <strong>${escapeHtml(request.company_name || request.company_slug)}</strong>
+          <span>${escapeHtml(quote.planName)} ${escapeHtml(planLabel(plan))} - ${escapeHtml(quote.totalText)} - ${escapeHtml(statusLabel(request.status || "novo"))}</span>
+          <small>${escapeHtml(request.contact_phone || "sem telefone")} - pedido em ${formatDate(request.created_at)}</small>
+          <em>${plan === "anual" ? (hasAcceptedContract ? "Contrato anual aceito pelo restaurante. Abra abaixo para conferir." : "Contrato anual ainda nao aparece como aceito.") : "Mensalidade pode ser liberada apos confirmacao do Pix/comprovante."}</em>
+        </div>
+        <div class="owner-actions">
+          ${whatsUrl ? `<a href="${whatsUrl}" target="_blank" rel="noreferrer">Chamar no WhatsApp</a>` : ""}
+          ${plan === "anual" ? `<button type="button" data-contract-preview="${escapeHtml(request.id)}">${hasAcceptedContract ? "Ver contrato" : "Ver minuta"}</button>` : ""}
+          <button type="button" data-billing-action="paid" data-billing-id="${request.id}" data-billing-slug="${escapeHtml(request.company_slug)}">Marcar pago</button>
+          <button type="button" data-billing-action="contacted" data-billing-id="${request.id}">Contatado</button>
+        </div>
+        ${plan === "anual" ? `<div class="owner-contract-preview" data-contract-preview-panel="${escapeHtml(request.id)}" hidden>${annualContractHtml(quote, contractCompany, request.created_at, hasAcceptedContract)}</div>` : ""}
+      </article>
+    `;
+  }).join("");
 
   elements.ownerBillingList.querySelectorAll("button").forEach((button) => {
+    if (button.dataset.contractPreview) {
+      button.addEventListener("click", () => toggleOwnerContractPreview(button));
+      return;
+    }
     button.addEventListener("click", () => handleOwnerBillingAction(button));
   });
 }
 
+function ownerContractCompany(request, company) {
+  return {
+    slug: request.company_slug,
+    name: request.company_name || company.name || titleFromSlug(request.company_slug),
+    contactName: company.contact_name || company.contactName || "Responsavel financeiro cadastrado",
+    contactPhone: request.contact_phone || company.contact_phone || company.contactPhone || "WhatsApp financeiro cadastrado"
+  };
+}
+
+function toggleOwnerContractPreview(button) {
+  const id = button.dataset.contractPreview;
+  const panel = Array.from(elements.ownerBillingList?.querySelectorAll("[data-contract-preview-panel]") || [])
+    .find((item) => item.dataset.contractPreviewPanel === id);
+  if (!panel) return;
+  const willOpen = panel.hidden;
+  panel.hidden = !willOpen;
+  button.textContent = willOpen ? "Fechar contrato" : "Ver contrato";
+}
+
 function bindProspectEvents() {
+  elements.ownerProspectToggleButton?.addEventListener("click", () => {
+    setProspectPanelOpen(elements.ownerProspectContent?.hidden);
+  });
   elements.prospectStateFilter?.addEventListener("change", renderProspectTable);
   elements.prospectStatusFilter?.addEventListener("change", renderProspectTable);
   elements.prospectSearchInput?.addEventListener("input", renderProspectTable);
@@ -1337,6 +1398,20 @@ function bindProspectEvents() {
       event.target.textContent = "Copiar texto";
     }, 1400);
   });
+}
+
+function setProspectPanelOpen(isOpen) {
+  if (!elements.ownerProspectPanel || !elements.ownerProspectContent || !elements.ownerProspectToggleButton) return;
+  elements.ownerProspectPanel.classList.toggle("is-collapsed", !isOpen);
+  elements.ownerProspectContent.hidden = !isOpen;
+  elements.ownerProspectToggleButton.textContent = isOpen ? "Fechar prospeccao" : "Abrir prospeccao";
+  elements.ownerProspectToggleButton.setAttribute("aria-expanded", String(isOpen));
+  localStorage.setItem(OWNER_PROSPECT_PANEL_KEY, isOpen ? "open" : "closed");
+}
+
+function restoreProspectPanelState() {
+  const saved = localStorage.getItem(OWNER_PROSPECT_PANEL_KEY);
+  setProspectPanelOpen(saved === "open");
 }
 
 function renderProspectTable() {
@@ -2808,10 +2883,12 @@ function renderBillingStatus() {
   const payment = state.company.paymentStatus || "pendente";
   const ownerStatus = state.company.ownerStatus || "teste";
   const trialExpired = isTrialExpired({ trial_ends_at: state.company.trialEndsAt });
+  const companyPlan = planFromValue(state.company.monthlyPrice);
+  const quote = billingQuote(companyPlan, "mensal");
 
   elements.billingStatusText.textContent = trialExpired
-    ? `Teste encerrado. Para continuar usando o FILA AI, efetue o pagamento ou entre em contato com o suporte. Status: ${ownerStatus}. Pagamento: ${payment}.`
-    : `Status: ${ownerStatus}. Pagamento: ${payment}. ${trialText}.`;
+    ? `Teste encerrado. Plano ${quote.planName}: ${quote.monthlyText}/mes. Para continuar usando o FILA AI, regularize pagamento e contrato quando escolher anual.`
+    : `Status: ${ownerStatus}. Pagamento: ${payment}. ${trialText}. Plano atual: ${quote.planName} (${quote.monthlyText}/mes).`;
   elements.billingRequestForm.hidden = payment === "pago" || ownerStatus === "ativo";
   renderBillingPaymentPanel();
   elements.billingRequestMessage.textContent = payment === "pago"
@@ -2824,30 +2901,43 @@ function renderBillingPaymentPanel() {
   const plan = elements.billingPlanInput.value;
   const isAnnual = plan === "anual";
   const billing = state.billingSettings || DEFAULT_BILLING_SETTINGS;
-  const pixMessage = `Pix FILA AI\nChave: ${billing.pixKey}\nFavorecido: ${billing.pixName}\nRestaurante: ${state.company.name}\nPlano: ${isAnnual ? "Anual" : "Mensal"}`;
+  const companyPlan = planFromValue(state.company.monthlyPrice);
+  const quote = billingQuote(companyPlan, plan);
+  const dueDate = billingDueDate();
+  const pixMessage = `Pix FILA AI\nChave: ${billing.pixKey}\nFavorecido: ${billing.pixName}\nRestaurante: ${state.company.name}\nPlano: ${quote.planName} ${isAnnual ? "Anual" : "Mensal"}\nValor: ${quote.totalText}`;
 
   elements.billingPaymentPanel.hidden = false;
   elements.billingPaymentPanel.innerHTML = isAnnual
     ? `
-      <div>
-        <strong>Plano anual</strong>
-        <p>Assine o contrato online e solicite o link de pagamento para concluir a ativacao.</p>
+      <div class="billing-summary-card">
+        <strong>${escapeHtml(quote.planName)} anual</strong>
+        <span>${escapeHtml(quote.totalText)} por 12 meses</span>
+        <small>Contrato preenchido + pagamento liberam a continuidade do acesso.</small>
       </div>
+      ${annualContractHtml(quote)}
       <div class="billing-payment-actions">
-        <a href="${escapeHtml(billing.contractLink)}" target="_blank" rel="noreferrer">Assinar contrato</a>
-        <a href="${escapeHtml(billing.bankLink)}" target="_blank" rel="noreferrer">Solicitar link de pagamento</a>
+        <label class="billing-contract-accept">
+          <input type="checkbox" data-contract-accept />
+          Li e aceito o contrato anual preenchido acima.
+        </label>
+        <a href="${escapeHtml(billing.contractLink)}" target="_blank" rel="noreferrer">Baixar contrato modelo</a>
+        <button type="button" data-accept-contract>Assinar contrato e pagar agora</button>
       </div>
     `
     : `
+      <div class="billing-summary-card">
+        <strong>${escapeHtml(quote.planName)} mensal</strong>
+        <span>${escapeHtml(quote.totalText)}</span>
+        <small>Vencimento sugerido: ${escapeHtml(dueDate)}.</small>
+      </div>
       <div>
-        <strong>Pagamento mensal via Pix</strong>
         <p>Use a chave Pix abaixo e envie o comprovante para liberar ou renovar o acesso.</p>
         <code>${escapeHtml(billing.pixKey)}</code>
         <small>Favorecido: ${escapeHtml(billing.pixName)}</small>
       </div>
       <div class="billing-payment-actions">
         <button type="button" data-copy-pix="${escapeHtml(pixMessage)}">Copiar Pix</button>
-        <a href="${escapeHtml(billing.bankLink)}" target="_blank" rel="noreferrer">Enviar comprovante</a>
+        <a href="${escapeHtml(billing.bankLink)}" target="_blank" rel="noreferrer">Pagar mensal</a>
       </div>
     `;
 
@@ -2855,10 +2945,16 @@ function renderBillingPaymentPanel() {
     await navigator.clipboard.writeText(event.currentTarget.dataset.copyPix).catch(() => {});
     event.currentTarget.textContent = "Pix copiado";
   });
+  elements.billingPaymentPanel.querySelector("[data-accept-contract]")?.addEventListener("click", acceptAnnualContractAndPay);
 }
 
 async function submitBillingRequest(event) {
   event.preventDefault();
+
+  if (elements.billingPlanInput.value === "anual") {
+    await acceptAnnualContractAndPay();
+    return;
+  }
 
   if (!db) {
     elements.billingRequestMessage.textContent = "Supabase indisponível. Fale com o FILA AÍ pelo WhatsApp.";
@@ -2882,6 +2978,97 @@ async function submitBillingRequest(event) {
   elements.billingRequestMessage.textContent = "Pedido enviado. O FILA AÍ vai chamar você para finalizar o pagamento.";
   renderBillingPaymentPanel();
   await refreshFromSupabase();
+}
+
+function annualContractHtml(quote, contractCompany = state.company, acceptedAt = new Date(), isAccepted = true) {
+  const billing = state.billingSettings || DEFAULT_BILLING_SETTINGS;
+  const contractDate = new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric"
+  }).format(new Date(acceptedAt || Date.now()));
+  const contractNumber = `FILA-${contractCompany.slug || state.company.slug}-${new Date(acceptedAt || Date.now()).getFullYear()}`.toUpperCase();
+  const companyName = contractCompany.name || state.company.name;
+  const responsible = contractCompany.contactName || "Responsavel financeiro cadastrado";
+  const phone = contractCompany.contactPhone || "WhatsApp financeiro cadastrado";
+
+  return `
+    <article class="billing-contract-card">
+      <div class="billing-contract-header">
+        <strong>Contrato anual preenchido</strong>
+        <span>${escapeHtml(contractNumber)}</span>
+      </div>
+      <dl>
+        <div>
+          <dt>Contratante</dt>
+          <dd>${escapeHtml(companyName)}</dd>
+        </div>
+        <div>
+          <dt>Responsavel</dt>
+          <dd>${escapeHtml(responsible)}</dd>
+        </div>
+        <div>
+          <dt>Contato financeiro</dt>
+          <dd>${escapeHtml(phone)}</dd>
+        </div>
+        <div>
+          <dt>Plano</dt>
+          <dd>${escapeHtml(quote.planName)} anual - ${escapeHtml(quote.totalText)} por 12 meses</dd>
+        </div>
+      </dl>
+      <p>Ao aceitar, o restaurante contrata o FILA AI pelo periodo de 12 meses, com acesso ao sistema, suporte operacional e recursos do plano selecionado.</p>
+      <div class="billing-signature-grid">
+        <div>
+          <small>Contratada</small>
+          <strong>Fila Ai</strong>
+          <span>CNPJ/CPF: ${escapeHtml(billing.pixKey)}</span>
+          <em>Assinado digitalmente pela empresa em ${escapeHtml(contractDate)}</em>
+        </div>
+        <div>
+          <small>Contratante</small>
+          <strong>${escapeHtml(companyName)}</strong>
+          <span>${escapeHtml(responsible)}</span>
+          <em>${isAccepted ? `Assinatura registrada pelo aceite digital em ${escapeHtml(contractDate)}.` : "Minuta ainda sem aceite digital registrado."}</em>
+        </div>
+      </div>
+    </article>
+  `;
+}
+
+async function acceptAnnualContractAndPay() {
+  const accepted = elements.billingPaymentPanel?.querySelector("[data-contract-accept]")?.checked;
+  if (!accepted) {
+    elements.billingRequestMessage.textContent = "Marque o aceite do contrato anual antes de pagar.";
+    return;
+  }
+
+  const billing = state.billingSettings || DEFAULT_BILLING_SETTINGS;
+  const companyPlan = planFromValue(state.company.monthlyPrice);
+  const quote = billingQuote(companyPlan, "anual");
+  const paymentWindow = window.open("", "_blank");
+  const payload = {
+    company_slug: state.company.slug,
+    company_name: state.company.name,
+    contact_phone: state.company.contactPhone || "",
+    plan: "anual",
+    status: "contrato aceito"
+  };
+
+  if (db) {
+    const { error } = await db.from("subscription_requests").insert(payload);
+    if (error) {
+      paymentWindow?.close();
+      elements.billingRequestMessage.textContent = `Nao consegui registrar o contrato: ${error.message}`;
+      return;
+    }
+  }
+
+  elements.billingRequestMessage.textContent = `Contrato anual aceito. Abrindo pagamento de ${quote.totalText}.`;
+  if (paymentWindow) {
+    paymentWindow.location.href = billing.bankLink;
+  } else {
+    window.open(billing.bankLink, "_blank", "noreferrer");
+  }
 }
 
 function fillCompanyForm() {
@@ -4101,6 +4288,12 @@ function normalizeUrl(value, fallback) {
   }
 }
 
+function normalizeContractLink(value) {
+  const candidate = String(value || "").trim();
+  if (!candidate || candidate === LEGACY_CONTRACT_LINK) return DEFAULT_BILLING_SETTINGS.contractLink;
+  return normalizeUrl(candidate, DEFAULT_BILLING_SETTINGS.contractLink);
+}
+
 function normalizeTime(value, fallback) {
   return /^([01]\d|2[0-3]):[0-5]\d$/.test(value || "") ? value : fallback;
 }
@@ -4233,6 +4426,7 @@ function statusLabel(status) {
     blocked: "bloqueado",
     called: "Chamado",
     contacted: "contatado",
+    "contrato aceito": "contrato aceito",
     done: "Finalizado",
     new: "novo",
     novo: "novo",
@@ -4242,6 +4436,32 @@ function statusLabel(status) {
     waiting: "Aguardando"
   };
   return labels[status] || status || "novo";
+}
+
+function planFromValue(value) {
+  return value === "pro" ? "pro" : "essencial";
+}
+
+function billingQuote(planValue, cycle) {
+  const plan = PLAN_CATALOG[planFromValue(planValue)] || PLAN_CATALOG.essencial;
+  const isAnnual = cycle === "anual";
+  return {
+    planName: plan.label,
+    features: plan.features,
+    monthlyText: formatCurrency(plan.monthly),
+    totalText: formatCurrency(isAnnual ? plan.yearly : plan.monthly)
+  };
+}
+
+function billingDueDate() {
+  const base = state.company.trialEndsAt && !isTrialExpired({ trial_ends_at: state.company.trialEndsAt })
+    ? new Date(state.company.trialEndsAt)
+    : new Date();
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric"
+  }).format(base);
 }
 
 function planLabel(plan) {
@@ -4344,6 +4564,11 @@ function normalizeAdminTab(value) {
     comanda: "adminChecksPanel",
     checks: "adminChecksPanel",
     admincheckspanel: "adminChecksPanel",
+    financeiro: "adminBillingPanel",
+    pagamento: "adminBillingPanel",
+    contrato: "adminBillingPanel",
+    billing: "adminBillingPanel",
+    adminbillingpanel: "adminBillingPanel",
     configurar: "adminConfigPanel",
     configuracoes: "adminConfigPanel",
     settings: "adminConfigPanel",
@@ -4361,6 +4586,7 @@ function adminTabSlug(panelId) {
     adminOrdersPanel: "pedidos",
     adminKitchenPanel: "cozinha",
     adminChecksPanel: "comandas",
+    adminBillingPanel: "financeiro",
     adminConfigPanel: "configurar"
   };
 

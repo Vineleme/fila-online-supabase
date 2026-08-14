@@ -1486,7 +1486,8 @@ html:has(.access-shell:not([hidden])) body {
 
 .owner-item strong,
 .owner-item span,
-.owner-item small {
+.owner-item small,
+.owner-item em {
   display: block;
 }
 
@@ -1499,6 +1500,25 @@ html:has(.access-shell:not([hidden])) body {
   margin-top: 4px;
   color: rgba(255, 255, 255, 0.52);
   font-size: 0.78rem;
+}
+
+.owner-item em {
+  margin-top: 8px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.8rem;
+  font-style: normal;
+}
+
+.owner-contract-preview {
+  grid-column: 1 / -1;
+}
+
+.owner-contract-preview[hidden] {
+  display: none;
+}
+
+.owner-contract-preview .billing-contract-card {
+  color: #1f2937;
 }
 
 .owner-expired-note {
@@ -1523,6 +1543,7 @@ html:has(.access-shell:not([hidden])) body {
 }
 
 .owner-actions button,
+.owner-actions a,
 .link-stack button,
 .link-stack a {
   display: inline-flex;
@@ -1558,11 +1579,34 @@ html:has(.access-shell:not([hidden])) body {
   background: transparent;
 }
 
+.prospect-title-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: end;
+}
+
+.owner-prospect-panel.is-collapsed {
+  border-color: rgba(249, 115, 22, 0.24);
+}
+
+.owner-prospect-panel.is-collapsed .prospect-title {
+  margin-bottom: 10px;
+}
+
 .prospect-summary {
   display: grid;
   grid-template-columns: repeat(4, minmax(120px, 1fr));
   gap: 10px;
   margin-bottom: 14px;
+}
+
+.owner-prospect-panel.is-collapsed .prospect-summary {
+  margin-bottom: 0;
+}
+
+.prospect-content[hidden] {
+  display: none;
 }
 
 .prospect-summary div {
@@ -2900,6 +2944,7 @@ html[data-access-mode="admin"] #adminQueuePanel.is-active {
   width: min(100%, 980px);
   grid-template-columns: minmax(0, 1fr) minmax(220px, 320px);
   align-items: end;
+  gap: 16px;
   background:
     linear-gradient(135deg, rgba(13, 110, 253, 0.08), transparent),
     var(--panel);
@@ -2913,7 +2958,7 @@ html[data-access-mode="admin"] #adminQueuePanel.is-active {
 .billing-payment-panel {
   grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(180px, 0.7fr) minmax(280px, 1.3fr);
   gap: 14px;
   align-items: center;
   border: 1px solid rgba(249, 115, 22, 0.24);
@@ -2921,6 +2966,82 @@ html[data-access-mode="admin"] #adminQueuePanel.is-active {
   padding: 14px;
   background: #fff7ed;
   color: #1f2937;
+}
+
+.billing-summary-card {
+  display: grid;
+  gap: 4px;
+}
+
+.billing-summary-card span {
+  color: #c2410c;
+  font-size: 1.28rem;
+  font-weight: 950;
+}
+
+.billing-contract-steps {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-left: 20px;
+  color: #4b5563;
+  font-size: 0.9rem;
+}
+
+.billing-contract-card {
+  display: grid;
+  gap: 12px;
+  border: 1px solid rgba(194, 65, 12, 0.18);
+  border-radius: 8px;
+  padding: 12px;
+  background: #ffffff;
+}
+
+.billing-contract-header,
+.billing-signature-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.billing-contract-header span {
+  justify-self: end;
+  color: #9a3412;
+  font-size: 0.8rem;
+  font-weight: 900;
+}
+
+.billing-contract-card dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.billing-contract-card dt,
+.billing-signature-grid small {
+  color: #6b7280;
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.billing-contract-card dd {
+  margin: 2px 0 0;
+  font-weight: 800;
+}
+
+.billing-signature-grid > div {
+  border-top: 1px solid rgba(17, 24, 39, 0.14);
+  padding-top: 8px;
+}
+
+.billing-signature-grid span,
+.billing-signature-grid em {
+  display: block;
+  color: #4b5563;
+  font-size: 0.78rem;
+  font-style: normal;
 }
 
 .billing-payment-panel[hidden] {
@@ -2950,6 +3071,7 @@ html[data-access-mode="admin"] #adminQueuePanel.is-active {
 }
 
 .billing-payment-actions {
+  grid-column: 1 / -1;
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -2967,6 +3089,17 @@ html[data-access-mode="admin"] #adminQueuePanel.is-active {
   background: #f97316;
   color: #ffffff;
   font-weight: 850;
+}
+
+.billing-contract-accept {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  gap: 8px;
+  margin-right: auto;
+  color: #374151;
+  font-size: 0.88rem;
+  font-weight: 800;
 }
 
 .mini-actions {
@@ -3205,6 +3338,9 @@ html[data-access-mode="admin"] #adminQueuePanel.is-active {
   .ticket-grid,
   .admin-actions,
   .billing-payment-panel,
+  .billing-contract-header,
+  .billing-contract-card dl,
+  .billing-signature-grid,
   .config-grid,
   .brand-config,
   .table-status {
@@ -4153,6 +4289,7 @@ html:has(.access-shell:not([hidden])) body {
 }
 
 .owner-actions button,
+.owner-actions a,
 .link-stack button,
 .link-stack a,
 .prospect-actions a,
