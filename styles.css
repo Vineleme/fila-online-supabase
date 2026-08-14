@@ -1522,6 +1522,18 @@ html:has(.access-shell:not([hidden])) body {
   font-style: normal;
 }
 
+.owner-warning-note {
+  width: fit-content;
+  max-width: 100%;
+  border: 1px solid rgba(245, 158, 11, 0.38);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: #fff7ed;
+  color: #9a3412 !important;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
 .owner-contract-preview {
   grid-column: 1 / -1;
 }

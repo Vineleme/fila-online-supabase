@@ -1274,7 +1274,7 @@ function renderOwnerCompanies(companies) {
           <span>${escapeHtml(company.owner_status || "teste")} - ${escapeHtml(company.payment_status || "pagamento pendente")} - Plano ${escapeHtml(company.monthly_price === "pro" ? "Pro beta" : "Essencial")} - ${trial}</span>
           <small>${company.legal_name ? `Razao social: ${escapeHtml(company.legal_name)} - CNPJ: ${escapeHtml(company.company_document || "sem CNPJ")}` : "Dados de contrato pendentes: razao social, CNPJ e endereco fiscal."}</small>
           <small>${company.fiscal_address ? `Endereco: ${escapeHtml(company.fiscal_address)}${company.fiscal_city ? ` - ${escapeHtml(company.fiscal_city)}` : ""}${company.fiscal_state ? `/${escapeHtml(company.fiscal_state)}` : ""}` : "Endereco fiscal ainda nao cadastrado."}</small>
-          ${legalReady ? "" : `<em class="owner-expired-note">Cadastro juridico incompleto. Nao marque pago sem completar contrato.</em>`}
+          ${legalReady ? "" : `<em class="owner-warning-note">Cadastro juridico incompleto. Nao marque pago sem completar contrato.</em>`}
           ${expired ? `<em class="owner-expired-note">Teste encerrado. Oriente o restaurante a efetuar o pagamento para continuar usando.</em>` : ""}
           <small>Usuario do restaurante: ${escapeHtml(company.slug)}. A senha nao e exibida por seguranca; gere um novo PIN se o cliente esquecer.</small>
         </div>
