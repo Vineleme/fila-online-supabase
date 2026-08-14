@@ -2287,6 +2287,7 @@ html[data-access-mode="admin"] .company-logo {
 
 .admin-tabs {
   display: inline-flex;
+  flex-wrap: wrap;
   width: fit-content;
   max-width: 100%;
   gap: 6px;
@@ -2294,7 +2295,12 @@ html[data-access-mode="admin"] .company-logo {
   border-radius: 8px;
   padding: 6px;
   background: var(--panel);
-  overflow-x: auto;
+  overflow: hidden;
+  scrollbar-width: none;
+}
+
+.admin-tabs::-webkit-scrollbar {
+  display: none;
 }
 
 html[data-access-mode="admin"] .admin-tabs {
@@ -3441,7 +3447,7 @@ html[data-access-mode="admin"] #adminQueuePanel.is-active {
   }
 
   .admin-tab {
-    flex: 1 0 auto;
+    flex: 1 1 112px;
   }
 
   .stats {
