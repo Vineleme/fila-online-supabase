@@ -30,7 +30,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="styles.css?v=owner-warning-1" />
+    <link rel="stylesheet" href="styles.css?v=ai-engineer-1" />
   </head>
   <body>
     <main id="landingPage" class="landing-shell">
@@ -512,6 +512,7 @@
             <button class="owner-crm-tab" data-owner-tab="ownerRecoveryPanel" type="button">Recuperação <b id="ownerRecoveryBadge">0</b></button>
             <button class="owner-crm-tab" data-owner-tab="ownerTokensPanel" type="button">Tokens <b id="ownerTokensBadge">0</b></button>
             <button class="owner-crm-tab" data-owner-tab="ownerBillingPanel" type="button">Pedidos de plano <b id="ownerBillingBadge">0</b></button>
+            <button class="owner-crm-tab" data-owner-tab="ownerAiPanel" type="button">Equipe IA <b id="ownerAiBadge">0</b></button>
           </div>
 
           <div id="ownerRequestsPanel" class="owner-tab-panel is-active">
@@ -532,6 +533,87 @@
           <div id="ownerBillingPanel" class="owner-tab-panel">
             <h2>Pedidos de plano</h2>
             <div id="ownerBillingList" class="owner-list"></div>
+          </div>
+
+          <div id="ownerAiPanel" class="owner-tab-panel">
+            <div class="section-title">
+              <div>
+                <h2>Engenheiro IA + QA</h2>
+                <p class="muted">Central para registrar problemas, acompanhar investigacao e aprovar correcoes antes de qualquer publicacao.</p>
+              </div>
+            </div>
+
+            <div class="owner-ai-grid">
+              <form id="ownerAiIncidentForm" class="owner-form owner-ai-form">
+                <h3>Registrar problema</h3>
+                <label>
+                  Problema
+                  <input id="ownerAiTitleInput" required placeholder="Ex: fila do cliente aparece indisponivel" />
+                </label>
+                <label>
+                  Modulo
+                  <select id="ownerAiModuleInput">
+                    <option value="fila">Fila</option>
+                    <option value="login">Login e acesso</option>
+                    <option value="admin">Administrador</option>
+                    <option value="financeiro">Financeiro</option>
+                    <option value="contrato">Contrato</option>
+                    <option value="cardapio">Cardapio</option>
+                    <option value="pedidos">Pedidos e cozinha</option>
+                    <option value="dono">Central do dono</option>
+                    <option value="geral">Geral</option>
+                  </select>
+                </label>
+                <label>
+                  Gravidade
+                  <select id="ownerAiSeverityInput">
+                    <option value="alta">Alta</option>
+                    <option value="critica">Critica</option>
+                    <option value="media">Media</option>
+                    <option value="baixa">Baixa</option>
+                  </select>
+                </label>
+                <label>
+                  Ambiente
+                  <select id="ownerAiEnvironmentInput">
+                    <option value="producao">Site publicado</option>
+                    <option value="desenvolvimento">Teste local</option>
+                  </select>
+                </label>
+                <label class="wide-field">
+                  O que aconteceu?
+                  <textarea id="ownerAiDescriptionInput" rows="3" required placeholder="Descreva em palavras simples o erro que voce viu."></textarea>
+                </label>
+                <label class="wide-field">
+                  O que deveria acontecer?
+                  <textarea id="ownerAiExpectedInput" rows="2" placeholder="Ex: ao clicar em abrir fila, deve abrir a fila do restaurante correto."></textarea>
+                </label>
+                <label class="wide-field">
+                  O que apareceu no lugar?
+                  <textarea id="ownerAiObservedInput" rows="2" placeholder="Ex: apareceu indisponivel ou carregou outro restaurante."></textarea>
+                </label>
+                <button class="primary wide-field" type="submit">Enviar para investigacao</button>
+                <p id="ownerAiMessage" class="muted wide-field" role="status"></p>
+              </form>
+
+              <aside class="owner-ai-report" aria-label="Resumo do Engenheiro IA">
+                <div class="pin-box">
+                  <h3>O que a IA vai te entregar</h3>
+                  <p>Problema, impacto, causa, correcao proposta, testes feitos, risco e recomendacao clara para aprovar ou pedir nova analise.</p>
+                </div>
+                <div class="pin-box">
+                  <h3>Regra de seguranca</h3>
+                  <p>Nenhuma correcao do Engenheiro IA sera publicada sem voce aprovar dentro da Central do Dono.</p>
+                </div>
+                <div class="pin-box">
+                  <h3>Fluxo protegido</h3>
+                  <p>Cliente acessar, entrar na fila, ver posicao, acompanhar a fila e ser chamado continua sendo prioridade maxima.</p>
+                </div>
+              </aside>
+            </div>
+
+            <h3>Incidentes acompanhados</h3>
+            <div id="ownerAiList" class="owner-list"></div>
           </div>
         </section>
 
@@ -810,17 +892,17 @@
               <label>
                 Foto/logo da empresa
                 <input id="companyLogoUrlInput" type="url" placeholder="https://.../logo.png" />
-                <input id="companyLogoFileInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif" />
-                <small>JPG, PNG, WebP ou GIF, até 5 MB.</small>
+                <input id="companyLogoFileInput" type="file" accept="image/png,image/jpeg,image/webp" />
+                <small>JPG, PNG ou WebP. Mínimo 400x400 px e até 5 MB.</small>
               </label>
               <label>
                 Capa da empresa
                 <input id="companyCoverUrlInput" type="url" placeholder="https://.../capa.jpg" />
-                <input id="companyCoverFileInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif" />
-                <small>Prefira imagem horizontal. JPG, PNG, WebP ou GIF, até 5 MB.</small>
+                <input id="companyCoverFileInput" type="file" accept="image/png,image/jpeg,image/webp" />
+                <small>JPG, PNG ou WebP. Imagem horizontal, mínimo 1200x675 px e até 5 MB.</small>
               </label>
             </div>
-            <p id="brandUploadStatus" class="muted" role="status">Você pode colar um link ou enviar uma imagem do computador/celular. Formatos aceitos: JPG, PNG, WebP ou GIF, até 5 MB.</p>
+            <p id="brandUploadStatus" class="muted" role="status">Envie o logo em JPG, PNG ou WebP, mínimo 400x400 px. Para capa, use imagem horizontal, mínimo 1200x675 px. Limite: 5 MB.</p>
             <div class="pin-box">
               <h3>Senha administrativa</h3>
               <p class="muted">Altere aqui quando você ainda souber o PIN atual. Se esqueceu, peça para o dono do Fila Aí redefinir pela Central do Dono.</p>
@@ -935,8 +1017,8 @@
               <input id="productImageUrlInput" type="hidden" />
               <label class="wide-field">
                 Enviar imagem
-                <input id="productImageFileInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif" />
-                <small>JPG, PNG, WebP ou GIF. Foto horizontal, mínimo 800x500 px e até 5 MB.</small>
+                <input id="productImageFileInput" type="file" accept="image/png,image/jpeg,image/webp" />
+                <small>JPG, PNG ou WebP. Foto horizontal, mínimo 800x500 px e até 5 MB.</small>
               </label>
               <button class="primary" type="submit">Adicionar produto</button>
             </form>
@@ -1079,6 +1161,6 @@
     </script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
-    <script src="app.js?v=owner-warning-1"></script>
+    <script src="app.js?v=ai-engineer-1"></script>
   </body>
 </html>

@@ -6,8 +6,12 @@ const ADMIN_SAVED_PREFIX = "fila-ai-admin-saved";
 const SAVED_ACCESS_KEY = "fila-ai-saved-access";
 const OWNER_EMAIL_KEY = "fila-ai-owner-email";
 const IMAGE_MAX_SIZE = 5 * 1024 * 1024;
-const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-const IMAGE_UPLOAD_RULES = "Use JPG, PNG, WebP ou GIF com ate 5 MB.";
+const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const IMAGE_UPLOAD_RULES = "Use JPG, PNG ou WebP com ate 5 MB.";
+const BRAND_IMAGE_RULES = {
+  logo: { minWidth: 400, minHeight: 400, label: "logo", hint: "Use uma imagem quadrada com minimo 400x400 px." },
+  cover: { minWidth: 1200, minHeight: 675, label: "capa", hint: "Use uma imagem horizontal com minimo 1200x675 px." }
+};
 const PROSPECT_STATUS_KEY = "fila-ai-owner-prospect-status";
 const OWNER_CUSTOM_PROSPECTS_KEY = "fila-ai-owner-custom-prospects";
 const OWNER_PROSPECT_PANEL_KEY = "fila-ai-owner-prospect-panel";
@@ -350,6 +354,17 @@ const elements = {
   ownerRecoveryBadge: document.querySelector("#ownerRecoveryBadge"),
   ownerTokensBadge: document.querySelector("#ownerTokensBadge"),
   ownerBillingBadge: document.querySelector("#ownerBillingBadge"),
+  ownerAiBadge: document.querySelector("#ownerAiBadge"),
+  ownerAiIncidentForm: document.querySelector("#ownerAiIncidentForm"),
+  ownerAiTitleInput: document.querySelector("#ownerAiTitleInput"),
+  ownerAiModuleInput: document.querySelector("#ownerAiModuleInput"),
+  ownerAiSeverityInput: document.querySelector("#ownerAiSeverityInput"),
+  ownerAiEnvironmentInput: document.querySelector("#ownerAiEnvironmentInput"),
+  ownerAiDescriptionInput: document.querySelector("#ownerAiDescriptionInput"),
+  ownerAiExpectedInput: document.querySelector("#ownerAiExpectedInput"),
+  ownerAiObservedInput: document.querySelector("#ownerAiObservedInput"),
+  ownerAiMessage: document.querySelector("#ownerAiMessage"),
+  ownerAiList: document.querySelector("#ownerAiList"),
   ownerCrmTabs: document.querySelectorAll(".owner-crm-tab"),
   ownerTabPanels: document.querySelectorAll(".owner-tab-panel"),
   prospectStateFilter: document.querySelector("#prospectStateFilter"),
@@ -652,6 +667,7 @@ function bindOwnerEvents() {
 
   elements.ownerRefreshButton.addEventListener("click", refreshOwnerDashboard);
   elements.ownerBillingSettingsForm?.addEventListener("submit", saveOwnerBillingSettings);
+  elements.ownerAiIncidentForm?.addEventListener("submit", createAiIncident);
   elements.ownerCreateForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     await createTrialToken({
@@ -1099,6 +1115,7 @@ async function refreshOwnerDashboard() {
     if (elements.ownerRecoveryList) elements.ownerRecoveryList.innerHTML = `<p class="muted">Supabase nao configurado.</p>`;
     elements.ownerRequestsList.innerHTML = `<p class="muted">Supabase não configurado.</p>`;
     elements.ownerCompaniesList.innerHTML = `<p class="muted">Supabase não configurado.</p>`;
+    if (elements.ownerAiList) elements.ownerAiList.innerHTML = `<p class="muted">Supabase não configurado.</p>`;
     return;
   }
 
@@ -1109,18 +1126,21 @@ async function refreshOwnerDashboard() {
     { data: requests, error: requestsError },
     { data: companies, error: companiesError },
     { data: tokens, error: tokensError },
-    { data: billing, error: billingError }
+    { data: billing, error: billingError },
+    { data: incidents, error: incidentsError }
   ] = await Promise.all([
     db.from("trial_requests").select("*").order("created_at", { ascending: false }),
     db.from("queue_companies").select("*").order("created_at", { ascending: false }),
     db.from("trial_tokens").select("*").order("created_at", { ascending: false }),
-    db.from("subscription_requests").select("*").order("created_at", { ascending: false })
+    db.from("subscription_requests").select("*").order("created_at", { ascending: false }),
+    db.from("ai_incidents").select("*").order("created_at", { ascending: false }).limit(30)
   ]);
 
   const safeRequests = requests || [];
   const safeCompanies = companies || [];
   const safeTokens = tokens || [];
   const safeBilling = billing || [];
+  const safeIncidents = incidents || [];
   const recoveryRequests = safeBilling.filter((request) => request.plan === "recuperacao-acesso");
   const planRequests = safeBilling.filter((request) => request.plan !== "recuperacao-acesso");
 
@@ -1128,6 +1148,7 @@ async function refreshOwnerDashboard() {
   setOwnerBadge(elements.ownerRecoveryBadge, recoveryRequests.filter((request) => request.status !== "contatado").length);
   setOwnerBadge(elements.ownerTokensBadge, safeTokens.filter((token) => !token.used_at && token.status !== "cancelado").length);
   setOwnerBadge(elements.ownerBillingBadge, planRequests.filter((request) => request.status !== "pago").length);
+  setOwnerBadge(elements.ownerAiBadge, safeIncidents.filter((incident) => !["resolvido", "rejeitado"].includes(incident.status)).length);
 
   if (requestsError) {
     elements.ownerRequestsList.innerHTML = `<p class="muted">Erro: ${escapeHtml(requestsError.message)}</p>`;
@@ -1153,6 +1174,12 @@ async function refreshOwnerDashboard() {
   } else {
     renderOwnerRecovery(recoveryRequests, safeCompanies);
     renderOwnerBilling(planRequests, safeCompanies);
+  }
+
+  if (incidentsError) {
+    if (elements.ownerAiList) elements.ownerAiList.innerHTML = `<p class="muted">Erro na Equipe IA: ${escapeHtml(incidentsError.message)}</p>`;
+  } else {
+    renderOwnerAiIncidents(safeIncidents);
   }
 }
 
@@ -1415,6 +1442,59 @@ function renderOwnerBilling(requests, companies = []) {
       return;
     }
     button.addEventListener("click", () => handleOwnerBillingAction(button));
+  });
+}
+
+function renderOwnerAiIncidents(incidents) {
+  if (!elements.ownerAiList) return;
+  if (!incidents.length) {
+    elements.ownerAiList.innerHTML = `
+      <article class="owner-item owner-ai-empty">
+        <div>
+          <strong>Nenhum incidente registrado.</strong>
+          <span>Quando voce encontrar um erro, registre acima para o Engenheiro IA iniciar a investigacao.</span>
+          <small>O fluxo da fila continua sendo tratado como prioridade maxima.</small>
+        </div>
+      </article>
+    `;
+    return;
+  }
+
+  elements.ownerAiList.innerHTML = incidents.map((incident) => {
+    const isAwaitingApproval = incident.status === "aguardando_aprovacao";
+    const isClosed = ["resolvido", "rejeitado"].includes(incident.status);
+    return `
+      <article class="owner-item owner-ai-incident">
+        <div>
+          <div class="owner-ai-meta">
+            <span class="owner-ai-pill owner-ai-severity-${escapeHtml(incident.severity)}">${escapeHtml(aiSeverityLabel(incident.severity))}</span>
+            <span class="owner-ai-pill">${escapeHtml(aiStatusLabel(incident.status))}</span>
+            <span class="owner-ai-pill">${escapeHtml(aiModuleLabel(incident.module))}</span>
+          </div>
+          <strong>${escapeHtml(incident.title)}</strong>
+          <span><b>Problema:</b> ${escapeHtml(incident.business_summary || incident.description || "Aguardando descricao.")}</span>
+          <small><b>Impacto:</b> ${escapeHtml(incident.impact || aiDefaultImpact(incident.severity))}</small>
+          <small><b>Causa:</b> ${escapeHtml(incident.root_cause || "Causa ainda nao confirmada.")}</small>
+          <small><b>Correcao:</b> ${escapeHtml(incident.proposed_fix || "Nenhuma correcao preparada ainda.")}</small>
+          <small><b>Testes:</b> ${escapeHtml(incident.tests_summary || "Testes serao definidos durante a investigacao.")}</small>
+          <small><b>Regressao:</b> ${escapeHtml(incident.regression_summary || "Ainda nao verificada.")}</small>
+          <small><b>Risco:</b> ${escapeHtml(aiRiskLabel(incident.risk_level))} - ${escapeHtml(incident.recommendation || "Investigar antes de aprovar qualquer publicacao.")}</small>
+          <small>Registrado em ${formatDate(incident.created_at)} - ultima atualizacao ${formatDate(incident.updated_at || incident.created_at)}</small>
+        </div>
+        <div class="owner-actions owner-ai-actions">
+          ${isClosed ? "" : `<button type="button" data-ai-action="investigating" data-incident-id="${incident.id}">Marcar investigando</button>`}
+          ${isClosed ? "" : `<button type="button" data-ai-action="approval" data-incident-id="${incident.id}">Pronto para aprovacao</button>`}
+          ${isAwaitingApproval ? `<button type="button" data-ai-action="approve" data-incident-id="${incident.id}">Aprovar correcao</button>` : ""}
+          ${isClosed ? "" : `<button type="button" data-ai-action="recheck" data-incident-id="${incident.id}">Pedir nova analise</button>`}
+          ${isClosed ? "" : `<button type="button" data-ai-action="reject" data-incident-id="${incident.id}">Rejeitar</button>`}
+          ${isClosed ? "" : `<button type="button" data-ai-action="resolve" data-incident-id="${incident.id}">Resolver</button>`}
+        </div>
+      </article>
+    `;
+  }).join("");
+
+  elements.ownerAiList.querySelectorAll("[data-ai-action]").forEach((button) => {
+    button.addEventListener("click", () => handleAiIncidentAction(button));
   });
 }
 
@@ -1744,6 +1824,129 @@ async function handleOwnerBillingAction(button) {
   }
 
   await refreshOwnerDashboard();
+}
+
+async function createAiIncident(event) {
+  event.preventDefault();
+  if (!db) {
+    elements.ownerAiMessage.textContent = "Supabase indisponivel agora.";
+    return;
+  }
+
+  const title = elements.ownerAiTitleInput.value.trim();
+  const description = elements.ownerAiDescriptionInput.value.trim();
+  if (!title || !description) {
+    elements.ownerAiMessage.textContent = "Informe o problema e o que aconteceu.";
+    return;
+  }
+
+  elements.ownerAiMessage.textContent = "Registrando problema para investigacao...";
+  const severity = elements.ownerAiSeverityInput.value;
+  const payload = {
+    title,
+    description,
+    status: "triagem",
+    severity,
+    module: elements.ownerAiModuleInput.value,
+    environment: elements.ownerAiEnvironmentInput.value,
+    source: "manual",
+    expected_result: elements.ownerAiExpectedInput.value.trim(),
+    observed_result: elements.ownerAiObservedInput.value.trim(),
+    business_summary: description,
+    impact: aiDefaultImpact(severity),
+    risk_level: severity === "critica" || severity === "alta" ? "alto" : "medio",
+    recommendation: "Investigar, reproduzir e preparar teste antes de qualquer correcao.",
+    approval_status: "nao_solicitada",
+    deploy_status: "nao_autorizado"
+  };
+
+  const { data, error } = await db
+    .from("ai_incidents")
+    .insert(payload)
+    .select("id")
+    .single();
+
+  if (error) {
+    elements.ownerAiMessage.textContent = `Nao consegui registrar: ${error.message}`;
+    return;
+  }
+
+  await addAiIncidentEvent(data.id, "detectado", "Problema registrado", "Incidente manual criado na Central do Dono.");
+  elements.ownerAiIncidentForm.reset();
+  elements.ownerAiMessage.textContent = "Problema registrado. A investigacao pode comecar.";
+  await refreshOwnerDashboard();
+}
+
+async function handleAiIncidentAction(button) {
+  const incidentId = button.dataset.incidentId;
+  const action = button.dataset.aiAction;
+  const actionMap = {
+    investigating: {
+      status: "investigando",
+      approval_status: "nao_solicitada",
+      title: "Investigacao iniciada",
+      details: "Engenheiro IA marcado para investigar o problema."
+    },
+    approval: {
+      status: "aguardando_aprovacao",
+      approval_status: "aguardando",
+      title: "Correcao aguardando aprovacao",
+      details: "A correcao deve ser revisada pelo dono antes de qualquer publicacao."
+    },
+    approve: {
+      status: "aprovado",
+      approval_status: "aprovada",
+      approved_by: "Dono do FILA AI",
+      approved_at: new Date().toISOString(),
+      title: "Correcao aprovada",
+      details: "Aprovacao registrada. Deploy continua dependendo do fluxo seguro de publicacao."
+    },
+    recheck: {
+      status: "reaberto",
+      approval_status: "nova_analise",
+      title: "Nova analise solicitada",
+      details: "O dono pediu nova investigacao antes de aprovar."
+    },
+    reject: {
+      status: "rejeitado",
+      approval_status: "rejeitada",
+      title: "Correcao rejeitada",
+      details: "O dono rejeitou a correcao proposta."
+    },
+    resolve: {
+      status: "resolvido",
+      title: "Incidente resolvido",
+      details: "Incidente marcado como resolvido na Central do Dono."
+    }
+  };
+
+  const next = actionMap[action];
+  if (!next) return;
+
+  const { title, details, ...updates } = next;
+  const { error } = await db
+    .from("ai_incidents")
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq("id", incidentId);
+
+  if (error) {
+    alert(`Nao consegui atualizar incidente: ${error.message}`);
+    return;
+  }
+
+  await addAiIncidentEvent(incidentId, action, title, details);
+  await refreshOwnerDashboard();
+}
+
+async function addAiIncidentEvent(incidentId, eventType, title, details) {
+  if (!db || !incidentId) return;
+  await db.from("ai_incident_events").insert({
+    incident_id: incidentId,
+    event_type: eventType,
+    title,
+    details,
+    created_by: "Central do Dono"
+  });
 }
 
 async function createTrialToken({ restaurantName, phone, trialDays }) {
@@ -2527,7 +2730,7 @@ async function handleBrandFileUpload(type) {
   if (!file) return;
 
   if (!db) {
-    elements.brandUploadStatus.textContent = "Nao consegui enviar: o armazenamento ainda nao esta configurado. Use um link de imagem por enquanto.";
+    elements.brandUploadStatus.textContent = "Nao consegui enviar agora: armazenamento de imagens indisponivel. Tente novamente em alguns instantes.";
     fileInput.value = "";
     return;
   }
@@ -2539,8 +2742,18 @@ async function handleBrandFileUpload(type) {
     return;
   }
 
-  if (!file.type.startsWith("image/")) {
-    alert("Escolha uma imagem.");
+  let dimensions;
+  try {
+    dimensions = await readImageDimensions(file);
+  } catch (error) {
+    elements.brandUploadStatus.textContent = "Nao consegui ler essa imagem. Escolha um arquivo JPG, PNG ou WebP valido.";
+    fileInput.value = "";
+    return;
+  }
+
+  const brandValidationMessage = validateBrandImageDimensions(type, dimensions);
+  if (brandValidationMessage) {
+    elements.brandUploadStatus.textContent = brandValidationMessage;
     fileInput.value = "";
     return;
   }
@@ -2644,6 +2857,24 @@ function validateImageFile(file) {
   return "";
 }
 
+function validateBrandImageDimensions(type, dimensions) {
+  const rules = BRAND_IMAGE_RULES[type];
+  if (!rules) return "";
+
+  if (dimensions.width < rules.minWidth || dimensions.height < rules.minHeight) {
+    return `Imagem pequena para ${rules.label}. ${rules.hint} ${IMAGE_UPLOAD_RULES}`;
+  }
+
+  if (type === "cover") {
+    const ratio = dimensions.width / dimensions.height;
+    if (ratio < 1.45) {
+      return `A capa precisa ser horizontal. ${rules.hint}`;
+    }
+  }
+
+  return "";
+}
+
 function uploadImageErrorMessage(error) {
   const message = error?.message || "erro desconhecido";
   const lowerMessage = message.toLowerCase();
@@ -2657,11 +2888,11 @@ function uploadImageErrorMessage(error) {
   }
 
   if (lowerMessage.includes("bucket") || lowerMessage.includes("storage")) {
-    return "Nao consegui acessar o armazenamento de imagens. Tente novamente em alguns segundos ou use um link de imagem.";
+    return "Nao consegui acessar o armazenamento de imagens. Tente novamente em alguns segundos. Se continuar, chame o suporte do Fila Ai.";
   }
 
   if (lowerMessage.includes("permission") || lowerMessage.includes("policy") || lowerMessage.includes("unauthorized") || lowerMessage.includes("forbidden")) {
-    return "Nao consegui enviar por permissao do armazenamento. Fale com o suporte do Fila Ai ou use um link de imagem.";
+    return "Nao consegui enviar por permissao do armazenamento. Chame o suporte do Fila Ai para liberar o envio.";
   }
 
   return `Nao consegui enviar a imagem. ${IMAGE_UPLOAD_RULES} Detalhe tecnico: ${message}`;
@@ -4634,6 +4865,68 @@ function statusLabel(status) {
     waiting: "Aguardando"
   };
   return labels[status] || status || "novo";
+}
+
+function aiStatusLabel(status) {
+  const labels = {
+    detectado: "Detectado",
+    triagem: "Em triagem",
+    investigando: "Investigando",
+    reproduzindo: "Reproduzindo",
+    causa_identificada: "Causa identificada",
+    corrigindo: "Corrigindo",
+    testando: "Testando",
+    verificando_regressao: "Verificando regressao",
+    aguardando_aprovacao: "Aguardando sua aprovacao",
+    aprovado: "Aprovado",
+    deploy: "Em publicacao",
+    monitoramento_pos_deploy: "Monitoramento",
+    resolvido: "Resolvido",
+    rejeitado: "Rejeitado",
+    reaberto: "Reaberto"
+  };
+  return labels[status] || status || "Detectado";
+}
+
+function aiSeverityLabel(severity) {
+  const labels = {
+    critica: "Critica",
+    alta: "Alta",
+    media: "Media",
+    baixa: "Baixa"
+  };
+  return labels[severity] || "Media";
+}
+
+function aiModuleLabel(moduleName) {
+  const labels = {
+    fila: "Fila",
+    login: "Login",
+    admin: "Administrador",
+    financeiro: "Financeiro",
+    contrato: "Contrato",
+    cardapio: "Cardapio",
+    pedidos: "Pedidos",
+    dono: "Central do dono",
+    geral: "Geral"
+  };
+  return labels[moduleName] || moduleName || "Geral";
+}
+
+function aiRiskLabel(risk) {
+  const labels = {
+    baixo: "Baixo",
+    medio: "Medio",
+    alto: "Alto"
+  };
+  return labels[risk] || "Medio";
+}
+
+function aiDefaultImpact(severity) {
+  if (severity === "critica") return "Pode impedir o uso principal do sistema e precisa de atencao imediata.";
+  if (severity === "alta") return "Pode atrapalhar cliente ou restaurante e deve ser investigado com prioridade.";
+  if (severity === "baixa") return "Impacto limitado, mas deve ser acompanhado para evitar repeticao.";
+  return "Pode afetar parte da operacao e precisa de investigacao antes de correcao.";
 }
 
 function planFromValue(value) {

@@ -1593,6 +1593,80 @@ html:has(.access-shell:not([hidden])) body {
   color: #041007;
 }
 
+.owner-ai-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(260px, 0.75fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.owner-ai-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.owner-ai-form h3,
+.owner-ai-form .wide-field {
+  grid-column: 1 / -1;
+}
+
+.owner-ai-form textarea {
+  width: 100%;
+  min-height: 72px;
+  resize: vertical;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  padding: 11px 12px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font: inherit;
+}
+
+.owner-ai-report {
+  display: grid;
+  gap: 10px;
+}
+
+.owner-ai-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.owner-ai-pill {
+  display: inline-flex;
+  min-height: 26px;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0 9px;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
+.owner-ai-severity-critica,
+.owner-ai-severity-alta {
+  background: rgba(239, 68, 68, 0.18);
+  color: #fecaca;
+}
+
+.owner-ai-severity-media {
+  background: rgba(245, 158, 11, 0.18);
+  color: #fed7aa;
+}
+
+.owner-ai-severity-baixa {
+  background: rgba(34, 197, 94, 0.16);
+  color: #bbf7d0;
+}
+
+.owner-ai-actions {
+  max-width: 320px;
+}
+
 .owner-prospect-panel {
   overflow: hidden;
 }
@@ -3189,12 +3263,14 @@ html[data-access-mode="admin"] #adminQueuePanel.is-active {
   .trial-section,
   .access-grid,
   .owner-grid,
-  .owner-billing-settings,
-  .owner-billing-form,
-  .owner-account-legal-grid,
-  .prospect-summary,
-  .prospect-toolbar,
-  .seo-content-grid,
+    .owner-billing-settings,
+    .owner-billing-form,
+    .owner-account-legal-grid,
+    .owner-ai-grid,
+    .owner-ai-form,
+    .prospect-summary,
+    .prospect-toolbar,
+    .seo-content-grid,
   .demo-grid,
   .mini-table-grid {
     grid-template-columns: 1fr;
@@ -3494,6 +3570,15 @@ html[data-access-mode="admin"] #adminQueuePanel.is-active {
 
   .owner-item {
     grid-template-columns: 1fr;
+  }
+
+  .owner-ai-actions {
+    max-width: none;
+    justify-content: stretch;
+  }
+
+  .owner-ai-actions button {
+    flex: 1 1 150px;
   }
 
   html[data-access-mode="fila"] .topbar {

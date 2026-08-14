@@ -98,7 +98,7 @@ values (
   'fila-ai-assets',
   true,
   10485760,
-  array['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'application/pdf']
+  array['image/png', 'image/jpeg', 'image/webp', 'application/pdf']
 )
 on conflict (id) do update
 set
@@ -325,6 +325,59 @@ create policy "Public can update subscription requests"
   to anon
   using (true)
   with check (true);
+
+create table if not exists public.ai_incidents (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  description text not null default '',
+  status text not null default 'detectado' check (status in ('detectado','triagem','investigando','reproduzindo','causa_identificada','corrigindo','testando','verificando_regressao','aguardando_aprovacao','aprovado','deploy','monitoramento_pos_deploy','resolvido','rejeitado','reaberto')),
+  severity text not null default 'media' check (severity in ('critica','alta','media','baixa')),
+  module text not null default 'geral',
+  environment text not null default 'producao',
+  source text not null default 'manual',
+  error_message text not null default '',
+  stack_trace text not null default '',
+  expected_result text not null default '',
+  observed_result text not null default '',
+  business_summary text not null default '',
+  impact text not null default '',
+  root_cause text not null default '',
+  proposed_fix text not null default '',
+  tests_summary text not null default '',
+  regression_summary text not null default '',
+  risk_level text not null default 'medio' check (risk_level in ('baixo','medio','alto')),
+  recommendation text not null default '',
+  approval_status text not null default 'nao_solicitada' check (approval_status in ('nao_solicitada','aguardando','aprovada','rejeitada','nova_analise')),
+  approved_by text not null default '',
+  approved_at timestamptz,
+  deploy_status text not null default 'nao_autorizado',
+  post_deploy_result text not null default '',
+  occurrence_count integer not null default 1 check (occurrence_count >= 0),
+  first_seen_at timestamptz not null default now(),
+  last_seen_at timestamptz not null default now(),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.ai_incident_events (
+  id uuid primary key default gen_random_uuid(),
+  incident_id uuid not null references public.ai_incidents(id) on delete cascade,
+  event_type text not null default 'nota',
+  title text not null,
+  details text not null default '',
+  created_by text not null default 'Sistema',
+  created_at timestamptz not null default now()
+);
+
+create index if not exists ai_incidents_status_idx on public.ai_incidents(status);
+create index if not exists ai_incidents_created_at_idx on public.ai_incidents(created_at desc);
+create index if not exists ai_incident_events_incident_id_idx on public.ai_incident_events(incident_id);
+
+alter table public.ai_incidents enable row level security;
+alter table public.ai_incident_events enable row level security;
+
+grant select, insert, update on public.ai_incidents to authenticated;
+grant select, insert, update on public.ai_incident_events to authenticated;
 
 create policy "Public can read fila ai assets"
   on storage.objects for select

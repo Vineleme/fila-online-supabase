@@ -561,6 +561,8 @@ alter table public.trial_requests enable row level security;
 alter table public.trial_tokens enable row level security;
 alter table public.subscription_requests enable row level security;
 alter table if exists public.queue_settings enable row level security;
+alter table if exists public.ai_incidents enable row level security;
+alter table if exists public.ai_incident_events enable row level security;
 
 drop policy if exists "Public can read queue companies" on public.queue_companies;
 drop policy if exists "Public can create queue companies" on public.queue_companies;
@@ -584,6 +586,8 @@ drop policy if exists "CEO can read queue tickets" on public.queue_tickets;
 drop policy if exists "CEO can manage trial requests" on public.trial_requests;
 drop policy if exists "CEO can manage trial tokens" on public.trial_tokens;
 drop policy if exists "CEO can manage subscription requests" on public.subscription_requests;
+drop policy if exists "CEO can manage ai incidents" on public.ai_incidents;
+drop policy if exists "CEO can manage ai incident events" on public.ai_incident_events;
 
 create policy "CEO can manage queue companies"
   on public.queue_companies for all
@@ -636,6 +640,18 @@ create policy "Public can create subscription requests"
 
 create policy "CEO can manage subscription requests"
   on public.subscription_requests for all
+  to authenticated
+  using (public.fila_is_ceo())
+  with check (public.fila_is_ceo());
+
+create policy "CEO can manage ai incidents"
+  on public.ai_incidents for all
+  to authenticated
+  using (public.fila_is_ceo())
+  with check (public.fila_is_ceo());
+
+create policy "CEO can manage ai incident events"
+  on public.ai_incident_events for all
   to authenticated
   using (public.fila_is_ceo())
   with check (public.fila_is_ceo());
