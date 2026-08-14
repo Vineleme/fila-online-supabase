@@ -181,6 +181,12 @@ const defaultCompany = {
   accentColor: "#F97316",
   ownerStatus: "demo",
   paymentStatus: "sem cobranca",
+  legalName: "",
+  companyDocument: "",
+  fiscalAddress: "",
+  fiscalCity: "",
+  fiscalState: "",
+  billingEmail: "",
   contactName: "",
   contactPhone: "",
   monthlyPrice: "",
@@ -315,6 +321,14 @@ const elements = {
   ownerAccountUserInput: document.querySelector("#ownerAccountUserInput"),
   ownerAccountPasswordInput: document.querySelector("#ownerAccountPasswordInput"),
   ownerAccountNameInput: document.querySelector("#ownerAccountNameInput"),
+  ownerAccountLegalNameInput: document.querySelector("#ownerAccountLegalNameInput"),
+  ownerAccountDocumentInput: document.querySelector("#ownerAccountDocumentInput"),
+  ownerAccountAddressInput: document.querySelector("#ownerAccountAddressInput"),
+  ownerAccountCityInput: document.querySelector("#ownerAccountCityInput"),
+  ownerAccountStateInput: document.querySelector("#ownerAccountStateInput"),
+  ownerAccountContactNameInput: document.querySelector("#ownerAccountContactNameInput"),
+  ownerAccountContactPhoneInput: document.querySelector("#ownerAccountContactPhoneInput"),
+  ownerAccountBillingEmailInput: document.querySelector("#ownerAccountBillingEmailInput"),
   ownerAccountMessage: document.querySelector("#ownerAccountMessage"),
   ownerAuthMessage: document.querySelector("#ownerAuthMessage"),
   ownerRequestsList: document.querySelector("#ownerRequestsList"),
@@ -974,10 +988,37 @@ async function createRestaurantAccount(event) {
   event.preventDefault();
   const slug = slugify(elements.ownerAccountUserInput.value);
   const password = elements.ownerAccountPasswordInput.value.trim();
-  const restaurantName = elements.ownerAccountNameInput.value.trim() || titleFromSlug(slug);
+  const restaurantName = elements.ownerAccountNameInput.value.trim();
+  const legalName = elements.ownerAccountLegalNameInput.value.trim();
+  const companyDocument = elements.ownerAccountDocumentInput.value.trim();
+  const fiscalAddress = elements.ownerAccountAddressInput.value.trim();
+  const fiscalCity = elements.ownerAccountCityInput.value.trim();
+  const fiscalState = elements.ownerAccountStateInput.value.trim().toUpperCase();
+  const contactName = elements.ownerAccountContactNameInput.value.trim();
+  const contactPhone = elements.ownerAccountContactPhoneInput.value.trim();
+  const billingEmail = elements.ownerAccountBillingEmailInput.value.trim();
 
   if (!slug || password.length < 4) {
-    elements.ownerAccountMessage.textContent = "Informe usuário e senha com pelo menos 4 caracteres.";
+    elements.ownerAccountMessage.textContent = "Informe usuario e senha com pelo menos 4 caracteres.";
+    return;
+  }
+  if (!restaurantName || !legalName || !companyDocument || !fiscalAddress || !fiscalCity || !fiscalState || !contactName || !contactPhone || !billingEmail) {
+    elements.ownerAccountMessage.textContent = "Preencha todos os dados da empresa para liberar contrato e cobranca.";
+    return;
+  }
+  if (!isValidCnpj(companyDocument)) {
+    elements.ownerAccountMessage.textContent = "Informe um CNPJ valido para emitir contrato e cobranca.";
+    elements.ownerAccountDocumentInput.focus();
+    return;
+  }
+  if (!/^[A-Z]{2}$/.test(fiscalState)) {
+    elements.ownerAccountMessage.textContent = "Informe a UF com 2 letras. Ex: SP.";
+    elements.ownerAccountStateInput.focus();
+    return;
+  }
+  if (!whatsappPhone(contactPhone)) {
+    elements.ownerAccountMessage.textContent = "Informe um WhatsApp financeiro valido.";
+    elements.ownerAccountContactPhoneInput.focus();
     return;
   }
 
@@ -987,6 +1028,14 @@ async function createRestaurantAccount(event) {
     slug,
     name: restaurantName,
     adminPin: passwordHash,
+    legalName,
+    companyDocument,
+    fiscalAddress,
+    fiscalCity,
+    fiscalState,
+    billingEmail,
+    contactName,
+    contactPhone,
     ownerStatus: "teste",
     paymentStatus: "pendente",
     trialStartedAt: new Date().toISOString(),
@@ -1215,11 +1264,15 @@ function renderOwnerCompanies(companies) {
     const contactDigits = whatsappPhone(company.contact_phone);
     const notifyMessage = encodeURIComponent(`Sua pagina do Fila Ai esta funcionando.\n\nAdministrador: ${adminUrl}\nFila do cliente: ${filaUrl}\nUsuario: ${company.slug}`);
     const notifyUrl = contactDigits ? `https://api.whatsapp.com/send?phone=${contactDigits}&text=${notifyMessage}` : "";
+    const legalReady = Boolean(company.legal_name && company.company_document && company.fiscal_address && company.contact_name && company.contact_phone && company.billing_email);
     return `
       <article class="owner-company owner-item">
         <div>
           <strong>${escapeHtml(company.name)}</strong>
           <span>${escapeHtml(company.owner_status || "teste")} - ${escapeHtml(company.payment_status || "pagamento pendente")} - Plano ${escapeHtml(company.monthly_price === "pro" ? "Pro beta" : "Essencial")} - ${trial}</span>
+          <small>${company.legal_name ? `Razao social: ${escapeHtml(company.legal_name)} - CNPJ: ${escapeHtml(company.company_document || "sem CNPJ")}` : "Dados de contrato pendentes: razao social, CNPJ e endereco fiscal."}</small>
+          <small>${company.fiscal_address ? `Endereco: ${escapeHtml(company.fiscal_address)}${company.fiscal_city ? ` - ${escapeHtml(company.fiscal_city)}` : ""}${company.fiscal_state ? `/${escapeHtml(company.fiscal_state)}` : ""}` : "Endereco fiscal ainda nao cadastrado."}</small>
+          ${legalReady ? "" : `<em class="owner-expired-note">Cadastro juridico incompleto. Nao marque pago sem completar contrato.</em>`}
           ${expired ? `<em class="owner-expired-note">Teste encerrado. Oriente o restaurante a efetuar o pagamento para continuar usando.</em>` : ""}
           <small>Usuario do restaurante: ${escapeHtml(company.slug)}. A senha nao e exibida por seguranca; gere um novo PIN se o cliente esquecer.</small>
         </div>
@@ -1367,6 +1420,12 @@ function ownerContractCompany(request, company) {
   return {
     slug: request.company_slug,
     name: request.company_name || company.name || titleFromSlug(request.company_slug),
+    legalName: company.legal_name || company.legalName || request.company_name || company.name || titleFromSlug(request.company_slug),
+    companyDocument: company.company_document || company.companyDocument || "CNPJ nao informado",
+    fiscalAddress: company.fiscal_address || company.fiscalAddress || "Endereco fiscal nao informado",
+    fiscalCity: company.fiscal_city || company.fiscalCity || "",
+    fiscalState: company.fiscal_state || company.fiscalState || "",
+    billingEmail: company.billing_email || company.billingEmail || "",
     contactName: company.contact_name || company.contactName || "Responsavel financeiro cadastrado",
     contactPhone: request.contact_phone || company.contact_phone || company.contactPhone || "WhatsApp financeiro cadastrado"
   };
@@ -3008,6 +3067,13 @@ function annualContractHtml(quote, contractCompany = state.company, acceptedAt =
   }).format(new Date(acceptedAt || Date.now()));
   const contractNumber = `FILA-${contractCompany.slug || state.company.slug}-${new Date(acceptedAt || Date.now()).getFullYear()}`.toUpperCase();
   const companyName = contractCompany.name || state.company.name;
+  const legalName = contractCompany.legalName || state.company.legalName || companyName;
+  const companyDocument = contractCompany.companyDocument || state.company.companyDocument || "CNPJ nao informado";
+  const fiscalAddress = contractCompany.fiscalAddress || state.company.fiscalAddress || "Endereco fiscal nao informado";
+  const cityState = [contractCompany.fiscalCity || state.company.fiscalCity, contractCompany.fiscalState || state.company.fiscalState]
+    .filter(Boolean)
+    .join(" - ");
+  const billingEmail = contractCompany.billingEmail || state.company.billingEmail || "";
   const responsible = contractCompany.contactName || "Responsavel financeiro cadastrado";
   const phone = contractCompany.contactPhone || "WhatsApp financeiro cadastrado";
 
@@ -3020,7 +3086,15 @@ function annualContractHtml(quote, contractCompany = state.company, acceptedAt =
       <dl>
         <div>
           <dt>Contratante</dt>
-          <dd>${escapeHtml(companyName)}</dd>
+          <dd>${escapeHtml(legalName)} (${escapeHtml(companyName)})</dd>
+        </div>
+        <div>
+          <dt>CNPJ</dt>
+          <dd>${escapeHtml(companyDocument)}</dd>
+        </div>
+        <div>
+          <dt>Endereco fiscal</dt>
+          <dd>${escapeHtml(fiscalAddress)}${cityState ? ` - ${escapeHtml(cityState)}` : ""}</dd>
         </div>
         <div>
           <dt>Responsavel</dt>
@@ -3028,7 +3102,7 @@ function annualContractHtml(quote, contractCompany = state.company, acceptedAt =
         </div>
         <div>
           <dt>Contato financeiro</dt>
-          <dd>${escapeHtml(phone)}</dd>
+          <dd>${escapeHtml(phone)}${billingEmail ? ` - ${escapeHtml(billingEmail)}` : ""}</dd>
         </div>
         <div>
           <dt>Plano</dt>
@@ -3898,6 +3972,12 @@ function fromSupabaseCompany(company) {
     accentColor: company.accent_color || "#F97316",
     ownerStatus: company.owner_status || "teste",
     paymentStatus: company.payment_status || "pendente",
+    legalName: company.legal_name || "",
+    companyDocument: company.company_document || "",
+    fiscalAddress: company.fiscal_address || "",
+    fiscalCity: company.fiscal_city || "",
+    fiscalState: company.fiscal_state || "",
+    billingEmail: company.billing_email || "",
     contactName: company.contact_name || "",
     contactPhone: company.contact_phone || "",
     monthlyPrice: company.monthly_price || "",
@@ -3932,6 +4012,12 @@ function toSupabaseCompany(company) {
     accent_color: company.accentColor,
     owner_status: company.ownerStatus,
     payment_status: company.paymentStatus,
+    legal_name: company.legalName || "",
+    company_document: company.companyDocument || "",
+    fiscal_address: company.fiscalAddress || "",
+    fiscal_city: company.fiscalCity || "",
+    fiscal_state: company.fiscalState || "",
+    billing_email: company.billingEmail || "",
     contact_name: company.contactName,
     contact_phone: company.contactPhone,
     monthly_price: company.monthlyPrice,
@@ -4321,6 +4407,22 @@ function whatsappPhone(value) {
   const digits = String(value || "").replace(/\D/g, "");
   if (!digits) return "";
   return digits.startsWith("55") ? digits : `55${digits}`;
+}
+
+function isValidCnpj(value) {
+  const cnpj = String(value || "").replace(/\D/g, "");
+  if (cnpj.length !== 14 || /^(\d)\1{13}$/.test(cnpj)) return false;
+
+  const calc = (length) => {
+    const weights = length === 12
+      ? [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
+      : [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+    const sum = cnpj.slice(0, length).split("").reduce((total, digit, index) => total + Number(digit) * weights[index], 0);
+    const rest = sum % 11;
+    return rest < 2 ? 0 : 11 - rest;
+  };
+
+  return calc(12) === Number(cnpj[12]) && calc(13) === Number(cnpj[13]);
 }
 
 async function sha256(value) {

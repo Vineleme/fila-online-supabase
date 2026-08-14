@@ -1409,6 +1409,17 @@ html:has(.access-shell:not([hidden])) body {
   gap: 12px;
 }
 
+.owner-account-legal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.owner-account-legal-grid,
+.owner-account-legal-grid .wide-field {
+  grid-column: 1 / -1;
+}
+
 .owner-billing-form button,
 .owner-billing-form p {
   grid-column: 1 / -1;
@@ -3166,6 +3177,7 @@ html[data-access-mode="admin"] #adminQueuePanel.is-active {
   .owner-grid,
   .owner-billing-settings,
   .owner-billing-form,
+  .owner-account-legal-grid,
   .prospect-summary,
   .prospect-toolbar,
   .seo-content-grid,

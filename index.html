@@ -30,7 +30,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="styles.css?v=login-error-1" />
+    <link rel="stylesheet" href="styles.css?v=company-data-1" />
   </head>
   <body>
     <main id="landingPage" class="landing-shell">
@@ -424,16 +424,50 @@
             <form id="ownerAccountForm" class="owner-form">
               <label>
                 Usuário do restaurante
-                <input id="ownerAccountUserInput" maxlength="80" placeholder="ex: restaurante-villa" />
+                <input id="ownerAccountUserInput" required maxlength="80" placeholder="ex: restaurante-villa" />
               </label>
               <label>
                 Senha do restaurante
-                <input id="ownerAccountPasswordInput" type="password" maxlength="80" placeholder="Senha de acesso" />
+                <input id="ownerAccountPasswordInput" required type="password" maxlength="80" placeholder="Senha de acesso" />
               </label>
               <label>
                 Nome do restaurante
-                <input id="ownerAccountNameInput" maxlength="90" placeholder="Nome que aparecerá na fila" />
+                <input id="ownerAccountNameInput" required maxlength="90" placeholder="Nome que aparecerá na fila" />
               </label>
+              <div class="owner-account-legal-grid">
+                <label>
+                  Razão social
+                  <input id="ownerAccountLegalNameInput" required maxlength="140" placeholder="Razão social da empresa" />
+                </label>
+                <label>
+                  CNPJ
+                  <input id="ownerAccountDocumentInput" required inputmode="numeric" maxlength="18" placeholder="00.000.000/0000-00" />
+                </label>
+                <label class="wide-field">
+                  Endereço fiscal completo
+                  <input id="ownerAccountAddressInput" required maxlength="180" placeholder="Rua, número, bairro, complemento" />
+                </label>
+                <label>
+                  Cidade
+                  <input id="ownerAccountCityInput" required maxlength="80" placeholder="Cidade" />
+                </label>
+                <label>
+                  UF
+                  <input id="ownerAccountStateInput" required maxlength="2" placeholder="SP" />
+                </label>
+                <label>
+                  Responsável financeiro
+                  <input id="ownerAccountContactNameInput" required maxlength="90" placeholder="Nome completo" />
+                </label>
+                <label>
+                  WhatsApp financeiro
+                  <input id="ownerAccountContactPhoneInput" required inputmode="tel" maxlength="30" placeholder="(11) 99999-9999" />
+                </label>
+                <label class="wide-field">
+                  E-mail financeiro
+                  <input id="ownerAccountBillingEmailInput" required type="email" maxlength="120" placeholder="financeiro@restaurante.com.br" />
+                </label>
+              </div>
               <button class="primary" type="submit">Criar conta do cliente</button>
               <p id="ownerAccountMessage" class="muted" role="status"></p>
             </form>
@@ -1046,6 +1080,6 @@
     </script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
-    <script src="app.js?v=login-error-1"></script>
+    <script src="app.js?v=company-data-1"></script>
   </body>
 </html>
