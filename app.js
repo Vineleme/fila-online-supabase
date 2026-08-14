@@ -319,6 +319,7 @@ const elements = {
   ownerLoginButton: document.querySelector("#ownerLoginButton"),
   ownerSignupButton: document.querySelector("#ownerSignupButton"),
   ownerForgotButton: document.querySelector("#ownerForgotButton"),
+  ownerAiShortcutButton: document.querySelector("#ownerAiShortcutButton"),
   ownerLogoutButton: document.querySelector("#ownerLogoutButton"),
   ownerRefreshButton: document.querySelector("#ownerRefreshButton"),
   ownerCreateForm: document.querySelector("#ownerCreateForm"),
@@ -663,6 +664,11 @@ function bindOwnerEvents() {
     clearStoredAccessSessions();
     elements.ownerPasswordInput.value = "";
     window.location.href = window.location.pathname;
+  });
+
+  elements.ownerAiShortcutButton?.addEventListener("click", () => {
+    showOwnerTab("ownerAiPanel");
+    document.querySelector("#ownerAiPanel")?.scrollIntoView({ behavior: "smooth", block: "start" });
   });
 
   elements.ownerRefreshButton.addEventListener("click", refreshOwnerDashboard);
