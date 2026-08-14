@@ -1346,15 +1346,19 @@ function renderOwnerTokens(tokens) {
     const activationUrl = `${origin}?token=${encodeURIComponent(token.token)}`;
     const status = token.used_at ? `usado em ${formatDate(token.used_at)}` : "ainda não usado";
     const countdown = token.trial_ends_at ? trialStatus({ trial_ends_at: token.trial_ends_at }) : `${token.trial_days || 7} dias após ativar`;
+    const phone = whatsappPhone(token.phone);
+    const message = encodeURIComponent(`Ola! Aqui esta o link para ativar o teste gratis do FILA AI.\n\nRestaurante: ${token.restaurant_name || "seu restaurante"}\nLink de ativacao: ${activationUrl}\n\nDepois de ativar, o sistema vai mostrar o painel administrador e a fila do cliente separados para o restaurante.`);
+    const whatsUrl = phone ? `https://api.whatsapp.com/send?phone=${phone}&text=${message}` : "";
     return `
       <article class="owner-item">
         <div>
           <strong>${escapeHtml(token.restaurant_name || "Token livre")}</strong>
-          <span>${escapeHtml(status)} - ${escapeHtml(countdown)}</span>
+          <span>${escapeHtml(status)} - ${escapeHtml(countdown)}${token.phone ? ` - WhatsApp: ${escapeHtml(token.phone)}` : ""}</span>
           <small>${escapeHtml(token.token)} ${token.activated_slug ? `- restaurante ativado: ${escapeHtml(token.activated_slug)}` : ""}</small>
         </div>
         <div class="link-stack">
           <a href="${activationUrl}" target="_blank" rel="noreferrer">Abrir token</a>
+          ${whatsUrl && !token.used_at ? `<a href="${whatsUrl}" target="_blank" rel="noreferrer">Enviar WhatsApp</a>` : ""}
           <button type="button" data-token-copy="${activationUrl}">Copiar link</button>
           ${token.used_at ? "" : `<button type="button" data-token-action="cancel" data-token="${escapeHtml(token.token)}">Cancelar</button>`}
         </div>
@@ -1976,7 +1980,8 @@ async function createTrialToken({ restaurantName, phone, trialDays }) {
 
   const link = `${window.location.origin + window.location.pathname}?token=${encodeURIComponent(token)}`;
   await navigator.clipboard.writeText(link).catch(() => {});
-  alert(`Token gerado e link copiado: ${link}`);
+  const sendHint = phone ? "\n\nAgora abra a aba Tokens e clique em Enviar WhatsApp para mandar ao cliente." : "\n\nComo nao foi informado WhatsApp, copie este link e envie manualmente ao cliente.";
+  alert(`Token gerado e link copiado: ${link}${sendHint}`);
 }
 
 async function handleOwnerCompanyAction(button) {
