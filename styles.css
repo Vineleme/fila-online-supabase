@@ -1128,6 +1128,7 @@ html:has(.access-shell:not([hidden])) body {
 
 .shell-action,
 .app-home-link,
+.topbar-logout-button,
 .admin-session-actions .ghost {
   display: inline-flex;
   min-height: 38px;
@@ -1145,6 +1146,7 @@ html:has(.access-shell:not([hidden])) body {
 
 .shell-action:hover,
 .app-home-link:hover,
+.topbar-logout-button:hover,
 .admin-session-actions .ghost:hover {
   transform: translateY(-1px);
   background: rgba(255, 122, 0, 0.22);

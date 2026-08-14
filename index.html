@@ -30,7 +30,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="styles.css?v=pricing-desktop-1" />
+    <link rel="stylesheet" href="styles.css?v=logout-switch-1" />
   </head>
   <body>
     <main id="landingPage" class="landing-shell">
@@ -317,7 +317,7 @@
           </label>
           <label class="remember-row">
             <input id="accessRememberInput" type="checkbox" />
-            Salvar senha neste aparelho
+            Salvar usuário neste aparelho
           </label>
           <div class="auth-links">
             <button id="accessForgotButton" class="text-button" type="button">Esqueci a senha</button>
@@ -378,7 +378,7 @@
         </label>
         <label class="remember-row">
           <input id="ownerRememberInput" type="checkbox" />
-          Salvar senha neste aparelho
+          Salvar e-mail neste aparelho
         </label>
         <div class="auth-links">
           <button id="ownerForgotButton" class="text-button" type="button">Esqueci a senha</button>
@@ -647,6 +647,7 @@
         </div>
         <div class="topbar-actions">
           <a class="ghost app-home-link" href="./">Página Inicial</a>
+          <button id="logoutTopButton" class="ghost topbar-logout-button" type="button">Sair</button>
         </div>
       </section>
 
@@ -754,7 +755,7 @@
           </label>
           <label class="remember-row">
             <input id="adminRememberInput" type="checkbox" />
-            Salvar senha neste aparelho
+            Salvar usuário neste aparelho
           </label>
           <div class="auth-links">
             <button id="adminForgotButton" class="text-button" type="button">Esqueci a senha</button>
@@ -1076,6 +1077,6 @@
     </script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
-    <script src="app.js?v=pricing-desktop-1"></script>
+    <script src="app.js?v=logout-switch-1"></script>
   </body>
 </html>

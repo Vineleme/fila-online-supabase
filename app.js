@@ -618,7 +618,6 @@ function bindAccessEvents() {
   elements.toggleAccessPasswordButton?.addEventListener("click", toggleAccessPassword);
   elements.accessForgotButton?.addEventListener("click", handleAccessForgotPassword);
   fillSavedAccess();
-  trySavedAccessLogin();
 }
 
 function toggleAccessPassword() {
@@ -2083,6 +2082,9 @@ function bindEvents() {
 
   elements.logoutButton.addEventListener("click", logoutAdminSession);
   elements.logoutTopButton?.addEventListener("click", logoutAdminSession);
+  document.querySelectorAll(".app-home-link").forEach((link) => {
+    link.addEventListener("click", clearStoredAccessSessions);
+  });
   elements.adminForgotButton?.addEventListener("click", handleAdminForgotPassword);
 
   elements.saveCompanyButton.addEventListener("click", saveCompanySettings);
@@ -4456,7 +4458,6 @@ function saveAccessChoice(type, user, passwordHash) {
   localStorage.setItem(SAVED_ACCESS_KEY, JSON.stringify({
     type,
     user,
-    passwordHash,
     savedAt: new Date().toISOString()
   }));
 }
