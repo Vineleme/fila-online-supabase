@@ -5,6 +5,9 @@ const ADMIN_AUTH_PREFIX = "fila-ai-admin-auth";
 const ADMIN_SAVED_PREFIX = "fila-ai-admin-saved";
 const SAVED_ACCESS_KEY = "fila-ai-saved-access";
 const OWNER_EMAIL_KEY = "fila-ai-owner-email";
+const IMAGE_MAX_SIZE = 5 * 1024 * 1024;
+const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const IMAGE_UPLOAD_RULES = "Use JPG, PNG, WebP ou GIF com ate 5 MB.";
 const PROSPECT_STATUS_KEY = "fila-ai-owner-prospect-status";
 const OWNER_CUSTOM_PROSPECTS_KEY = "fila-ai-owner-custom-prospects";
 const OWNER_PROSPECT_PANEL_KEY = "fila-ai-owner-prospect-panel";
@@ -2520,7 +2523,14 @@ async function handleBrandFileUpload(type) {
   if (!file) return;
 
   if (!db) {
-    alert("Upload precisa do Supabase configurado.");
+    elements.brandUploadStatus.textContent = "Nao consegui enviar: o armazenamento ainda nao esta configurado. Use um link de imagem por enquanto.";
+    fileInput.value = "";
+    return;
+  }
+
+  const validationMessage = validateImageFile(file);
+  if (validationMessage) {
+    elements.brandUploadStatus.textContent = validationMessage;
     fileInput.value = "";
     return;
   }
@@ -2537,7 +2547,6 @@ async function handleBrandFileUpload(type) {
     return;
   }
 
-  const previousStatus = elements.brandUploadStatus.textContent;
   elements.brandUploadStatus.textContent = `Enviando ${type === "logo" ? "logo" : "capa"}...`;
   fileInput.disabled = true;
 
@@ -2553,8 +2562,7 @@ async function handleBrandFileUpload(type) {
   fileInput.value = "";
 
   if (error) {
-    elements.brandUploadStatus.textContent = previousStatus;
-    alert(`Não consegui enviar imagem: ${error.message}`);
+    elements.brandUploadStatus.textContent = uploadImageErrorMessage(error);
     return;
   }
 
@@ -2568,19 +2576,14 @@ async function handleProductImageUpload() {
   if (!file) return;
 
   if (!db) {
-    elements.menuUploadStatus.textContent = "Upload precisa do Supabase configurado.";
+    elements.menuUploadStatus.textContent = "Nao consegui enviar: o armazenamento ainda nao esta configurado. Use um link de imagem por enquanto.";
     elements.productImageFileInput.value = "";
     return;
   }
 
-  if (!file.type.startsWith("image/")) {
-    elements.menuUploadStatus.textContent = "Escolha uma imagem do produto.";
-    elements.productImageFileInput.value = "";
-    return;
-  }
-
-  if (file.size > 5 * 1024 * 1024) {
-    elements.menuUploadStatus.textContent = "Use uma imagem de ate 5 MB.";
+  const validationMessage = validateImageFile(file);
+  if (validationMessage) {
+    elements.menuUploadStatus.textContent = validationMessage;
     elements.productImageFileInput.value = "";
     return;
   }
@@ -2616,13 +2619,54 @@ async function handleProductImageUpload() {
   elements.productImageFileInput.value = "";
 
   if (error) {
-    elements.menuUploadStatus.textContent = `Nao consegui enviar imagem: ${error.message}`;
+    elements.menuUploadStatus.textContent = uploadImageErrorMessage(error);
     return;
   }
 
   const { data } = db.storage.from(ASSETS_BUCKET).getPublicUrl(path);
   elements.productImageUrlInput.value = data.publicUrl;
   elements.menuUploadStatus.textContent = "Imagem pronta. Agora clique em Adicionar produto.";
+}
+
+function validateImageFile(file) {
+  if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+    return `Formato nao aceito. ${IMAGE_UPLOAD_RULES}`;
+  }
+
+  if (file.size > IMAGE_MAX_SIZE) {
+    return `Arquivo muito pesado (${formatFileSize(file.size)}). ${IMAGE_UPLOAD_RULES}`;
+  }
+
+  return "";
+}
+
+function uploadImageErrorMessage(error) {
+  const message = error?.message || "erro desconhecido";
+  const lowerMessage = message.toLowerCase();
+
+  if (lowerMessage.includes("mime") || lowerMessage.includes("type") || lowerMessage.includes("content")) {
+    return `O servidor recusou o formato da imagem. ${IMAGE_UPLOAD_RULES}`;
+  }
+
+  if (lowerMessage.includes("size") || lowerMessage.includes("payload") || lowerMessage.includes("too large")) {
+    return `O servidor recusou porque o arquivo esta grande demais. ${IMAGE_UPLOAD_RULES}`;
+  }
+
+  if (lowerMessage.includes("bucket") || lowerMessage.includes("storage")) {
+    return "Nao consegui acessar o armazenamento de imagens. Tente novamente em alguns segundos ou use um link de imagem.";
+  }
+
+  if (lowerMessage.includes("permission") || lowerMessage.includes("policy") || lowerMessage.includes("unauthorized") || lowerMessage.includes("forbidden")) {
+    return "Nao consegui enviar por permissao do armazenamento. Fale com o suporte do Fila Ai ou use um link de imagem.";
+  }
+
+  return `Nao consegui enviar a imagem. ${IMAGE_UPLOAD_RULES} Detalhe tecnico: ${message}`;
+}
+
+function formatFileSize(bytes) {
+  if (!Number.isFinite(bytes)) return "tamanho desconhecido";
+  const megabytes = bytes / (1024 * 1024);
+  return `${megabytes.toFixed(megabytes >= 10 ? 0 : 1).replace(".", ",")} MB`;
 }
 
 function readImageDimensions(file) {
