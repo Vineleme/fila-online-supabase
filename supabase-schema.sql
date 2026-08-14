@@ -122,6 +122,24 @@ alter table public.queue_tickets
   add column if not exists party_size integer not null default 2 check (party_size between 1 and 20),
   add column if not exists check_requested boolean not null default false;
 
+alter table public.queue_tickets
+  drop constraint if exists queue_tickets_company_slug_fkey;
+
+alter table public.queue_tickets
+  add constraint queue_tickets_company_slug_fkey
+  foreign key (company_slug)
+  references public.queue_companies(slug)
+  on delete cascade;
+
+alter table public.subscription_requests
+  drop constraint if exists subscription_requests_company_slug_fkey;
+
+alter table public.subscription_requests
+  add constraint subscription_requests_company_slug_fkey
+  foreign key (company_slug)
+  references public.queue_companies(slug)
+  on delete cascade;
+
 alter table public.queue_companies
   add column if not exists used_2 integer not null default 0 check (used_2 between 0 and 99),
   add column if not exists used_4 integer not null default 0 check (used_4 between 0 and 99),
@@ -370,6 +388,37 @@ begin
   where slug = p_company_slug;
 end;
 $function$;
+
+create or replace function public.fila_delete_company_permanent(p_company_slug text)
+returns void
+language plpgsql
+security definer
+set search_path to 'public'
+as $function$
+begin
+  if p_company_slug is null or trim(p_company_slug) = '' then
+    raise exception 'company_slug_required';
+  end if;
+
+  if p_company_slug = 'restaurante-demo' then
+    raise exception 'demo_company_cannot_be_deleted';
+  end if;
+
+  delete from public.queue_tickets where company_slug = p_company_slug;
+  delete from public.subscription_requests where company_slug = p_company_slug;
+  delete from public.fila_orders where company_slug = p_company_slug;
+  delete from public.fila_products where company_slug = p_company_slug;
+  update public.trial_tokens
+  set activated_slug = null,
+      admin_pin = null,
+      updated_at = now()
+  where activated_slug = p_company_slug;
+
+  delete from public.queue_companies where slug = p_company_slug;
+end;
+$function$;
+
+grant execute on function public.fila_delete_company_permanent(text) to anon, authenticated;
 
 create or replace function public.fila_normalize_ticket_company_slug()
 returns trigger

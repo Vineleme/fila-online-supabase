@@ -161,6 +161,7 @@ const TICKET_SNAPSHOT_KEYS = TICKET_STORAGE_KEYS.map((key) => `${key}-snapshot`)
 const TRIAL_TOKEN = (params.get("token") || "").trim();
 const ACCESS_MODE = normalizeAccessMode(params.get("modo") || params.get("tela") || params.get("view") || (TRIAL_TOKEN ? "ativar" : ""));
 const ADMIN_TAB = normalizeAdminTab(params.get("aba") || params.get("tab") || params.get("painel") || "");
+let companyAvailable = true;
 
 const defaultCompany = {
   slug: COMPANY_SLUG,
@@ -1813,10 +1814,10 @@ async function handleOwnerCompanyAction(button) {
 async function deleteOwnerCompany(button) {
   const slug = button.dataset.slug;
   const name = button.dataset.companyName || slug;
-  const confirmed = window.confirm(`Excluir ${name} da Central do Dono? Essa acao remove o acesso do restaurante.`);
+  const confirmed = window.confirm(`Excluir ${name} permanentemente? Essa acao remove o acesso, fila, produtos, pedidos e pedidos financeiros deste restaurante.`);
   if (!confirmed) return;
 
-  const { error } = await db.from("queue_companies").delete().eq("slug", slug);
+  const { error } = await db.rpc("fila_delete_company_permanent", { p_company_slug: slug });
   if (error) {
     alert(`Nao consegui excluir restaurante: ${error.message}`);
     return;
@@ -2195,9 +2196,11 @@ async function ensureCompany() {
 
   if (data?.[0]) {
     state.company = fromSupabaseCompany(data[0]);
+    companyAvailable = true;
     return true;
   }
 
+  companyAvailable = false;
   state.company = {
     ...defaultCompany,
     slug: COMPANY_SLUG,
@@ -2209,6 +2212,7 @@ async function ensureCompany() {
   state.queue = [];
   state.currentTicketId = null;
   clearMyTicketId();
+  clearStoredAccessSessions();
   return false;
 }
 
@@ -4424,6 +4428,18 @@ function isNowWithinWindow(openTime, closeTime) {
 }
 
 function queueStatusText() {
+  if (!companyAvailable) {
+    return "Restaurante nao encontrado ou removido. Volte para a pagina inicial e entre com o usuario correto.";
+  }
+  if (state.company.ownerStatus === "bloqueado") {
+    return "Fila bloqueada pelo Fila Ai. Procure o suporte para reativar este restaurante.";
+  }
+  if (state.company.trialEndsAt && state.company.paymentStatus !== "pago" && new Date(state.company.trialEndsAt).getTime() < Date.now()) {
+    return "Periodo de teste encerrado. Regularize o financeiro para reabrir a fila.";
+  }
+  if (!state.company.queueOpen) {
+    return "Fila fechada no painel do restaurante. Para abrir, entre em Administrativo > Configurar e altere Fila para Aberta.";
+  }
   if (!isCompanyCommerciallyActive()) {
     return "Fila indisponível no momento. Procure a recepção do restaurante.";
   }
