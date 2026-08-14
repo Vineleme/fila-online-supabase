@@ -5841,3 +5841,77 @@ html[data-access-mode="fila"] .queue-section {
   opacity: 0.42;
   cursor: not-allowed;
 }
+
+/* Light surface contrast guard */
+html:has(.owner-shell:not([hidden])) .owner-shell .owner-tab-nav {
+  border-color: var(--fa-border) !important;
+  background: #f9fafb !important;
+}
+
+html:has(.owner-shell:not([hidden])) .owner-shell .owner-crm-tab:not(.is-active) {
+  background: var(--fa-white) !important;
+  color: var(--fa-graphite-2) !important;
+  -webkit-text-fill-color: var(--fa-graphite-2) !important;
+}
+
+html:has(.owner-shell:not([hidden])) .owner-shell .owner-crm-tab.is-active {
+  background: var(--fa-orange) !important;
+  color: var(--fa-white) !important;
+  -webkit-text-fill-color: var(--fa-white) !important;
+}
+
+html:has(.owner-shell:not([hidden])) .owner-shell .owner-crm-tab b {
+  color: inherit !important;
+  -webkit-text-fill-color: inherit !important;
+}
+
+html:has(.owner-shell:not([hidden])) .owner-shell :where(.panel, .owner-item, .pin-box, .prospect-summary div, .owner-tab-panel, .owner-contract-preview) :where(h1, h2, h3, h4, label, p, span, small, em, dt, dd, th, td):not(.owner-warning-note):not(.owner-expired-note):not(.owner-ai-pill):not(.priority-chip) {
+  color: var(--fa-graphite) !important;
+  -webkit-text-fill-color: var(--fa-graphite) !important;
+  opacity: 1 !important;
+}
+
+html:has(.owner-shell:not([hidden])) .owner-shell :where(.panel, .owner-item, .pin-box, .owner-tab-panel) .muted {
+  color: var(--fa-muted) !important;
+  -webkit-text-fill-color: var(--fa-muted) !important;
+  opacity: 1 !important;
+}
+
+html:has(.owner-shell:not([hidden])) .owner-shell :where(input, select, textarea) {
+  background: var(--fa-white) !important;
+  color: var(--fa-graphite) !important;
+  -webkit-text-fill-color: var(--fa-graphite) !important;
+}
+
+html:has(.owner-shell:not([hidden])) .owner-shell :where(input, textarea)::placeholder {
+  color: #9ca3af !important;
+  -webkit-text-fill-color: #9ca3af !important;
+  opacity: 1 !important;
+}
+
+html:has(.owner-shell:not([hidden])) .owner-shell :where(.link-stack a, .link-stack button, .owner-actions a, .owner-actions button):not(.primary) {
+  color: var(--fa-graphite) !important;
+  -webkit-text-fill-color: var(--fa-graphite) !important;
+}
+
+html:has(.owner-shell:not([hidden])) .owner-shell .primary,
+html:has(.owner-shell:not([hidden])) .owner-shell .owner-crm-tab.is-active,
+html:has(.owner-shell:not([hidden])) .owner-shell .link-stack a:first-child,
+html:has(.owner-shell:not([hidden])) .owner-shell .link-stack a:nth-child(2) {
+  color: var(--fa-white) !important;
+  -webkit-text-fill-color: var(--fa-white) !important;
+}
+
+html:has(.access-shell:not([hidden])) .access-card :where(h1, h2, h3, label, p, span, small):not(.trial-message),
+html:has(.activation-shell:not([hidden])) .activation-card :where(h1, h2, h3, label, p, span, small):not(.landing-eyebrow):not(.trial-message) {
+  color: var(--fa-graphite) !important;
+  -webkit-text-fill-color: var(--fa-graphite) !important;
+  opacity: 1 !important;
+}
+
+html:has(.access-shell:not([hidden])) .access-card .muted,
+html:has(.activation-shell:not([hidden])) .activation-card .muted {
+  color: var(--fa-muted) !important;
+  -webkit-text-fill-color: var(--fa-muted) !important;
+  opacity: 1 !important;
+}
