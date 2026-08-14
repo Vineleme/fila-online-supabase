@@ -4434,6 +4434,12 @@ html:has(.access-shell:not([hidden])) body {
     var(--fa-gray);
 }
 
+.activation-card > p:not(.landing-eyebrow) {
+  color: var(--fa-graphite-2);
+  -webkit-text-fill-color: var(--fa-graphite-2);
+  font-weight: 600;
+}
+
 .activation-result {
   border: 1px solid rgba(249, 115, 22, 0.24);
   background: var(--fa-orange-soft);

@@ -269,7 +269,7 @@ begin
     monthly_price, trial_started_at, trial_ends_at, menu_enabled, menu_title, menu_pdf_url
   )
   values (
-    v_slug, p_restaurant_name, encode(digest(v_pin, 'sha256'), 'hex'),
+    v_slug, p_restaurant_name, encode(extensions.digest(v_pin, 'sha256'), 'hex'),
     4, 4, 1, 0, 0, 0, true, '16:00', '19:00',
     'assets/fila-ai-logo-white.png',
     'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=1800&q=80',
