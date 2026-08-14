@@ -642,10 +642,9 @@ function bindOwnerEvents() {
 
   elements.ownerLogoutButton?.addEventListener("click", async () => {
     if (db) await db.auth.signOut();
-    localStorage.removeItem(SAVED_ACCESS_KEY);
+    clearStoredAccessSessions();
     elements.ownerPasswordInput.value = "";
-    elements.ownerLoginPanel.hidden = false;
-    elements.ownerPanel.hidden = true;
+    window.location.href = window.location.pathname;
   });
 
   elements.ownerRefreshButton.addEventListener("click", refreshOwnerDashboard);
@@ -2117,10 +2116,27 @@ function bindEvents() {
 }
 
 function logoutAdminSession() {
+  clearStoredAccessSessions();
   elements.pinInput.value = "";
-  elements.loginPanel.hidden = false;
-  elements.adminPanel.hidden = true;
-  sessionStorage.removeItem(adminAuthKey(COMPANY_SLUG));
+  window.location.href = window.location.pathname;
+}
+
+function clearStoredAccessSessions() {
+  localStorage.removeItem(SAVED_ACCESS_KEY);
+
+  for (let index = localStorage.length - 1; index >= 0; index -= 1) {
+    const key = localStorage.key(index);
+    if (key?.startsWith(ADMIN_SAVED_PREFIX)) {
+      localStorage.removeItem(key);
+    }
+  }
+
+  for (let index = sessionStorage.length - 1; index >= 0; index -= 1) {
+    const key = sessionStorage.key(index);
+    if (key?.startsWith(ADMIN_AUTH_PREFIX)) {
+      sessionStorage.removeItem(key);
+    }
+  }
 }
 
 function saveAdminPasswordChoice() {
