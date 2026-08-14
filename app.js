@@ -768,6 +768,13 @@ function setOwnerAuthMessage(message) {
   if (elements.ownerAuthMessage) elements.ownerAuthMessage.textContent = message;
 }
 
+function setAccessMessage(message, type = "info") {
+  if (!elements.accessMessage) return;
+  elements.accessMessage.textContent = message;
+  elements.accessMessage.classList.toggle("is-error", type === "error");
+  elements.accessMessage.classList.toggle("is-success", type === "success");
+}
+
 function rememberOwnerEmail(email) {
   if (!elements.ownerRememberInput?.checked) {
     localStorage.removeItem(OWNER_EMAIL_KEY);
@@ -786,12 +793,23 @@ function fillOwnerRememberedEmail() {
 
 async function sendOwnerPasswordReset(email, targetElement) {
   if (!db) {
-    targetElement.textContent = "Supabase Auth e necessario para recuperar senha por e-mail.";
+    if (targetElement === elements.accessMessage) {
+      setAccessMessage("Supabase Auth e necessario para recuperar senha por e-mail.", "error");
+    } else {
+      targetElement.textContent = "Supabase Auth e necessario para recuperar senha por e-mail.";
+    }
     return;
   }
 
   const redirectTo = `${window.location.origin + window.location.pathname}?modo=acesso`;
   const { error } = await db.auth.resetPasswordForEmail(email, { redirectTo });
+  if (targetElement === elements.accessMessage) {
+    setAccessMessage(
+      error ? `Nao consegui enviar recuperacao: ${error.message}` : "Enviamos um link de recuperacao para o e-mail informado.",
+      error ? "error" : "success"
+    );
+    return;
+  }
   targetElement.textContent = error
     ? `Nao consegui enviar recuperacao: ${error.message}`
     : "Enviamos um link de recuperacao para o e-mail informado.";
@@ -819,7 +837,7 @@ async function handleAccessLogin(event) {
   const password = elements.accessPasswordInput.value.trim();
 
   if (!user || !password) {
-    elements.accessMessage.textContent = "Informe usuário e senha.";
+    setAccessMessage("Informe usuario e senha.", "error");
     return;
   }
 
@@ -840,21 +858,21 @@ async function handleAccessLogin(event) {
 
 async function handleAccessCeoLogin(email, password) {
   if (!db) {
-    elements.accessMessage.textContent = "Supabase Auth e necessario para acessar o CEO.";
+    setAccessMessage("Supabase Auth e necessario para acessar o CEO.", "error");
     return;
   }
 
-  elements.accessMessage.textContent = "Validando acesso CEO...";
+  setAccessMessage("Validando acesso CEO...");
   const { error } = await db.auth.signInWithPassword({ email, password });
   if (error) {
-    elements.accessMessage.textContent = "E-mail ou senha do CEO incorretos.";
+    setAccessMessage("E-mail ou senha do CEO incorretos.", "error");
     return;
   }
 
   const { data: isCeo, error: ceoError } = await db.rpc("fila_is_ceo");
   if (ceoError || !isCeo) {
     await db.auth.signOut();
-    elements.accessMessage.textContent = "Este e-mail nao esta liberado como CEO.";
+    setAccessMessage("Este e-mail nao esta liberado como CEO.", "error");
     return;
   }
 
@@ -868,13 +886,13 @@ async function handleAccessForgotPassword() {
     return;
   }
   if (!rawUser) {
-    elements.accessMessage.textContent = "Informe o usuário ou e-mail antes de recuperar a senha.";
+    setAccessMessage("Informe o usuario ou e-mail antes de recuperar a senha.", "error");
     elements.accessUserInput.focus();
     return;
   }
 
   if (!rawUser.includes("@")) {
-    elements.accessMessage.textContent = "Para restaurante, peça ao dono do Fila Aí para gerar um novo PIN na Central do Dono.";
+    setAccessMessage("Para restaurante, peca ao dono do Fila Ai para gerar um novo PIN na Central do Dono.", "error");
     return;
   }
 
@@ -884,12 +902,12 @@ async function handleAccessForgotPassword() {
 async function requestRestaurantAccessRecovery(rawUser) {
   const slug = slugify(rawUser);
   if (!slug) {
-    elements.accessMessage.textContent = "Informe o usuario do restaurante para solicitar recuperacao.";
+    setAccessMessage("Informe o usuario do restaurante para solicitar recuperacao.", "error");
     return;
   }
 
   if (!db) {
-    elements.accessMessage.textContent = "Banco indisponivel. Peca ao dono do Fila Ai para gerar um novo PIN.";
+    setAccessMessage("Banco indisponivel. Peca ao dono do Fila Ai para gerar um novo PIN.", "error");
     return;
   }
 
@@ -901,13 +919,14 @@ async function requestRestaurantAccessRecovery(rawUser) {
     status: "novo"
   });
 
-  elements.accessMessage.textContent = error
-    ? `Nao consegui solicitar recuperacao: ${error.message}`
-    : "Solicitacao enviada. O dono do Fila Ai vai gerar um novo acesso para o restaurante.";
+  setAccessMessage(
+    error ? `Nao consegui solicitar recuperacao: ${error.message}` : "Solicitacao enviada. O dono do Fila Ai vai gerar um novo acesso para o restaurante.",
+    error ? "error" : "success"
+  );
 }
 
 async function handleRestaurantAccessSecure(slug, password, passwordHash) {
-  elements.accessMessage.textContent = "Validando acesso...";
+  setAccessMessage("Validando acesso...");
 
   try {
     let adminPin = defaultCompany.adminPin;
@@ -929,17 +948,17 @@ async function handleRestaurantAccessSecure(slug, password, passwordHash) {
       }
 
       if (!hashOk && !plainOk) {
-        elements.accessMessage.textContent = "Usuario ou senha incorretos.";
+        setAccessMessage("Usuario ou senha incorretos.", "error");
         return;
       }
       adminPin = hashOk ? passwordHash : password;
     } else if (slug !== defaultCompany.slug) {
-      elements.accessMessage.textContent = "Supabase indisponivel. Teste apenas com restaurante-demo.";
+      setAccessMessage("Supabase indisponivel. Teste apenas com restaurante-demo.", "error");
       return;
     }
 
     if (!db && password !== adminPin && passwordHash !== adminPin) {
-      elements.accessMessage.textContent = "Usuario ou senha incorretos.";
+      setAccessMessage("Usuario ou senha incorretos.", "error");
       return;
     }
 
@@ -947,7 +966,7 @@ async function handleRestaurantAccessSecure(slug, password, passwordHash) {
     sessionStorage.setItem(adminAuthKey(slug), adminPin);
     window.location.href = `${window.location.pathname}?empresa=${encodeURIComponent(slug)}&modo=admin`;
   } catch (error) {
-    elements.accessMessage.textContent = `Nao consegui validar: ${error.message}`;
+    setAccessMessage(`Nao consegui validar: ${error.message}`, "error");
   }
 }
 
@@ -4345,7 +4364,7 @@ async function trySavedAccessLogin() {
   }
 
   if (!saved?.user || !saved?.passwordHash) return;
-  elements.accessMessage.textContent = "Entrando com acesso salvo...";
+  setAccessMessage("Entrando com acesso salvo...");
 
   try {
     if (saved.type === "restaurant") {
@@ -4367,7 +4386,7 @@ async function trySavedAccessLogin() {
   localStorage.removeItem(SAVED_ACCESS_KEY);
   elements.accessPasswordInput.value = "";
   elements.accessRememberInput.checked = false;
-  elements.accessMessage.textContent = "Acesso salvo expirou. Entre novamente.";
+  setAccessMessage("Acesso salvo expirou. Entre novamente.", "error");
 }
 
 function adminAuthKey(slug) {

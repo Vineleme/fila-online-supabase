@@ -4269,6 +4269,18 @@ html:has(.access-shell:not([hidden])) body {
   box-shadow: 0 14px 32px rgba(249, 115, 22, 0.22);
 }
 
+.access-card #accessMessage.is-error {
+  color: #dc2626 !important;
+  -webkit-text-fill-color: #dc2626 !important;
+  font-weight: 800;
+}
+
+.access-card #accessMessage.is-success {
+  color: #15803d !important;
+  -webkit-text-fill-color: #15803d !important;
+  font-weight: 800;
+}
+
 .remember-row input,
 .switch-row input {
   accent-color: var(--fa-orange);
