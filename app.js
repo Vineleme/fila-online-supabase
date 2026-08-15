@@ -691,6 +691,7 @@ function bindOwnerEvents() {
   elements.ownerRefreshButton.addEventListener("click", refreshOwnerDashboard);
   elements.ownerBillingSettingsForm?.addEventListener("submit", saveOwnerBillingSettings);
   elements.ownerAiIncidentForm?.addEventListener("submit", createAiIncident);
+  bindCnpjMask(elements.ownerAccountDocumentInput);
   elements.ownerCreateForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     await createTrialToken({
@@ -1031,7 +1032,7 @@ async function createRestaurantAccount(event) {
   const password = elements.ownerAccountPasswordInput.value.trim();
   const restaurantName = elements.ownerAccountNameInput.value.trim();
   const legalName = elements.ownerAccountLegalNameInput.value.trim();
-  const companyDocument = elements.ownerAccountDocumentInput.value.trim();
+  const companyDocument = formatCnpj(elements.ownerAccountDocumentInput.value);
   const fiscalAddress = elements.ownerAccountAddressInput.value.trim();
   const fiscalCity = elements.ownerAccountCityInput.value.trim();
   const fiscalState = elements.ownerAccountStateInput.value.trim().toUpperCase();
@@ -1052,6 +1053,7 @@ async function createRestaurantAccount(event) {
     elements.ownerAccountDocumentInput.focus();
     return;
   }
+  elements.ownerAccountDocumentInput.value = companyDocument;
   if (!/^[A-Z]{2}$/.test(fiscalState)) {
     elements.ownerAccountMessage.textContent = "Informe a UF com 2 letras. Ex: SP.";
     elements.ownerAccountStateInput.focus();
@@ -2400,6 +2402,7 @@ function bindEvents() {
   elements.adminAddForm.addEventListener("submit", addTicketFromAdmin);
   elements.billingRequestForm.addEventListener("submit", submitBillingRequest);
   elements.billingPlanInput?.addEventListener("change", renderBillingPaymentPanel);
+  bindCnpjMask(elements.companyDocumentInput);
   elements.companyLogoFileInput.addEventListener("change", () => handleBrandFileUpload("logo"));
   elements.companyCoverFileInput.addEventListener("change", () => handleBrandFileUpload("cover"));
   elements.menuPdfFileInput?.addEventListener("change", handleMenuPdfUpload);
@@ -2691,7 +2694,7 @@ async function saveCompanySettings() {
     themeMode: elements.themeModeInput.value === "dark" ? "dark" : "light",
     accentColor: "#F97316",
     legalName: elements.companyLegalNameInput?.value.trim() || "",
-    companyDocument: elements.companyDocumentInput?.value.trim() || "",
+    companyDocument: formatCnpj(elements.companyDocumentInput?.value || ""),
     fiscalAddress: elements.companyFiscalAddressInput?.value.trim() || "",
     fiscalCity: elements.companyFiscalCityInput?.value.trim() || "",
     fiscalState: elements.companyFiscalStateInput?.value.trim().toUpperCase() || "",
@@ -2709,6 +2712,7 @@ async function saveCompanySettings() {
     document.querySelector("#legalConfigBox")?.scrollIntoView({ behavior: "smooth", block: "start" });
     return;
   }
+  if (elements.companyDocumentInput) elements.companyDocumentInput.value = company.companyDocument;
   if (elements.legalConfigMessage) elements.legalConfigMessage.textContent = "";
 
   state.company = company;
@@ -3704,14 +3708,14 @@ function fillCompanyForm() {
   elements.closeTimeInput.value = state.company.closeTime;
   elements.companyLogoUrlInput.value = state.company.logoUrl || "";
   elements.companyCoverUrlInput.value = state.company.coverUrl || "";
-  if (elements.companyLegalNameInput) elements.companyLegalNameInput.value = state.company.legalName || "";
-  if (elements.companyDocumentInput) elements.companyDocumentInput.value = state.company.companyDocument || "";
-  if (elements.companyFiscalAddressInput) elements.companyFiscalAddressInput.value = state.company.fiscalAddress || "";
-  if (elements.companyFiscalCityInput) elements.companyFiscalCityInput.value = state.company.fiscalCity || "";
-  if (elements.companyFiscalStateInput) elements.companyFiscalStateInput.value = state.company.fiscalState || "";
-  if (elements.companyBillingEmailInput) elements.companyBillingEmailInput.value = state.company.billingEmail || "";
-  if (elements.companyContactNameInput) elements.companyContactNameInput.value = state.company.contactName || "";
-  if (elements.companyContactPhoneInput) elements.companyContactPhoneInput.value = state.company.contactPhone || "";
+  setInputValueUnlessEditing(elements.companyLegalNameInput, state.company.legalName || "");
+  setInputValueUnlessEditing(elements.companyDocumentInput, formatCnpj(state.company.companyDocument || ""));
+  setInputValueUnlessEditing(elements.companyFiscalAddressInput, state.company.fiscalAddress || "");
+  setInputValueUnlessEditing(elements.companyFiscalCityInput, state.company.fiscalCity || "");
+  setInputValueUnlessEditing(elements.companyFiscalStateInput, state.company.fiscalState || "");
+  setInputValueUnlessEditing(elements.companyBillingEmailInput, state.company.billingEmail || "");
+  setInputValueUnlessEditing(elements.companyContactNameInput, state.company.contactName || "");
+  setInputValueUnlessEditing(elements.companyContactPhoneInput, state.company.contactPhone || "");
   if (elements.menuEnabledInput) elements.menuEnabledInput.checked = Boolean(state.company.menuEnabled);
   if (elements.menuTitleInput) elements.menuTitleInput.value = state.company.menuTitle || "Cardápio do restaurante";
   if (elements.menuPdfUrlInput) elements.menuPdfUrlInput.value = state.company.menuPdfUrl || "";
@@ -4953,6 +4957,31 @@ function whatsappPhone(value) {
   const digits = String(value || "").replace(/\D/g, "");
   if (!digits) return "";
   return digits.startsWith("55") ? digits : `55${digits}`;
+}
+
+function formatCnpj(value) {
+  const digits = String(value || "").replace(/\D/g, "").slice(0, 14);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 5) return `${digits.slice(0, 2)}.${digits.slice(2)}`;
+  if (digits.length <= 8) return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5)}`;
+  if (digits.length <= 12) return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8)}`;
+  return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
+}
+
+function bindCnpjMask(input) {
+  if (!input || input.dataset.cnpjMaskBound === "true") return;
+  input.dataset.cnpjMaskBound = "true";
+  input.addEventListener("input", () => {
+    input.value = formatCnpj(input.value);
+  });
+  input.addEventListener("blur", () => {
+    input.value = formatCnpj(input.value);
+  });
+}
+
+function setInputValueUnlessEditing(input, value) {
+  if (!input || document.activeElement === input) return;
+  input.value = value || "";
 }
 
 function isValidCnpj(value) {
