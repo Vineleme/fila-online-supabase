@@ -4993,6 +4993,23 @@ html[data-access-mode="fila"] .ticket-panel {
     --fa-container: min(100% - 28px, 760px);
   }
 
+  .landing-nav {
+    gap: 14px;
+  }
+
+  .nav-brand-mark {
+    width: 116px;
+  }
+
+  .landing-nav div {
+    gap: 14px;
+    font-size: 0.84rem;
+  }
+
+  .nav-cta {
+    padding: 9px 13px;
+  }
+
   .landing-hero,
   .benefit-grid,
   .split-section,
@@ -5019,23 +5036,41 @@ html[data-access-mode="fila"] .ticket-panel {
 
 @media (max-width: 760px) {
   :root {
-    --fa-container: calc(100% - 28px);
+    --fa-container: calc(100% - 24px);
   }
 
   .landing-nav {
     position: sticky;
+    min-height: 62px;
     align-items: center;
-    flex-direction: column;
-    gap: 12px;
-    padding: 12px 14px;
+    flex-direction: row;
+    gap: 10px;
+    padding: 10px 0;
+  }
+
+  .landing-nav .nav-brand-mark {
+    width: 108px;
   }
 
   .landing-nav div {
-    width: 100%;
-    justify-content: flex-start;
-    gap: 14px;
-    overflow-x: auto;
+    width: auto;
+    justify-content: flex-end;
+    gap: 8px;
+    overflow: visible;
     white-space: nowrap;
+  }
+
+  .landing-nav div a:not(.nav-cta):not([href="?modo=acesso"]) {
+    display: none;
+  }
+
+  .landing-nav div a[href="?modo=acesso"] {
+    font-size: 0.82rem;
+  }
+
+  .landing-nav .nav-cta {
+    padding: 9px 11px;
+    font-size: 0.82rem;
   }
 
   .landing-hero {
@@ -5086,6 +5121,25 @@ html[data-access-mode="fila"] .ticket-panel {
   .landing-footer {
     align-items: flex-start;
     flex-direction: column;
+  }
+}
+
+@media (max-width: 380px) {
+  :root {
+    --fa-container: calc(100% - 18px);
+  }
+
+  .landing-nav .nav-brand-mark {
+    width: 96px;
+  }
+
+  .landing-nav div a[href="?modo=acesso"] {
+    display: none;
+  }
+
+  .landing-nav .nav-cta {
+    padding: 8px 10px;
+    font-size: 0.78rem;
   }
 }
 
