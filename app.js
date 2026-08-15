@@ -1349,6 +1349,8 @@ function renderOwnerTokens(tokens) {
     const phone = whatsappPhone(token.phone);
     const message = encodeURIComponent(`Ola! Aqui esta o link para ativar o teste gratis do FILA AI.\n\nRestaurante: ${token.restaurant_name || "seu restaurante"}\nLink de ativacao: ${activationUrl}\n\nDepois de ativar, o sistema vai mostrar o painel administrador e a fila do cliente separados para o restaurante.`);
     const whatsUrl = phone ? `https://api.whatsapp.com/send?phone=${phone}&text=${message}` : "";
+    const contactMessage = encodeURIComponent(`Ola! Tudo bem? Estou falando sobre o teste do FILA AI para ${token.restaurant_name || "seu restaurante"}.\n\nConsigo te ajudar a ativar o acesso ou tirar alguma duvida?`);
+    const contactUrl = phone ? `https://api.whatsapp.com/send?phone=${phone}&text=${contactMessage}` : "";
     return `
       <article class="owner-item">
         <div>
@@ -1359,8 +1361,11 @@ function renderOwnerTokens(tokens) {
         <div class="link-stack">
           <a href="${activationUrl}" target="_blank" rel="noreferrer">Abrir token</a>
           ${whatsUrl && !token.used_at ? `<a href="${whatsUrl}" target="_blank" rel="noreferrer">Enviar WhatsApp</a>` : ""}
+          ${contactUrl ? `<a href="${contactUrl}" target="_blank" rel="noreferrer">Contato</a>` : ""}
           <button type="button" data-token-copy="${activationUrl}">Copiar link</button>
+          <button type="button" data-token-action="lead" data-token="${escapeHtml(token.token)}" data-token-name="${escapeHtml(token.restaurant_name || "Token livre")}" data-token-phone="${escapeHtml(token.phone || "")}">Transformar em lead</button>
           ${token.used_at ? "" : `<button type="button" data-token-action="cancel" data-token="${escapeHtml(token.token)}">Cancelar</button>`}
+          <button type="button" data-token-action="delete" data-token="${escapeHtml(token.token)}" data-token-name="${escapeHtml(token.restaurant_name || "Token livre")}">Excluir</button>
         </div>
       </article>
     `;
@@ -1685,6 +1690,25 @@ function addOwnerLeadFromCompany(company) {
   localStorage.setItem(OWNER_CUSTOM_PROSPECTS_KEY, JSON.stringify(rows));
 }
 
+function addOwnerLeadFromToken(button) {
+  const token = button.dataset.token || "";
+  const name = button.dataset.tokenName || "Token de teste";
+  const phone = button.dataset.tokenPhone || "";
+  const id = `token-${slugify(token || name)}`;
+  const rows = loadCustomProspects().filter((row) => row.id !== id);
+  rows.unshift({
+    id,
+    name,
+    state: "Lead",
+    city: "Token de teste",
+    phone,
+    priority: "Alta",
+    pain: "Token gerado na Central do Dono. Acompanhar ativacao do teste e fechamento do plano.",
+    status: "retorno"
+  });
+  localStorage.setItem(OWNER_CUSTOM_PROSPECTS_KEY, JSON.stringify(rows));
+}
+
 function loadProspectState() {
   try {
     return JSON.parse(localStorage.getItem(PROSPECT_STATUS_KEY) || "{}");
@@ -1798,7 +1822,37 @@ async function handleOwnerRequestAction(button) {
 }
 
 async function handleOwnerTokenAction(button) {
-  if (button.dataset.tokenAction !== "cancel") return;
+  const action = button.dataset.tokenAction;
+
+  if (action === "lead") {
+    addOwnerLeadFromToken(button);
+    setProspectPanelOpen(true);
+    renderProspectTable();
+    alert(`${button.dataset.tokenName || "Token"} foi enviado para a prospeccao.`);
+    return;
+  }
+
+  if (action === "delete") {
+    const name = button.dataset.tokenName || button.dataset.token;
+    const confirmed = window.confirm(`Excluir o token de ${name} da lista? Isso nao apaga restaurante ja ativado.`);
+    if (!confirmed) return;
+
+    const { error } = await db
+      .from("trial_tokens")
+      .delete()
+      .eq("token", button.dataset.token);
+
+    if (error) {
+      alert(`Não consegui excluir token: ${error.message}`);
+      return;
+    }
+
+    await refreshOwnerDashboard();
+    return;
+  }
+
+  if (action !== "cancel") return;
+
   const { error } = await db
     .from("trial_tokens")
     .update({ status: "cancelado", updated_at: new Date().toISOString() })
