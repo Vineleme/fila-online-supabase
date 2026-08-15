@@ -5298,6 +5298,26 @@ html[data-access-mode="fila"] #clientOrderPanel .cart-item button {
   font-weight: 750;
 }
 
+.product-admin-item .mini-actions button {
+  border: 1px solid rgba(249, 115, 22, 0.28) !important;
+  background: #fff7ed !important;
+  color: #9a3412 !important;
+  -webkit-text-fill-color: #9a3412 !important;
+  opacity: 1 !important;
+}
+
+.product-admin-item .mini-actions button[data-product-toggle] {
+  background: #f97316 !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+.product-admin-item .mini-actions button[data-product-remove] {
+  background: #ffffff !important;
+  color: #991b1b !important;
+  -webkit-text-fill-color: #991b1b !important;
+}
+
 #clientOrderStatus .client-order-history-card {
   background: #111827 !important;
   color: #f8fafc !important;
