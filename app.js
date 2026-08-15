@@ -44,6 +44,13 @@ const ORDER_STATUS_LABELS = {
   ready: "Pronto",
   delivered: "Entregue"
 };
+const PRO_ADMIN_PANELS = new Set([
+  "adminTablesPanel",
+  "adminMenuPanel",
+  "adminOrdersPanel",
+  "adminKitchenPanel",
+  "adminChecksPanel"
+]);
 
 const LANDING_DEMO_STEPS = [
   {
@@ -1327,10 +1334,10 @@ function renderOwnerCompanies(companies) {
           <a href="${filaUrl}" target="_blank" rel="noreferrer">Fila do cliente</a>
           ${legalReady ? "" : `<a href="${legalUrl}" target="_blank" rel="noreferrer">Completar cadastro</a>`}
           ${notifyUrl ? `<a href="${notifyUrl}" target="_blank" rel="noreferrer">Avisar cliente</a>` : ""}
-          <button type="button" data-company-action="paid" data-slug="${escapeHtml(company.slug)}">Pago</button>
+          <button type="button" data-company-action="paid" data-slug="${escapeHtml(company.slug)}" data-legal-ready="${legalReady ? "true" : "false"}">Pago</button>
           <button type="button" data-company-action="pending" data-slug="${escapeHtml(company.slug)}">Pendente</button>
           <button type="button" data-company-action="essential" data-slug="${escapeHtml(company.slug)}">Essencial</button>
-          <button type="button" data-company-action="pro" data-slug="${escapeHtml(company.slug)}">Pro beta</button>
+          <button type="button" data-company-action="pro" data-slug="${escapeHtml(company.slug)}" data-payment-status="${escapeHtml(company.payment_status || "")}" ${company.payment_status === "pago" ? "" : "disabled title=\"Marque como pago antes de liberar o Pro beta.\""}>Pro beta</button>
           <button type="button" data-company-action="reset-pin" data-slug="${escapeHtml(company.slug)}" data-company-name="${escapeHtml(company.name)}" data-contact-phone="${escapeHtml(company.contact_phone || "")}">Gerar novo PIN</button>
           <button type="button" data-company-action="send-pin" data-slug="${escapeHtml(company.slug)}" data-company-name="${escapeHtml(company.name)}" data-contact-phone="${escapeHtml(company.contact_phone || "")}">Gerar e enviar PIN</button>
           <button type="button" data-company-action="blocked" data-slug="${escapeHtml(company.slug)}">Bloquear</button>
@@ -2068,11 +2075,21 @@ async function handleOwnerCompanyAction(button) {
     return;
   }
 
+  if (action === "paid" && button.dataset.legalReady !== "true") {
+    alert("Complete o cadastro juridico antes de marcar este restaurante como pago.");
+    return;
+  }
+
+  if (action === "pro" && button.dataset.paymentStatus !== "pago") {
+    alert("O Pro beta so pode ser liberado depois que o pagamento estiver marcado como Pago.");
+    return;
+  }
+
   const updates = {
     paid: { owner_status: "ativo", payment_status: "pago" },
     pending: { owner_status: "teste", payment_status: "pendente" },
     blocked: { owner_status: "bloqueado", payment_status: "bloqueado", queue_open: false },
-    essential: { monthly_price: "essencial" },
+    essential: { monthly_price: "essencial", menu_enabled: false },
     pro: { monthly_price: "pro", menu_enabled: true }
   }[action];
 
@@ -3392,10 +3409,40 @@ function showView(viewId) {
 function showAdminPanel(panelId, options = {}) {
   const targetPanel = normalizeAdminTab(panelId);
   if (!targetPanel) return;
+  if (!canAccessAdminPanel(targetPanel)) {
+    alert("Este recurso faz parte do Pro beta e so fica disponivel apos pagamento confirmado pelo FILA AI.");
+    showAdminPanel("adminQueuePanel", options);
+    return;
+  }
 
   elements.adminTabs.forEach((tab) => tab.classList.toggle("is-active", tab.dataset.adminTab === targetPanel));
   elements.adminTabPanels.forEach((panel) => panel.classList.toggle("is-active", panel.id === targetPanel));
   updateAdminTabUrl(targetPanel, options);
+}
+
+function canAccessAdminPanel(panelId) {
+  if (!PRO_ADMIN_PANELS.has(panelId)) return true;
+  return hasProAccess();
+}
+
+function hasProAccess() {
+  return state.company.monthlyPrice === "pro" && state.company.paymentStatus === "pago";
+}
+
+function applyPlanAccess() {
+  if (!elements.adminTabs?.length) return;
+  const canUsePro = hasProAccess();
+  elements.adminTabs.forEach((tab) => {
+    const isProPanel = PRO_ADMIN_PANELS.has(tab.dataset.adminTab);
+    tab.hidden = isProPanel && !canUsePro;
+    tab.disabled = isProPanel && !canUsePro;
+  });
+
+  const activeProPanel = Array.from(elements.adminTabPanels || [])
+    .some((panel) => panel.classList.contains("is-active") && PRO_ADMIN_PANELS.has(panel.id));
+  if (activeProPanel && !canUsePro) {
+    showAdminPanel("adminQueuePanel", { replaceUrl: true });
+  }
 }
 
 function render() {
@@ -3412,6 +3459,7 @@ function render() {
   elements.finishCalledButton.disabled = !current;
   applyTheme();
   updateTopLabel();
+  applyPlanAccess();
 
   renderCalledBanner();
   renderBillingStatus();
