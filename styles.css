@@ -3120,6 +3120,25 @@ html[data-access-mode="admin"] #adminQueuePanel.is-active {
   font-weight: 900;
 }
 
+.billing-contract-header .contract-brand-mark {
+  display: grid;
+  justify-items: end;
+  gap: 4px;
+}
+
+.billing-contract-header .contract-brand-mark img {
+  width: 96px;
+  max-width: 26vw;
+  border: 0;
+  background: transparent;
+}
+
+.billing-contract-header .contract-brand-mark small {
+  color: #9a3412;
+  font-size: 0.66rem;
+  font-weight: 900;
+}
+
 .billing-contract-card dl {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

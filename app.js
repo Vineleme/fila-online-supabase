@@ -30,7 +30,7 @@ const PLAN_CATALOG = {
     features: "Fila digital, QR Code, painel administrativo e suporte."
   },
   pro: {
-    label: "Pro beta",
+    label: "Pro",
     monthly: 247,
     yearly: 2470,
     features: "Fila, mesas, cardapio, pedidos, cozinha e comanda simples."
@@ -1322,7 +1322,7 @@ function renderOwnerCompanies(companies) {
       <article class="owner-company owner-item">
         <div>
           <strong>${escapeHtml(company.name)}</strong>
-          <span>${escapeHtml(company.owner_status || "teste")} - ${escapeHtml(company.payment_status || "pagamento pendente")} - Plano ${escapeHtml(company.monthly_price === "pro" ? "Pro beta" : "Essencial")} - ${trial}</span>
+          <span>${escapeHtml(company.owner_status || "teste")} - ${escapeHtml(company.payment_status || "pagamento pendente")} - Plano ${escapeHtml(company.monthly_price === "pro" ? "Pro" : "Essencial")} - ${trial}</span>
           <small>${company.legal_name ? `Razao social: ${escapeHtml(company.legal_name)} - CNPJ: ${escapeHtml(company.company_document || "sem CNPJ")}` : "Dados de contrato pendentes: razao social, CNPJ e endereco fiscal."}</small>
           <small>${company.fiscal_address ? `Endereco: ${escapeHtml(company.fiscal_address)}${company.fiscal_city ? ` - ${escapeHtml(company.fiscal_city)}` : ""}${company.fiscal_state ? `/${escapeHtml(company.fiscal_state)}` : ""}` : "Endereco fiscal ainda nao cadastrado."}</small>
           ${legalReady ? "" : `<em class="owner-warning-note">Cadastro juridico incompleto. Nao marque pago sem completar contrato.</em>`}
@@ -1337,7 +1337,7 @@ function renderOwnerCompanies(companies) {
           <button type="button" data-company-action="paid" data-slug="${escapeHtml(company.slug)}" data-legal-ready="${legalReady ? "true" : "false"}">Pago</button>
           <button type="button" data-company-action="pending" data-slug="${escapeHtml(company.slug)}">Pendente</button>
           <button type="button" data-company-action="essential" data-slug="${escapeHtml(company.slug)}">Essencial</button>
-          <button type="button" data-company-action="pro" data-slug="${escapeHtml(company.slug)}" data-payment-status="${escapeHtml(company.payment_status || "")}" ${company.payment_status === "pago" ? "" : "disabled title=\"Marque como pago antes de liberar o Pro beta.\""}>Pro beta</button>
+          <button type="button" data-company-action="pro" data-slug="${escapeHtml(company.slug)}" data-payment-status="${escapeHtml(company.payment_status || "")}" ${company.payment_status === "pago" ? "" : "disabled title=\"Marque como pago antes de liberar o Pro.\""}>Pro</button>
           <button type="button" data-company-action="reset-pin" data-slug="${escapeHtml(company.slug)}" data-company-name="${escapeHtml(company.name)}" data-contact-phone="${escapeHtml(company.contact_phone || "")}">Gerar novo PIN</button>
           <button type="button" data-company-action="send-pin" data-slug="${escapeHtml(company.slug)}" data-company-name="${escapeHtml(company.name)}" data-contact-phone="${escapeHtml(company.contact_phone || "")}">Gerar e enviar PIN</button>
           <button type="button" data-company-action="blocked" data-slug="${escapeHtml(company.slug)}">Bloquear</button>
@@ -2081,7 +2081,7 @@ async function handleOwnerCompanyAction(button) {
   }
 
   if (action === "pro" && button.dataset.paymentStatus !== "pago") {
-    alert("O Pro beta so pode ser liberado depois que o pagamento estiver marcado como Pago.");
+    alert("O Pro so pode ser liberado depois que o pagamento estiver marcado como Pago.");
     return;
   }
 
@@ -3410,7 +3410,7 @@ function showAdminPanel(panelId, options = {}) {
   const targetPanel = normalizeAdminTab(panelId);
   if (!targetPanel) return;
   if (!canAccessAdminPanel(targetPanel)) {
-    alert("Este recurso faz parte do Pro beta e so fica disponivel apos pagamento confirmado pelo FILA AI.");
+    alert("Este recurso faz parte do Pro e so fica disponivel apos pagamento confirmado pelo FILA AI.");
     showAdminPanel("adminQueuePanel", options);
     return;
   }
@@ -3515,8 +3515,8 @@ function renderBillingPaymentPanel() {
     ? `
       <div class="billing-summary-card">
         <strong>${escapeHtml(quote.planName)} anual</strong>
-        <span>${escapeHtml(quote.totalText)} por 12 meses</span>
-        <small>Contrato preenchido + pagamento liberam a continuidade do acesso.</small>
+        <span>${escapeHtml(quote.annualMonthlyText)}/mes no plano anual</span>
+        <small>Total anual: ${escapeHtml(quote.annualTotalText)} por 12 meses. Contrato preenchido + pagamento liberam a continuidade do acesso.</small>
       </div>
       ${annualContractHtml(quote)}
       <div class="billing-payment-actions">
@@ -3607,7 +3607,7 @@ function annualContractHtml(quote, contractCompany = state.company, acceptedAt =
     <article class="billing-contract-card">
       <div class="billing-contract-header">
         <strong>Contrato anual preenchido</strong>
-        <span>${escapeHtml(contractNumber)}</span>
+        <span class="contract-brand-mark"><img src="assets/fila-ai-wordmark-outline.png" alt="FILA AI" /><small>${escapeHtml(contractNumber)}</small></span>
       </div>
       <dl>
         <div>
@@ -3632,7 +3632,7 @@ function annualContractHtml(quote, contractCompany = state.company, acceptedAt =
         </div>
         <div>
           <dt>Plano</dt>
-          <dd>${escapeHtml(quote.planName)} anual - ${escapeHtml(quote.totalText)} por 12 meses</dd>
+          <dd>${escapeHtml(quote.planName)} anual - ${escapeHtml(quote.annualMonthlyText)}/mes no plano anual. Total anual: ${escapeHtml(quote.annualTotalText)}.</dd>
         </div>
       </dl>
       <p>Ao aceitar, o restaurante contrata o FILA AI pelo periodo de 12 meses, com acesso ao sistema, suporte operacional e recursos do plano selecionado.</p>
@@ -5173,10 +5173,13 @@ function planFromValue(value) {
 function billingQuote(planValue, cycle) {
   const plan = PLAN_CATALOG[planFromValue(planValue)] || PLAN_CATALOG.essencial;
   const isAnnual = cycle === "anual";
+  const annualEquivalent = plan.yearly / 10;
   return {
     planName: plan.label,
     features: plan.features,
     monthlyText: formatCurrency(plan.monthly),
+    annualMonthlyText: formatCurrency(annualEquivalent),
+    annualTotalText: formatCurrency(plan.yearly),
     totalText: formatCurrency(isAnnual ? plan.yearly : plan.monthly)
   };
 }
