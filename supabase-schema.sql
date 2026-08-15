@@ -229,6 +229,7 @@ drop policy if exists "Public can update subscription requests" on public.subscr
 drop policy if exists "Public can read fila ai assets" on storage.objects;
 drop policy if exists "Public can upload fila ai assets" on storage.objects;
 drop policy if exists "Public can update fila ai assets" on storage.objects;
+drop policy if exists "Public can delete fila ai assets" on storage.objects;
 
 create policy "Public can read queue companies"
   on public.queue_companies for select
@@ -381,19 +382,24 @@ grant select, insert, update on public.ai_incident_events to authenticated;
 
 create policy "Public can read fila ai assets"
   on storage.objects for select
-  to anon
+  to anon, authenticated
   using (bucket_id = 'fila-ai-assets');
 
 create policy "Public can upload fila ai assets"
   on storage.objects for insert
-  to anon
+  to anon, authenticated
   with check (bucket_id = 'fila-ai-assets');
 
 create policy "Public can update fila ai assets"
   on storage.objects for update
-  to anon
+  to anon, authenticated
   using (bucket_id = 'fila-ai-assets')
   with check (bucket_id = 'fila-ai-assets');
+
+create policy "Public can delete fila ai assets"
+  on storage.objects for delete
+  to anon, authenticated
+  using (bucket_id = 'fila-ai-assets');
 
 do $$
 begin
