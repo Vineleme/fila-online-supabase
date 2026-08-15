@@ -422,6 +422,15 @@ const elements = {
   companyLogoFileInput: document.querySelector("#companyLogoFileInput"),
   companyCoverFileInput: document.querySelector("#companyCoverFileInput"),
   brandUploadStatus: document.querySelector("#brandUploadStatus"),
+  companyLegalNameInput: document.querySelector("#companyLegalNameInput"),
+  companyDocumentInput: document.querySelector("#companyDocumentInput"),
+  companyFiscalAddressInput: document.querySelector("#companyFiscalAddressInput"),
+  companyFiscalCityInput: document.querySelector("#companyFiscalCityInput"),
+  companyFiscalStateInput: document.querySelector("#companyFiscalStateInput"),
+  companyContactNameInput: document.querySelector("#companyContactNameInput"),
+  companyContactPhoneInput: document.querySelector("#companyContactPhoneInput"),
+  companyBillingEmailInput: document.querySelector("#companyBillingEmailInput"),
+  legalConfigMessage: document.querySelector("#legalConfigMessage"),
   adminCurrentPinInput: document.querySelector("#adminCurrentPinInput"),
   adminNewPinInput: document.querySelector("#adminNewPinInput"),
   changeAdminPinButton: document.querySelector("#changeAdminPinButton"),
@@ -1296,6 +1305,7 @@ function renderOwnerCompanies(companies) {
     const trial = trialStatus(company);
     const expired = isTrialExpired(company);
     const adminUrl = `${origin}?empresa=${encodeURIComponent(company.slug)}&modo=admin`;
+    const legalUrl = `${origin}?empresa=${encodeURIComponent(company.slug)}&modo=admin&aba=configurar#legalConfigBox`;
     const filaUrl = `${origin}?empresa=${encodeURIComponent(company.slug)}&modo=fila`;
     const contactDigits = whatsappPhone(company.contact_phone);
     const notifyMessage = encodeURIComponent(`Sua pagina do Fila Ai esta funcionando.\n\nAdministrador: ${adminUrl}\nFila do cliente: ${filaUrl}\nUsuario: ${company.slug}`);
@@ -1315,6 +1325,7 @@ function renderOwnerCompanies(companies) {
         <div class="link-stack">
           <a href="${adminUrl}" target="_blank" rel="noreferrer">Administrador</a>
           <a href="${filaUrl}" target="_blank" rel="noreferrer">Fila do cliente</a>
+          ${legalReady ? "" : `<a href="${legalUrl}" target="_blank" rel="noreferrer">Completar cadastro</a>`}
           ${notifyUrl ? `<a href="${notifyUrl}" target="_blank" rel="noreferrer">Avisar cliente</a>` : ""}
           <button type="button" data-company-action="paid" data-slug="${escapeHtml(company.slug)}">Pago</button>
           <button type="button" data-company-action="pending" data-slug="${escapeHtml(company.slug)}">Pendente</button>
@@ -2662,10 +2673,26 @@ async function saveCompanySettings() {
     dwell6: clamp(Number(elements.dwell6Input.value), 15, 240),
     themeMode: elements.themeModeInput.value === "dark" ? "dark" : "light",
     accentColor: "#F97316",
+    legalName: elements.companyLegalNameInput?.value.trim() || "",
+    companyDocument: elements.companyDocumentInput?.value.trim() || "",
+    fiscalAddress: elements.companyFiscalAddressInput?.value.trim() || "",
+    fiscalCity: elements.companyFiscalCityInput?.value.trim() || "",
+    fiscalState: elements.companyFiscalStateInput?.value.trim().toUpperCase() || "",
+    billingEmail: elements.companyBillingEmailInput?.value.trim() || "",
+    contactName: elements.companyContactNameInput?.value.trim() || "",
+    contactPhone: elements.companyContactPhoneInput?.value.trim() || "",
     menuEnabled: elements.menuEnabledInput?.checked || false,
     menuTitle: elements.menuTitleInput?.value.trim() || state.company.menuTitle || "Cardápio do restaurante",
     menuPdfUrl: normalizeUrl(elements.menuPdfUrlInput?.value, state.company.menuPdfUrl)
   };
+
+  const legalValidation = validateLegalCompanyFields(company);
+  if (legalValidation) {
+    if (elements.legalConfigMessage) elements.legalConfigMessage.textContent = legalValidation;
+    document.querySelector("#legalConfigBox")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    return;
+  }
+  if (elements.legalConfigMessage) elements.legalConfigMessage.textContent = "";
 
   state.company = company;
   state.avgMinutes = Math.round((company.dwell2 + company.dwell4 + company.dwell6) / 3);
@@ -2690,6 +2717,14 @@ async function saveCompanySettings() {
       p_dwell_4: company.dwell4,
       p_dwell_6: company.dwell6,
       p_theme_mode: company.themeMode,
+      p_legal_name: company.legalName,
+      p_company_document: company.companyDocument,
+      p_fiscal_address: company.fiscalAddress,
+      p_fiscal_city: company.fiscalCity,
+      p_fiscal_state: company.fiscalState,
+      p_billing_email: company.billingEmail,
+      p_contact_name: company.contactName,
+      p_contact_phone: company.contactPhone,
       p_menu_enabled: company.menuEnabled,
       p_menu_title: company.menuTitle,
       p_menu_pdf_url: company.menuPdfUrl
@@ -2705,6 +2740,35 @@ async function saveCompanySettings() {
   }
 
   render();
+}
+
+function validateLegalCompanyFields(company) {
+  const fields = [
+    company.legalName,
+    company.companyDocument,
+    company.fiscalAddress,
+    company.fiscalCity,
+    company.fiscalState,
+    company.billingEmail,
+    company.contactName,
+    company.contactPhone
+  ];
+  const hasAny = fields.some(Boolean);
+  if (!hasAny) return "";
+
+  if (fields.some((value) => !value)) {
+    return "Complete todos os dados jurídicos para liberar contrato e cobrança.";
+  }
+  if (!isValidCnpj(company.companyDocument)) {
+    return "Informe um CNPJ valido para contrato e cobrança.";
+  }
+  if (!/^[A-Z]{2}$/.test(company.fiscalState)) {
+    return "Informe a UF com 2 letras. Ex: SP.";
+  }
+  if (!whatsappPhone(company.contactPhone)) {
+    return "Informe um WhatsApp financeiro valido.";
+  }
+  return "";
 }
 
 async function saveMenuSettings() {
@@ -3592,6 +3656,14 @@ function fillCompanyForm() {
   elements.closeTimeInput.value = state.company.closeTime;
   elements.companyLogoUrlInput.value = state.company.logoUrl || "";
   elements.companyCoverUrlInput.value = state.company.coverUrl || "";
+  if (elements.companyLegalNameInput) elements.companyLegalNameInput.value = state.company.legalName || "";
+  if (elements.companyDocumentInput) elements.companyDocumentInput.value = state.company.companyDocument || "";
+  if (elements.companyFiscalAddressInput) elements.companyFiscalAddressInput.value = state.company.fiscalAddress || "";
+  if (elements.companyFiscalCityInput) elements.companyFiscalCityInput.value = state.company.fiscalCity || "";
+  if (elements.companyFiscalStateInput) elements.companyFiscalStateInput.value = state.company.fiscalState || "";
+  if (elements.companyBillingEmailInput) elements.companyBillingEmailInput.value = state.company.billingEmail || "";
+  if (elements.companyContactNameInput) elements.companyContactNameInput.value = state.company.contactName || "";
+  if (elements.companyContactPhoneInput) elements.companyContactPhoneInput.value = state.company.contactPhone || "";
   if (elements.menuEnabledInput) elements.menuEnabledInput.checked = Boolean(state.company.menuEnabled);
   if (elements.menuTitleInput) elements.menuTitleInput.value = state.company.menuTitle || "Cardápio do restaurante";
   if (elements.menuPdfUrlInput) elements.menuPdfUrlInput.value = state.company.menuPdfUrl || "";

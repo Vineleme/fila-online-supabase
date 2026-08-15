@@ -30,7 +30,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="styles.css?v=admin-menu-contrast-1" />
+    <link rel="stylesheet" href="styles.css?v=legal-profile-1" />
   </head>
   <body>
     <main id="landingPage" class="landing-shell">
@@ -905,6 +905,45 @@
               </label>
             </div>
             <p id="brandUploadStatus" class="muted" role="status">Envie o logo em JPG, PNG ou WebP, mínimo 400x400 px. Para capa, use imagem horizontal, mínimo 1200x675 px. Limite: 5 MB.</p>
+            <div id="legalConfigBox" class="pin-box legal-config-box">
+              <h3>Cadastro jurídico e cobrança</h3>
+              <p class="muted">Preencha estes dados para liberar contrato, cobrança e ativação sem pendências.</p>
+              <div class="config-grid legal-config-grid">
+                <label>
+                  Razão social
+                  <input id="companyLegalNameInput" maxlength="140" placeholder="Razão social da empresa" />
+                </label>
+                <label>
+                  CNPJ
+                  <input id="companyDocumentInput" inputmode="numeric" maxlength="18" placeholder="00.000.000/0000-00" />
+                </label>
+                <label class="wide-field">
+                  Endereço fiscal completo
+                  <input id="companyFiscalAddressInput" maxlength="180" placeholder="Rua, número, bairro, complemento" />
+                </label>
+                <label>
+                  Cidade
+                  <input id="companyFiscalCityInput" maxlength="80" placeholder="Cidade" />
+                </label>
+                <label>
+                  UF
+                  <input id="companyFiscalStateInput" maxlength="2" placeholder="SP" />
+                </label>
+                <label>
+                  Responsável financeiro
+                  <input id="companyContactNameInput" maxlength="90" placeholder="Nome completo" />
+                </label>
+                <label>
+                  WhatsApp financeiro
+                  <input id="companyContactPhoneInput" inputmode="tel" maxlength="30" placeholder="(11) 99999-9999" />
+                </label>
+                <label class="wide-field">
+                  E-mail financeiro
+                  <input id="companyBillingEmailInput" type="email" maxlength="120" placeholder="financeiro@restaurante.com.br" />
+                </label>
+              </div>
+              <p id="legalConfigMessage" class="muted" role="status"></p>
+            </div>
             <div class="pin-box">
               <h3>Senha administrativa</h3>
               <p class="muted">Altere aqui quando você ainda souber o PIN atual. Se esqueceu, peça para o dono do Fila Aí redefinir pela Central do Dono.</p>
@@ -1163,6 +1202,6 @@
     </script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
-    <script src="app.js?v=admin-menu-contrast-1"></script>
+    <script src="app.js?v=legal-profile-1"></script>
   </body>
 </html>

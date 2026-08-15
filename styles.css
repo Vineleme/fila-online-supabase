@@ -2473,6 +2473,10 @@ html[data-access-mode="admin"] #adminQueuePanel.is-active {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.legal-config-grid .wide-field {
+  grid-column: 1 / -1;
+}
+
 .table-status {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

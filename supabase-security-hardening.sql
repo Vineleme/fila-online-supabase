@@ -297,6 +297,8 @@ begin
 end;
 $$;
 
+drop function if exists public.fila_update_company(text, text, text, integer, integer, integer, integer, integer, integer, boolean, text, text, text, text, integer, integer, integer, text, boolean, text, text);
+
 create or replace function public.fila_update_company(
   p_company_slug text,
   p_admin_pin text,
@@ -316,6 +318,14 @@ create or replace function public.fila_update_company(
   p_dwell_4 integer,
   p_dwell_6 integer,
   p_theme_mode text,
+  p_legal_name text,
+  p_company_document text,
+  p_fiscal_address text,
+  p_fiscal_city text,
+  p_fiscal_state text,
+  p_billing_email text,
+  p_contact_name text,
+  p_contact_phone text,
   p_menu_enabled boolean,
   p_menu_title text,
   p_menu_pdf_url text
@@ -348,6 +358,14 @@ begin
       dwell_4 = p_dwell_4,
       dwell_6 = p_dwell_6,
       theme_mode = p_theme_mode,
+      legal_name = coalesce(p_legal_name, ''),
+      company_document = coalesce(p_company_document, ''),
+      fiscal_address = coalesce(p_fiscal_address, ''),
+      fiscal_city = coalesce(p_fiscal_city, ''),
+      fiscal_state = coalesce(p_fiscal_state, ''),
+      billing_email = coalesce(p_billing_email, ''),
+      contact_name = coalesce(p_contact_name, ''),
+      contact_phone = coalesce(p_contact_phone, ''),
       menu_enabled = p_menu_enabled,
       menu_title = p_menu_title,
       menu_pdf_url = p_menu_pdf_url,
@@ -672,7 +690,7 @@ grant execute on function public.fila_admin_company(text, text) to anon, authent
 grant execute on function public.fila_trial_token_public(text) to anon, authenticated;
 grant execute on function public.fila_activate_trial_token(text, text, text, text) to anon, authenticated;
 grant execute on function public.fila_company_slug_exists(text) to anon, authenticated;
-grant execute on function public.fila_update_company(text, text, text, integer, integer, integer, integer, integer, integer, boolean, text, text, text, text, integer, integer, integer, text, boolean, text, text) to anon, authenticated;
+grant execute on function public.fila_update_company(text, text, text, integer, integer, integer, integer, integer, integer, boolean, text, text, text, text, integer, integer, integer, text, text, text, text, text, text, text, text, text, boolean, text, text) to anon, authenticated;
 grant execute on function public.fila_update_menu(text, text, boolean, text, text) to anon, authenticated;
 grant execute on function public.fila_change_admin_pin(text, text, text) to anon, authenticated;
 grant execute on function public.fila_ceo_reset_admin_pin(text, text) to authenticated;
