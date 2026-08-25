@@ -2701,7 +2701,17 @@ async function saveCompanySettings() {
     menuPdfUrl: normalizeUrl(elements.menuPdfUrlInput?.value, state.company.menuPdfUrl)
   };
 
-  const legalValidation = validateLegalCompanyFields(company);
+  const legalFieldsChanged = [
+    "legalName",
+    "companyDocument",
+    "fiscalAddress",
+    "fiscalCity",
+    "fiscalState",
+    "billingEmail",
+    "contactName",
+    "contactPhone"
+  ].some((field) => company[field] !== (state.company[field] || ""));
+  const legalValidation = legalFieldsChanged ? validateLegalCompanyFields(company) : "";
   if (legalValidation) {
     if (elements.legalConfigMessage) elements.legalConfigMessage.textContent = legalValidation;
     document.querySelector("#legalConfigBox")?.scrollIntoView({ behavior: "smooth", block: "start" });
