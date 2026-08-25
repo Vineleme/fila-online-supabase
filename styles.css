@@ -5483,6 +5483,86 @@ html[data-access-mode="fila"] #clientOrderPanel .cart-item button {
   }
 }
 
+html[data-access-mode="fila"] #clientOrderPanel .order-client-grid {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+html[data-access-mode="fila"] #clientOrderPanel {
+  padding-bottom: 88px;
+}
+
+html[data-access-mode="fila"] #clientOrderPanel .cart-panel {
+  position: fixed !important;
+  top: auto !important;
+  left: 50% !important;
+  right: auto !important;
+  bottom: 12px !important;
+  z-index: 80 !important;
+  display: none !important;
+  width: min(calc(100% - 28px), 390px) !important;
+  max-height: min(70vh, 520px) !important;
+  overflow: auto !important;
+  border-radius: 14px !important;
+  transform: translate(-50%, calc(100% + 28px)) !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+html[data-access-mode="fila"] #clientOrderPanel .cart-panel.is-open {
+  display: grid !important;
+  transform: translate(-50%, 0) !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+html[data-access-mode="fila"] #clientOrderPanel .cart-panel-header .text-button {
+  display: inline-flex;
+}
+
+html[data-access-mode="fila"] #clientOrderPanel .cart-fab:not([hidden]) {
+  position: fixed !important;
+  left: 50% !important;
+  right: auto !important;
+  bottom: 10px !important;
+  z-index: 70 !important;
+  display: grid !important;
+  width: min(calc(100% - 28px), 390px) !important;
+  min-height: 46px !important;
+  padding: 0 14px !important;
+  grid-template-columns: 1fr auto auto !important;
+  gap: 10px !important;
+  align-items: center !important;
+  border-radius: 999px !important;
+  background: #1f2937 !important;
+  color: #ffffff !important;
+  box-shadow: 0 12px 32px rgba(31, 41, 55, 0.22) !important;
+  transform: translateX(-50%) !important;
+}
+
+html[data-access-mode="fila"] #clientOrderPanel .cart-fab span,
+html[data-access-mode="fila"] #clientOrderPanel .cart-fab small,
+html[data-access-mode="fila"] #clientOrderPanel .cart-fab b {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+html[data-access-mode="fila"] #clientOrderPanel .cart-fab b {
+  display: inline-grid;
+  min-width: 26px !important;
+  height: 26px !important;
+  place-items: center;
+  border-radius: 999px;
+  background: #f97316 !important;
+}
+
+html[data-access-mode="fila"] #clientOrderPanel .cart-drawer-overlay:not([hidden]) {
+  position: fixed;
+  inset: 0;
+  z-index: 75;
+  display: block;
+  background: rgba(17, 24, 39, 0.42);
+}
+
 @keyframes cartSummaryPulseMobile {
   0% {
     transform: translateX(-50%) translateY(0) scale(1);
