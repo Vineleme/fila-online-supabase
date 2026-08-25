@@ -1339,7 +1339,7 @@ function renderOwnerCompanies(companies) {
           <button type="button" data-company-action="paid" data-slug="${escapeHtml(company.slug)}" data-legal-ready="${legalReady ? "true" : "false"}">Pago</button>
           <button type="button" data-company-action="pending" data-slug="${escapeHtml(company.slug)}">Pendente</button>
           <button type="button" data-company-action="essential" data-slug="${escapeHtml(company.slug)}">Essencial</button>
-          <button type="button" data-company-action="pro" data-slug="${escapeHtml(company.slug)}" data-payment-status="${escapeHtml(company.payment_status || "")}" ${company.payment_status === "pago" ? "" : "disabled title=\"Marque como pago antes de liberar o Pro.\""}>Pro</button>
+          <button type="button" data-company-action="pro" data-slug="${escapeHtml(company.slug)}">Pro</button>
           <button type="button" data-company-action="reset-pin" data-slug="${escapeHtml(company.slug)}" data-company-name="${escapeHtml(company.name)}" data-contact-phone="${escapeHtml(company.contact_phone || "")}">Gerar novo PIN</button>
           <button type="button" data-company-action="send-pin" data-slug="${escapeHtml(company.slug)}" data-company-name="${escapeHtml(company.name)}" data-contact-phone="${escapeHtml(company.contact_phone || "")}">Gerar e enviar PIN</button>
           <button type="button" data-company-action="blocked" data-slug="${escapeHtml(company.slug)}">Bloquear</button>
@@ -2079,11 +2079,6 @@ async function handleOwnerCompanyAction(button) {
 
   if (action === "paid" && button.dataset.legalReady !== "true") {
     alert("Complete o cadastro juridico antes de marcar este restaurante como pago.");
-    return;
-  }
-
-  if (action === "pro" && button.dataset.paymentStatus !== "pago") {
-    alert("O Pro so pode ser liberado depois que o pagamento estiver marcado como Pago.");
     return;
   }
 
@@ -3430,7 +3425,7 @@ function canAccessAdminPanel(panelId) {
 }
 
 function hasProAccess() {
-  return state.company.monthlyPrice === "pro" && state.company.paymentStatus === "pago";
+  return state.company.monthlyPrice === "pro";
 }
 
 function applyPlanAccess() {
