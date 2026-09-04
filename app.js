@@ -4,6 +4,7 @@ const ASSETS_BUCKET = "fila-ai-assets";
 const ADMIN_AUTH_PREFIX = "fila-ai-admin-auth";
 const ADMIN_SAVED_PREFIX = "fila-ai-admin-saved";
 const SAVED_ACCESS_KEY = "fila-ai-saved-access";
+const OWNER_SESSION_KEY = "fila-ai-owner-session";
 const OWNER_EMAIL_KEY = "fila-ai-owner-email";
 const OWNER_FALLBACK_SLUG = "vineleme-icloud-com";
 const OWNER_FALLBACK_PASSWORD_HASH = "03a12f3ad865c7ee171064a4425f130f1c8384d28c97b547c30d5f9b2aab8e6b";
@@ -709,8 +710,13 @@ function bindOwnerEvents() {
 }
 
 async function restoreOwnerSession() {
+  if (hasStoredOwnerAccess()) {
+    showOwnerDashboard();
+    return;
+  }
+
   if (!db) {
-    setOwnerAuthMessage("Supabase Auth e necessario para acessar o painel CEO.");
+    setOwnerAuthMessage("Entre pela área administrativa para acessar a central do dono.");
     return;
   }
 
@@ -919,6 +925,7 @@ async function handleAccessOwnerLogin(rawUser, passwordHash) {
   const isMainOwner = loginKeys.includes(OWNER_FALLBACK_SLUG);
 
   if (isMainOwner && passwordHash === OWNER_FALLBACK_PASSWORD_HASH) {
+    saveOwnerSession(OWNER_FALLBACK_SLUG, passwordHash);
     saveAccessChoice("owner", OWNER_FALLBACK_SLUG, passwordHash);
     window.location.href = `${window.location.pathname}?modo=dono`;
     return;
@@ -953,6 +960,7 @@ async function handleAccessOwnerLogin(rawUser, passwordHash) {
     return;
   }
 
+  saveOwnerSession(ownerAccount.slug, passwordHash);
   saveAccessChoice("owner", ownerAccount.slug, passwordHash);
   window.location.href = `${window.location.pathname}?modo=dono`;
 }
@@ -973,6 +981,41 @@ function withTimeout(promise, timeoutMs) {
       window.setTimeout(() => reject(new Error("A validacao demorou demais. Verifique a internet e tente novamente.")), timeoutMs);
     })
   ]);
+}
+
+function saveOwnerSession(slug, passwordHash) {
+  sessionStorage.setItem(OWNER_SESSION_KEY, JSON.stringify({
+    slug,
+    passwordHash,
+    savedAt: new Date().toISOString()
+  }));
+}
+
+function hasStoredOwnerAccess() {
+  const session = readStoredJson(sessionStorage, OWNER_SESSION_KEY);
+  if (isValidOwnerAccess(session)) return true;
+
+  const saved = readStoredJson(localStorage, SAVED_ACCESS_KEY);
+  if (saved?.type === "owner" && isValidOwnerAccess(saved)) {
+    saveOwnerSession(saved.user || saved.slug || OWNER_FALLBACK_SLUG, saved.passwordHash);
+    return true;
+  }
+
+  return false;
+}
+
+function isValidOwnerAccess(saved) {
+  const slug = saved?.user || saved?.slug;
+  return slug === OWNER_FALLBACK_SLUG && saved?.passwordHash === OWNER_FALLBACK_PASSWORD_HASH;
+}
+
+function readStoredJson(storage, key) {
+  try {
+    return JSON.parse(storage.getItem(key) || "null");
+  } catch {
+    storage.removeItem(key);
+    return null;
+  }
 }
 
 async function handleAccessForgotPassword() {
@@ -2479,6 +2522,7 @@ function logoutAdminSession() {
 
 function clearStoredAccessSessions() {
   localStorage.removeItem(SAVED_ACCESS_KEY);
+  sessionStorage.removeItem(OWNER_SESSION_KEY);
 
   for (let index = localStorage.length - 1; index >= 0; index -= 1) {
     const key = localStorage.key(index);
