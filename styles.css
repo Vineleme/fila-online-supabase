@@ -1054,6 +1054,26 @@ h2 {
   font-weight: 750;
 }
 
+.trial-message.is-success {
+  display: grid;
+  gap: 6px;
+  margin-top: 6px;
+  border: 1px solid rgba(34, 197, 94, 0.32);
+  border-radius: 8px;
+  padding: 14px 16px;
+  background: rgba(34, 197, 94, 0.1);
+  color: #d9ffe5;
+  box-shadow: 0 16px 34px rgba(34, 197, 94, 0.14);
+}
+
+.trial-message.is-success strong {
+  color: #ffffff;
+}
+
+.trial-message.is-success span {
+  color: rgba(255, 255, 255, 0.82);
+}
+
 .conversion-cta {
   align-items: center;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
@@ -4309,6 +4329,20 @@ textarea {
 
 .trial-message {
   color: var(--fa-orange-dark);
+}
+
+.trial-message.is-success {
+  border-color: rgba(22, 163, 74, 0.24);
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.trial-message.is-success strong {
+  color: #14532d;
+}
+
+.trial-message.is-success span {
+  color: #166534;
 }
 
 .final-cta {

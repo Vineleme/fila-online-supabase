@@ -1133,23 +1133,30 @@ async function submitTrialRequest(event) {
   };
 
   if (!request.restaurant_name || !hasFullName(request.owner_name) || request.phone.length < 8) {
+    elements.trialRequestMessage.classList.remove("is-success");
     elements.trialRequestMessage.textContent = "Preencha restaurante, nome completo e WhatsApp.";
     return;
   }
 
   if (!db) {
+    elements.trialRequestMessage.classList.remove("is-success");
     elements.trialRequestMessage.textContent = "Banco indisponível agora. Me chame no WhatsApp para liberar o teste.";
     return;
   }
 
   const { error } = await db.from("trial_requests").insert(request);
   if (error) {
+    elements.trialRequestMessage.classList.remove("is-success");
     elements.trialRequestMessage.textContent = `Não consegui enviar: ${error.message}`;
     return;
   }
 
   elements.trialRequestForm.reset();
-  elements.trialRequestMessage.textContent = "Pedido recebido. Voce vai liberar o teste pelo painel CEO.";
+  elements.trialRequestMessage.classList.add("is-success");
+  elements.trialRequestMessage.innerHTML = `
+    <strong>Solicitação recebida.</strong>
+    <span>Obrigado pelo interesse no FILA AÍ. Eu recebi seus dados e vou entrar em contato pelo WhatsApp para liberar seu teste de 7 dias.</span>
+  `;
 }
 
 async function refreshOwnerDashboard() {
@@ -1304,8 +1311,8 @@ function renderOwnerRequests(requests) {
     <article class="owner-item">
       <div>
         <strong>${escapeHtml(request.restaurant_name)}</strong>
-        <span>${escapeHtml(request.owner_name)} - ${escapeHtml(request.phone || "sem telefone")}</span>
-        <small>${escapeHtml(request.city || "cidade não informada")} - ${formatDate(request.created_at)}</small>
+        <span>Novo pedido de teste - ${escapeHtml(request.owner_name)} - ${escapeHtml(request.phone || "sem telefone")}</span>
+        <small>${escapeHtml(request.city || "cidade não informada")} - recebido em ${formatDate(request.created_at)}</small>
       </div>
       <div class="owner-actions">
         <button type="button" data-owner-action="create" data-request-id="${request.id}">Liberar 7 dias</button>
