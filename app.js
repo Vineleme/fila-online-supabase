@@ -898,41 +898,58 @@ async function handleAccessLogin(event) {
   }
 
   const passwordHash = await sha256(password);
-  const isLocalOwnerUser = ["dono", "owner", "fila-ai"].includes(user);
-  if (isLocalOwnerUser) {
-    window.location.href = `${window.location.pathname}?modo=dono`;
-    return;
-  }
-
-  if (rawUser.includes("@")) {
-    await handleAccessCeoLogin(rawUser, password);
+  if (isOwnerLoginUser(rawUser)) {
+    await handleAccessOwnerLogin(rawUser, passwordHash);
     return;
   }
 
   await handleRestaurantAccessSecure(user, password, passwordHash);
 }
 
-async function handleAccessCeoLogin(email, password) {
+function isOwnerLoginUser(rawUser) {
+  const user = slugify(rawUser);
+  return rawUser.includes("@") || ["dono", "owner", "fila-ai", "fila-ai-dono", "vineleme-icloud-com"].includes(user);
+}
+
+async function handleAccessOwnerLogin(rawUser, passwordHash) {
   if (!db) {
-    setAccessMessage("Supabase Auth e necessario para acessar o CEO.", "error");
+    setAccessMessage("Banco indisponivel para validar o acesso do dono.", "error");
     return;
   }
 
-  setAccessMessage("Validando acesso CEO...");
-  const { error } = await db.auth.signInWithPassword({ email, password });
+  setAccessMessage("Validando acesso...");
+  const loginKeys = ownerLoginKeys(rawUser);
+  const { data, error } = await db
+    .from("queue_companies")
+    .select("slug, admin_pin, owner_status")
+    .in("slug", loginKeys);
+
   if (error) {
-    setAccessMessage("E-mail ou senha do CEO incorretos.", "error");
+    setAccessMessage(`Nao consegui validar: ${error.message}`, "error");
     return;
   }
 
-  const { data: isCeo, error: ceoError } = await db.rpc("fila_is_ceo");
-  if (ceoError || !isCeo) {
-    await db.auth.signOut();
-    setAccessMessage("Este e-mail nao esta liberado como CEO.", "error");
+  const ownerAccount = (data || []).find((company) => {
+    const ownerStatus = String(company.owner_status || "").toLowerCase();
+    return ["dono", "ceo", "owner"].includes(ownerStatus) && company.admin_pin === passwordHash;
+  });
+
+  if (!ownerAccount) {
+    setAccessMessage("Usuario ou senha incorretos.", "error");
     return;
   }
 
+  saveAccessChoice("owner", ownerAccount.slug, passwordHash);
   window.location.href = `${window.location.pathname}?modo=dono`;
+}
+
+function ownerLoginKeys(rawUser) {
+  const normalized = String(rawUser || "").trim().toLowerCase();
+  const keys = new Set([slugify(normalized)]);
+  if (normalized === "vineleme@icloud.com" || normalized === "dono" || normalized === "owner" || normalized === "fila-ai") {
+    keys.add("vineleme-icloud-com");
+  }
+  return Array.from(keys).filter(Boolean);
 }
 
 async function handleAccessForgotPassword() {
@@ -5020,6 +5037,7 @@ function saveAccessChoice(type, user, passwordHash) {
   localStorage.setItem(SAVED_ACCESS_KEY, JSON.stringify({
     type,
     user,
+    passwordHash,
     savedAt: new Date().toISOString()
   }));
 }
@@ -5048,6 +5066,20 @@ async function trySavedAccessLogin() {
   setAccessMessage("Entrando com acesso salvo...");
 
   try {
+    if (saved.type === "owner") {
+      const { data, error } = await db
+        .from("queue_companies")
+        .select("slug, admin_pin, owner_status")
+        .eq("slug", saved.user)
+        .maybeSingle();
+      if (error) throw error;
+      const ownerStatus = String(data?.owner_status || "").toLowerCase();
+      if (["dono", "ceo", "owner"].includes(ownerStatus) && data?.admin_pin === saved.passwordHash) {
+        window.location.href = `${window.location.pathname}?modo=dono`;
+        return;
+      }
+    }
+
     if (saved.type === "restaurant") {
       const { data, error } = await db.rpc("fila_admin_authorized", {
         p_company_slug: saved.user,
