@@ -984,16 +984,24 @@ function withTimeout(promise, timeoutMs) {
 }
 
 function saveOwnerSession(slug, passwordHash) {
-  sessionStorage.setItem(OWNER_SESSION_KEY, JSON.stringify({
+  const payload = JSON.stringify({
     slug,
     passwordHash,
     savedAt: new Date().toISOString()
-  }));
+  });
+  sessionStorage.setItem(OWNER_SESSION_KEY, payload);
+  localStorage.setItem(OWNER_SESSION_KEY, payload);
 }
 
 function hasStoredOwnerAccess() {
   const session = readStoredJson(sessionStorage, OWNER_SESSION_KEY);
   if (isValidOwnerAccess(session)) return true;
+
+  const persistentSession = readStoredJson(localStorage, OWNER_SESSION_KEY);
+  if (isValidOwnerAccess(persistentSession)) {
+    saveOwnerSession(persistentSession.user || persistentSession.slug || OWNER_FALLBACK_SLUG, persistentSession.passwordHash);
+    return true;
+  }
 
   const saved = readStoredJson(localStorage, SAVED_ACCESS_KEY);
   if (saved?.type === "owner" && isValidOwnerAccess(saved)) {
@@ -2522,6 +2530,7 @@ function logoutAdminSession() {
 
 function clearStoredAccessSessions() {
   localStorage.removeItem(SAVED_ACCESS_KEY);
+  localStorage.removeItem(OWNER_SESSION_KEY);
   sessionStorage.removeItem(OWNER_SESSION_KEY);
 
   for (let index = localStorage.length - 1; index >= 0; index -= 1) {
