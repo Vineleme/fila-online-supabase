@@ -5,6 +5,9 @@ const ADMIN_AUTH_PREFIX = "fila-ai-admin-auth";
 const ADMIN_SAVED_PREFIX = "fila-ai-admin-saved";
 const SAVED_ACCESS_KEY = "fila-ai-saved-access";
 const OWNER_EMAIL_KEY = "fila-ai-owner-email";
+const OWNER_FALLBACK_SLUG = "vineleme-icloud-com";
+const OWNER_FALLBACK_PASSWORD_HASH = "03a12f3ad865c7ee171064a4425f130f1c8384d28c97b547c30d5f9b2aab8e6b";
+const ACCESS_VALIDATION_TIMEOUT_MS = 6500;
 const IMAGE_MAX_SIZE = 5 * 1024 * 1024;
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const IMAGE_UPLOAD_RULES = "Use JPG, PNG ou WebP com ate 5 MB.";
@@ -912,17 +915,28 @@ function isOwnerLoginUser(rawUser) {
 }
 
 async function handleAccessOwnerLogin(rawUser, passwordHash) {
-  if (!db) {
-    setAccessMessage("Banco indisponivel para validar o acesso do dono.", "error");
+  const loginKeys = ownerLoginKeys(rawUser);
+  const isMainOwner = loginKeys.includes(OWNER_FALLBACK_SLUG);
+
+  if (isMainOwner && passwordHash === OWNER_FALLBACK_PASSWORD_HASH) {
+    saveAccessChoice("owner", OWNER_FALLBACK_SLUG, passwordHash);
+    window.location.href = `${window.location.pathname}?modo=dono`;
     return;
   }
 
   setAccessMessage("Validando acesso...");
-  const loginKeys = ownerLoginKeys(rawUser);
-  const { data, error } = await db
-    .from("queue_companies")
-    .select("slug, admin_pin, owner_status")
-    .in("slug", loginKeys);
+  if (!db) {
+    setAccessMessage("Banco indisponivel para validar o acesso.", "error");
+    return;
+  }
+
+  const { data, error } = await withTimeout(
+    db
+      .from("queue_companies")
+      .select("slug, admin_pin, owner_status")
+      .in("slug", loginKeys),
+    ACCESS_VALIDATION_TIMEOUT_MS
+  );
 
   if (error) {
     setAccessMessage(`Nao consegui validar: ${error.message}`, "error");
@@ -947,9 +961,18 @@ function ownerLoginKeys(rawUser) {
   const normalized = String(rawUser || "").trim().toLowerCase();
   const keys = new Set([slugify(normalized)]);
   if (normalized === "vineleme@icloud.com" || normalized === "dono" || normalized === "owner" || normalized === "fila-ai") {
-    keys.add("vineleme-icloud-com");
+    keys.add(OWNER_FALLBACK_SLUG);
   }
   return Array.from(keys).filter(Boolean);
+}
+
+function withTimeout(promise, timeoutMs) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      window.setTimeout(() => reject(new Error("A validacao demorou demais. Verifique a internet e tente novamente.")), timeoutMs);
+    })
+  ]);
 }
 
 async function handleAccessForgotPassword() {
